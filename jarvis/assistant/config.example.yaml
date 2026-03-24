@@ -1,0 +1,150 @@
+# ═══════════════════════════════════════════════════════════════
+# Assistant Configuration
+# ═══════════════════════════════════════════════════════════════
+# This is the ONLY place where specific choices are made.
+# Changing the assistant name, model, music platform, etc.
+# requires editing ONLY this file. No code changes needed.
+# ═══════════════════════════════════════════════════════════════
+
+# --- Identity ---
+# Change these to rename/rebrand the assistant.
+# Every module reads from here — no "Jarvis" hardcoded anywhere.
+assistant:
+  name: "Jarvis"
+  wake_word: "jarvis"
+  personality: >
+    You are a smart, friendly voice assistant. You speak concisely
+    and have a warm personality. You understand Hindi, English,
+    and Hinglish naturally.
+
+# --- Brain (LLM) ---
+# Which model + backend to use for understanding commands.
+# Swap model: change the name. Swap backend: change the provider.
+brain:
+  provider: "ollama" # options: ollama, llamacpp, openai, custom
+  model: "llama3.2:3b" # any model tag your provider supports
+  endpoint: "http://localhost:11434" # where the model server runs
+  temperature: 0.3 # lower = more consistent intent parsing
+  json_mode: true # constrain output to valid JSON
+
+  # Song resolution: when the user describes a song vaguely,
+  # the LLM produces search keywords. It does NOT need to know
+  # the actual song — the music provider's search handles that.
+  song_resolution_strategy: "search" # options: search (pass to music provider), llm_only (ask LLM to name the song)
+
+# --- Ears (Speech-to-Text) ---
+# How spoken words become text.
+ears:
+  provider: "faster_whisper" # options: faster_whisper, whisper_cpp, google_cloud, azure, custom
+  model_size: "base" # tiny, base, small, medium, large-v3
+  language: "auto" # auto-detect, or force: "en", "hi"
+  device: "auto" # auto (picks GPU if available), cpu, cuda, metal
+
+# --- Voice (Text-to-Speech) ---
+# How text becomes spoken audio.
+voice:
+  provider: "piper" # options: piper, coqui_xtts, elevenlabs, system, custom
+  model: "en_US-lessac-medium" # voice model identifier
+  speed: 1.0
+  output_device: "default" # "default", "bluetooth", or specific device name
+
+# --- Hands (Skills/Actions) ---
+# What the assistant can actually DO.
+music:
+  provider: "youtube_music" # options: youtube_music, spotify, apple_music, custom
+  search_results: 5 # how many results to consider
+  auto_play_first: true # play first result automatically, or ask user?
+  player: "mpv" # audio player backend: mpv, vlc, custom
+
+  # User's music taste — fed to the LLM so it can disambiguate vague requests.
+  # "Sajni" alone could be 10 songs. But "Sajni" + knowing the user loves Arijit Singh
+  # → "Sajni Arijit Singh Laapata Ladies". This is how we beat Alexa.
+  user_preferences:
+    languages: ["Hindi", "English"] # user listens to both
+    region: "India"
+    favorite_artists:
+      # Hindi / Bollywood
+      - "Arijit Singh"
+      - "Shreya Ghoshal"
+      - "A.R. Rahman"
+      - "Pritam"
+      # English / Western
+      - "Coldplay"
+      - "Ed Sheeran"
+      - "The Weeknd"
+    favorite_genres:
+      - "Bollywood"
+      - "Hindi romantic"
+      - "Sufi"
+      - "Pop"
+      - "Alternative rock"
+    # When a song name is ambiguous AND the language is Hindi,
+    # prefer recent Bollywood hit by a favorite artist.
+    # When the song is clearly English, prefer the globally popular version.
+    disambiguation_bias: "recent_bollywood" # applies to Hindi songs only
+
+# --- Audio Output ---
+# System-level audio routing. Volume lives here, not in music,
+# because "volume down" applies to everything: music, voice responses, alerts.
+# When you add a Bluetooth speaker or move to a Jetson with HDMI + BT,
+# configure outputs here. All providers route audio through this.
+audio:
+  provider: "system" # options: system (OS-level), pulseaudio, pipewire, custom
+  default_output: "default" # which output to use by default
+  outputs:
+    - name: "default"
+      type: "system" # uses OS default audio device
+    # Uncomment when you connect the Bluetooth speaker:
+    # - name: "jbl_speaker"
+    #   type: "bluetooth"
+    #   mac_address: "XX:XX:XX:XX:XX:XX"
+    # - name: "room_speaker"
+    #   type: "hdmi"
+
+lights:
+  provider: "tuya" # options: tuya, hue, wiz, mqtt, custom
+  devices:
+    - name: "room_light"
+      device_id: "YOUR_DEVICE_ID"
+      local_key: "YOUR_LOCAL_KEY"
+      ip: "192.168.1.X"
+      type: "rgb" # rgb (full colour + white modes)
+      version: 3.5 # Tuya protocol version (auto-detected)
+  scenes:
+    romantic: { color: "#FF1450", brightness: 30 }
+    movie: { color: "#1a1a3c", brightness: 10 }
+    study: { color: "#FFFFFF", brightness: 100 }
+    party: { color: "#FF00FF", brightness: 80 }
+    sleep: { color: "#FF8C00", brightness: 5 }
+    reading: { color: "#FFFFFF", brightness: 70 }
+    sunset: { color: "#FF6B35", brightness: 50 }
+    focus: { color: "#4169E1", brightness: 60 }
+
+# --- Body (Hardware) ---
+# Physical device configuration. Ignored when running on Mac (simulation mode).
+hardware:
+  platform: "auto" # auto-detect, or force: mac, jetson, rpi, x86_linux
+  mic:
+    type: "default" # default (system mic), respeaker, inmp441, usb
+    sample_rate: 16000
+    channels: 1
+  speaker:
+    type: "default" # default, bluetooth, usb, hdmi
+    bluetooth_device: null # MAC address if using bluetooth
+  leds:
+    enabled: false # NeoPixel/WS2812B LED ring
+    pin: null # GPIO pin number
+    count: 0 # number of LEDs
+
+# --- Wake Word ---
+wake_word:
+  provider: "openwakeword" # options: openwakeword, porcupine, snowboy, custom
+  sensitivity: 0.5 # 0.0 (never triggers) to 1.0 (triggers on everything)
+  custom_model: null # path to custom-trained wake word model
+
+# --- Logging & Debug ---
+debug:
+  log_level: "DEBUG" # DEBUG, INFO, WARNING, ERROR
+  log_intents: true # log every classified intent
+  log_latency: true # log response times
+  save_audio: false # save recorded audio clips for debugging

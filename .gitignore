@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — Tuya device credentials, API keys
+jarvis/01-the-brain/experiments/tinytuya.json
+jarvis/01-the-brain/experiments/devices.json
+jarvis/01-the-brain/experiments/snapshot.json
+jarvis/01-the-brain/experiments/tuya-raw.json
+
+# Config may contain personal preferences/device IDs — keep a .example instead
+jarvis/assistant/config.yaml
+
+# Audio recordings saved during debug
+*.wav
+*.mp3
+
+# Logs
+*.log

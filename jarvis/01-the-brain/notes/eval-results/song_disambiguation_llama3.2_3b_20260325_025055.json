@@ -1,0 +1,268 @@
+{
+  "model": "llama3.2:3b",
+  "timestamp": "20260325_025055",
+  "total": 15,
+  "passed": 2,
+  "percentage": 13.333333333333334,
+  "results": [
+    {
+      "input": "Channa Mereya",
+      "description": "Arijit Singh hit from ADHM \u2014 NOT in prompt examples",
+      "expected_in_query": [
+        "Arijit Singh",
+        "Ae Dil Hai Mushkil"
+      ],
+      "actual_query": "Channa Mereya Arijit Singh Raabta",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [
+        "Arijit Singh"
+      ],
+      "expected_missing": [
+        "Ae Dil Hai Mushkil"
+      ],
+      "passed": false,
+      "latency": 2.5636708736419678
+    },
+    {
+      "input": "Kun Faya Kun",
+      "description": "AR Rahman classic from Rockstar",
+      "expected_in_query": [
+        "A.R. Rahman",
+        "Rockstar"
+      ],
+      "actual_query": "Kun Faya Kun A.R. Rahman",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [
+        "A.R. Rahman"
+      ],
+      "expected_missing": [
+        "Rockstar"
+      ],
+      "passed": false,
+      "latency": 1.6075592041015625
+    },
+    {
+      "input": "Raabta",
+      "description": "Could be movie title or Agent Vinod song \u2014 should add artist",
+      "expected_in_query": [
+        "Arijit Singh"
+      ],
+      "actual_query": "Raabta Arijit Singh Gully Boy",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [
+        "Arijit Singh"
+      ],
+      "expected_missing": [],
+      "passed": true,
+      "latency": 1.8312528133392334
+    },
+    {
+      "input": "Ilahi",
+      "description": "YJHD song \u2014 should add movie context",
+      "expected_in_query": [
+        "Arijit Singh",
+        "Yeh Jawaani Hai Deewani"
+      ],
+      "actual_query": "Ilahi Arijit Singh Laapata Ladies",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [
+        "Arijit Singh"
+      ],
+      "expected_missing": [
+        "Yeh Jawaani Hai Deewani"
+      ],
+      "passed": false,
+      "latency": 1.6972999572753906
+    },
+    {
+      "input": "Gerua",
+      "description": "Dilwale hit \u2014 bare name needs enrichment",
+      "expected_in_query": [
+        "Arijit Singh",
+        "Dilwale"
+      ],
+      "actual_query": "Gerua Arijit Singh Dum Maaro Dum",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [
+        "Arijit Singh"
+      ],
+      "expected_missing": [
+        "Dilwale"
+      ],
+      "passed": false,
+      "latency": 1.6809020042419434
+    },
+    {
+      "input": "Tere Bina",
+      "description": "Multiple songs with this name \u2014 should resolve to most popular",
+      "expected_in_query": [
+        "A.R. Rahman",
+        "Guru"
+      ],
+      "actual_query": "Tere Bina Atif Aslam Aashiqui 2",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [],
+      "expected_missing": [
+        "A.R. Rahman",
+        "Guru"
+      ],
+      "passed": false,
+      "latency": 1.7182350158691406
+    },
+    {
+      "input": "Tera Ban Jaunga",
+      "description": "Kabir Singh hit \u2014 recent Bollywood",
+      "expected_in_query": [
+        "Kabir Singh"
+      ],
+      "actual_query": "Tera Ban Jaunga Arijit Singh Raabta",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [],
+      "expected_missing": [
+        "Kabir Singh"
+      ],
+      "passed": false,
+      "latency": 1.6922838687896729
+    },
+    {
+      "input": "Mast Magan",
+      "description": "2 States soundtrack",
+      "expected_in_query": [
+        "Arijit Singh",
+        "2 States"
+      ],
+      "actual_query": "Mast Magan Arijit Singh Raabta",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [
+        "Arijit Singh"
+      ],
+      "expected_missing": [
+        "2 States"
+      ],
+      "passed": false,
+      "latency": 1.5926930904388428
+    },
+    {
+      "input": "woh Shreya Ghoshal ka bahut meetha sa gaana",
+      "description": "Vague Hindi request \u2014 should at least keep the artist and add context",
+      "expected_in_query": [
+        "Shreya Ghoshal"
+      ],
+      "actual_query": "Chaiyya Chaiyya Shreya Ghoshal",
+      "intent_correct": true,
+      "query_enriched": false,
+      "expected_found": [
+        "Shreya Ghoshal"
+      ],
+      "expected_missing": [],
+      "passed": false,
+      "latency": 1.872426986694336
+    },
+    {
+      "input": "90s ka koi Bollywood gaana laga do",
+      "description": "Decade + genre request in Hindi",
+      "expected_in_query": [
+        "90s",
+        "Bollywood"
+      ],
+      "actual_query": "90s Bollywood songs Arijit Singh Pritam",
+      "intent_correct": true,
+      "query_enriched": false,
+      "expected_found": [
+        "90s",
+        "Bollywood"
+      ],
+      "expected_missing": [],
+      "passed": false,
+      "latency": 1.6503071784973145
+    },
+    {
+      "input": "Lata ji ka koi purana gaana",
+      "description": "Hindi request with iconic artist name \u2014 should understand 'Lata ji'",
+      "expected_in_query": [
+        "Lata"
+      ],
+      "actual_query": "Lata Mangeshkar old songs",
+      "intent_correct": true,
+      "query_enriched": false,
+      "expected_found": [
+        "Lata"
+      ],
+      "expected_missing": [],
+      "passed": false,
+      "latency": 1.6153521537780762
+    },
+    {
+      "input": "play some AR Rahman instrumentals",
+      "description": "Specific artist + mood/style",
+      "expected_in_query": [
+        "A.R. Rahman",
+        "instrumental"
+      ],
+      "actual_query": "A.R. Rahman instrumental",
+      "intent_correct": true,
+      "query_enriched": false,
+      "expected_found": [
+        "A.R. Rahman",
+        "instrumental"
+      ],
+      "expected_missing": [],
+      "passed": false,
+      "latency": 1.4745447635650635
+    },
+    {
+      "input": "play that Ranbir Kapoor breakup song",
+      "description": "Actor-based reference \u2014 should resolve to a real song",
+      "expected_in_query": [
+        "Ranbir"
+      ],
+      "actual_query": "Ranbir Kapoor breakup song Arijit Singh",
+      "intent_correct": true,
+      "query_enriched": false,
+      "expected_found": [
+        "Ranbir"
+      ],
+      "expected_missing": [],
+      "passed": false,
+      "latency": 1.623793125152588
+    },
+    {
+      "input": "Dil",
+      "description": "Single ultra-common word \u2014 MUST add context, many songs named 'Dil'",
+      "expected_in_query": [],
+      "actual_query": "Dil Arijit Singh",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [],
+      "expected_missing": [],
+      "passed": true,
+      "latency": 1.530012845993042
+    },
+    {
+      "input": "Phir Le Aaya Dil",
+      "description": "Barfi song \u2014 not in examples",
+      "expected_in_query": [
+        "Arijit Singh",
+        "Barfi"
+      ],
+      "actual_query": "Phir Le Aaya Dil Shreya Ghoshal Om Shanti Om",
+      "intent_correct": true,
+      "query_enriched": true,
+      "expected_found": [],
+      "expected_missing": [
+        "Arijit Singh",
+        "Barfi"
+      ],
+      "passed": false,
+      "latency": 1.8627047538757324
+    }
+  ]
+}

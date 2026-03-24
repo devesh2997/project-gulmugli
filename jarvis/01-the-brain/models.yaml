@@ -1,0 +1,108 @@
+# Model Registry — candidates for JARVIS's brain
+# Add new models here as they're released. The eval framework reads this file.
+
+models:
+  qwen2.5:3b:
+    family: "Qwen (Alibaba)"
+    params: "3B"
+    q4_size_gb: 2.0
+    strengths:
+      - "Best-in-class structured JSON / function-calling output"
+      - "Specifically trained for tool use"
+      - "Good multilingual support"
+    weaknesses:
+      - "Weaker at creative/conversational writing than Llama"
+    hardware_constraints:
+      min_ram_gb: 4
+      gpu_acceleration: ["cuda", "metal", "vulkan"]
+      tested_on: ["macOS ARM", "Jetson Orin Nano", "x86 Linux"]
+      known_issues: []
+
+  llama3.2:3b:
+    family: "Llama (Meta)"
+    params: "3B"
+    q4_size_gb: 2.0
+    strengths:
+      - "Strong general-purpose model"
+      - "Huge community, lots of fine-tunes available"
+      - "Good conversational quality"
+    weaknesses:
+      - "JSON output less reliable — sometimes adds markdown or explanations"
+      - "Needs more prompt engineering for structured output"
+    hardware_constraints:
+      min_ram_gb: 4
+      gpu_acceleration: ["cuda", "metal", "vulkan"]
+      tested_on: ["macOS ARM", "Jetson Orin Nano", "x86 Linux"]
+      known_issues: []
+
+  phi4-mini:
+    family: "Phi (Microsoft)"
+    params: "3.8B"
+    q4_size_gb: 2.4
+    strengths:
+      - "Best reasoning in the 3-4B class (52% AIME 2024)"
+      - "Excellent at complex, multi-step logic"
+    weaknesses:
+      - "Slightly larger than 3B models"
+      - "Microsoft ecosystem bias — best with ONNX, less Ollama optimization"
+    hardware_constraints:
+      min_ram_gb: 5
+      gpu_acceleration: ["cuda", "metal", "directml"]
+      tested_on: ["macOS ARM", "x86 Linux"]
+      known_issues:
+        - "Less tested on ARM Linux without ONNX runtime"
+
+  gemma3:4b:
+    family: "Gemma (Google)"
+    params: "4B"
+    q4_size_gb: 2.5
+    strengths:
+      - "Purpose-built for edge/mobile deployment"
+      - "Multimodal (text + vision) in same model"
+    weaknesses:
+      - "Reported compatibility bugs on some NVIDIA ARM boards"
+    hardware_constraints:
+      min_ram_gb: 5
+      gpu_acceleration: ["cuda", "metal"]
+      tested_on: ["macOS ARM", "x86 Linux"]
+      known_issues:
+        - "Errors reported on Jetson Orin Nano Super with JetPack 6.2.1"
+
+  deepseek-r1:8b:
+    family: "DeepSeek"
+    params: "8B"
+    q4_size_gb: 5.0
+    strengths:
+      - "Incredible reasoning capability for its size"
+      - "Surpasses many 14B models on benchmarks"
+    weaknesses:
+      - "At 5GB, leaves little room for Whisper + TTS on 8GB devices"
+      - "Slower inference due to size"
+    hardware_constraints:
+      min_ram_gb: 8
+      gpu_acceleration: ["cuda", "metal"]
+      tested_on: ["macOS ARM", "x86 Linux"]
+      known_issues:
+        - "Too large for 8GB shared-memory boards if running alongside STT+TTS"
+
+  llama3.2:1b:
+    family: "Llama (Meta)"
+    params: "1B"
+    q4_size_gb: 0.7
+    strengths:
+      - "Ultra-fast, ultra-small"
+      - "Runs on almost anything including Raspberry Pi"
+    weaknesses:
+      - "Limited reasoning depth"
+      - "Struggles with vague/creative music requests"
+    hardware_constraints:
+      min_ram_gb: 2
+      gpu_acceleration: ["cuda", "metal", "vulkan", "cpu-only"]
+      tested_on: ["macOS ARM", "Raspberry Pi 5", "Jetson Orin Nano", "x86 Linux"]
+      known_issues: []
+
+# To add a new model:
+# 1. Add entry here
+# 2. Run: ollama pull <model_name>
+# 3. Run: python experiments/eval_framework.py
+# 4. Check results in notes/eval-results/

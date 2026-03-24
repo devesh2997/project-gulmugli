@@ -1,0 +1,3698 @@
+[
+  {
+    "model": "qwen2.5:3b",
+    "timestamp": "2026-03-25T00:32:39.122033",
+    "scores": {
+      "intent_accuracy": 83.7,
+      "json_reliability": 100.0,
+      "song_resolution": 25.0,
+      "hindi_intent_accuracy": 80.0,
+      "avg_latency": 1.22,
+      "avg_tok_per_sec": 57.5,
+      "total_tests": 54,
+      "intent_tests": 43,
+      "hindi_tests": 20,
+      "song_tests": 8
+    },
+    "details": [
+      {
+        "index": 0,
+        "input": "play Tum Hi Ho",
+        "task": "intent_classification",
+        "notes": "Direct song request, should be trivial",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho",
+            "platform": "any"
+          },
+          "response": "Playing Tum Hi Ho."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Tum Hi Ho\", \"platform\": \"any\"}, \"response\": \"Playing Tum Hi Ho.\"}",
+        "latency": 4.843983888626099,
+        "tok_per_sec": 55.55339364435965,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true,
+        "expected_keywords": [
+          "Tum Hi Ho"
+        ],
+        "found_keywords": [
+          "Tum Hi Ho"
+        ]
+      },
+      {
+        "index": 1,
+        "input": "play Bohemian Rhapsody by Queen",
+        "task": "intent_classification",
+        "notes": "Specific song + artist",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Bohemian Rhapsody Queen",
+            "platform": "any"
+          },
+          "response": "Playing Bohemian Rhapsody by Queen."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Bohemian Rhapsody Queen\", \"platform\": \"any\"}, \"response\": \"Playing Bohemian Rhapsody by Queen.\"}",
+        "latency": 1.6386539936065674,
+        "tok_per_sec": 56.200501224936545,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true,
+        "expected_keywords": [
+          "Bohemian Rhapsody",
+          "Queen"
+        ],
+        "found_keywords": [
+          "Bohemian Rhapsody",
+          "Queen"
+        ]
+      },
+      {
+        "index": 2,
+        "input": "play that sad Coldplay song from the space movie",
+        "task": "intent_classification",
+        "notes": "Requires cultural knowledge: Interstellar → Atlas or A Sky Full of Stars",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "sad Coldplay space movie",
+            "platform": "any"
+          },
+          "response": "Playing a sad Coldplay song from a space movie."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"sad Coldplay space movie\", \"platform\": \"any\"}, \"response\": \"Playing a sad Coldplay song from a space movie.\"}",
+        "latency": 1.5854079723358154,
+        "tok_per_sec": 55.92258996376942,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 3,
+        "input": "play something chill for studying",
+        "task": "intent_classification",
+        "notes": "Mood-based request, no specific song",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "chill study music",
+            "platform": "any"
+          },
+          "response": "Playing some chill study music for you."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"chill study music\", \"platform\": \"any\"}, \"response\": \"Playing some chill study music for you.\"}",
+        "latency": 1.4500360488891602,
+        "tok_per_sec": 56.62623447532433,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 4,
+        "input": "play that Arijit Singh song everyone cries to",
+        "task": "intent_classification",
+        "notes": "Requires Bollywood knowledge: probably Tum Hi Ho or Channa Mereya",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Arijit Singh Everyone Cries song",
+            "platform": "any"
+          },
+          "response": "Playing Everyone Cries by Arijit Singh."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Arijit Singh Everyone Cries song\", \"platform\": \"any\"}, \"response\": \"Playing Everyone Cries by Arijit Singh.\"}",
+        "latency": 1.6870782375335693,
+        "tok_per_sec": 55.82407653120641,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 5,
+        "input": "play that song that goes I'm just a kid and life is a nightmare",
+        "task": "intent_classification",
+        "notes": "Lyric-based reference: I'm Just a Kid by Simple Plan",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "I'm Just A Kid life is a nightmare",
+            "platform": "any"
+          },
+          "response": "Playing I'm Just a Kid by Parampara."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"I'm Just A Kid life is a nightmare\", \"platform\": \"any\"}, \"response\": \"Playing I'm Just a Kid by Parampara.\"}",
+        "latency": 1.7357392311096191,
+        "tok_per_sec": 55.345936364250626,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 6,
+        "input": "woh Arijit Singh ka dard bhara gaana laga do",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play that painful Arijit Singh song' → Tum Hi Ho / Channa Mereya",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Arijit Singh Dard Bhare Gaan",
+            "platform": "any"
+          },
+          "response": "Playing a song by Arijit Singh."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Arijit Singh Dard Bhare Gaan\", \"platform\": \"any\"}, \"response\": \"Playing a song by Arijit Singh.\"}",
+        "latency": 1.6759028434753418,
+        "tok_per_sec": 56.432545737047896,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 7,
+        "input": "kuch romantic sa bajao",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play something romantic'. Mood request in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": "Setting the mood."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"scene\", \"value\": \"romantic\"}, \"response\": \"Setting the mood.\"}",
+        "latency": 1.2542967796325684,
+        "tok_per_sec": 56.53016965562144,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "light_control",
+        "intent_correct": false
+      },
+      {
+        "index": 8,
+        "input": "gaana band karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'stop the song'. Direct control in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "stop"
+          },
+          "response": "Stopped."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"stop\"}, \"response\": \"Stopped.\"}",
+        "latency": 0.9432878494262695,
+        "tok_per_sec": 57.08888897721808,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "stop"
+        ],
+        "found_keywords": [
+          "stop"
+        ]
+      },
+      {
+        "index": 9,
+        "input": "light band karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'turn off the light'",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "on",
+            "value": "band"
+          },
+          "response": "Room lights are now on in the band scene."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"on\", \"value\": \"band\"}, \"response\": \"Room lights are now on in the band scene.\"}",
+        "latency": 1.4107768535614014,
+        "tok_per_sec": 56.19034951714916,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "off"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 10,
+        "input": "awaaz badha do thoda",
+        "task": "intent_classification",
+        "notes": "Hindi: 'increase the volume a bit'",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "volume_up"
+          },
+          "response": "Volume up."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"volume_up\"}, \"response\": \"Volume up.\"}",
+        "latency": 1.0181329250335693,
+        "tok_per_sec": 57.215597784417525,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "volume_up"
+        ],
+        "found_keywords": [
+          "volume_up"
+        ]
+      },
+      {
+        "index": 11,
+        "input": "awaaz kam karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'reduce the volume'",
+        "is_hindi": true,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "volume_down"
+          },
+          "response": "Volume down."
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"volume_down\"}, \"response\": \"Volume down.\"}",
+        "latency": 0.9885098934173584,
+        "tok_per_sec": 57.22119603382312,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "system",
+        "intent_correct": false,
+        "expected_keywords": [
+          "volume_down"
+        ],
+        "found_keywords": [
+          "volume_down"
+        ]
+      },
+      {
+        "index": 12,
+        "input": "woh gaana laga do jisme woh bolta hai senorita",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play that song where he says senorita' → Señorita by Shawn Mendes & Camila Cabello",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "senorita song",
+            "platform": "any"
+          },
+          "response": "Playing Senorita."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"senorita song\", \"platform\": \"any\"}, \"response\": \"Playing Senorita.\"}",
+        "latency": 1.3616678714752197,
+        "tok_per_sec": 56.77432714509411,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 13,
+        "input": "neeli light kar do",
+        "task": "intent_classification",
+        "notes": "Hindi: 'make the light blue'. 'neeli' = blue in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "color",
+            "value": "neeli"
+          },
+          "response": "Setting the lights to blue."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"color\", \"value\": \"neeli\"}, \"response\": \"Setting the lights to blue.\"}",
+        "latency": 1.3270180225372314,
+        "tok_per_sec": 56.46052574360662,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "blue"
+        ],
+        "found_keywords": [
+          "blue"
+        ]
+      },
+      {
+        "index": 14,
+        "input": "aaj ka din kaisa hai",
+        "task": "intent_classification",
+        "notes": "Hindi: 'how is today' — general chat, NOT system/weather.",
+        "is_hindi": true,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "date"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"date\"}, \"response\": \"\"}",
+        "latency": 0.8420820236206055,
+        "tok_per_sec": 58.41696289514468,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "system",
+        "intent_correct": false
+      },
+      {
+        "index": 15,
+        "input": "yaar woh sad wala song play kar do na",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'bro play that sad song'. Extremely vague but common.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "sad song",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"sad song\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.1291050910949707,
+        "tok_per_sec": 56.84710779626347,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 16,
+        "input": "woh KK ka last concert wala gaana play karo",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play that song from KK's last concert' → Pal by KK (his last performance). Tests Indian pop culture knowledge.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "KK Last Concert song",
+            "platform": "any"
+          },
+          "response": "Playing the song from KK's last concert."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"KK Last Concert song\", \"platform\": \"any\"}, \"response\": \"Playing the song from KK's last concert.\"}",
+        "latency": 1.5091240406036377,
+        "tok_per_sec": 55.64219369693632,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 17,
+        "input": "bhai kuch Punjabi bajao party wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'bro play some Punjabi party song'. Genre + mood in Hinglish.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Punjabi party song",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Punjabi party song\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.2646801471710205,
+        "tok_per_sec": 56.35210399200365,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 18,
+        "input": "room ka mood change karo romantic wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'change the room mood to romantic'. Scene request.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": "Setting the mood."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"scene\", \"value\": \"romantic\"}, \"response\": \"Setting the mood.\"}",
+        "latency": 1.260274887084961,
+        "tok_per_sec": 56.34445706435073,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "romantic"
+        ],
+        "found_keywords": [
+          "romantic"
+        ]
+      },
+      {
+        "index": 19,
+        "input": "next song laga do",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play the next song' → skip intent.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "next song",
+            "platform": "any"
+          },
+          "response": "Playing the next song in queue."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"next song\", \"platform\": \"any\"}, \"response\": \"Playing the next song in queue.\"}",
+        "latency": 1.3771629333496094,
+        "tok_per_sec": 55.88727134980391,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_play",
+        "intent_correct": false,
+        "expected_keywords": [
+          "skip"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 20,
+        "input": "lights thoda dim karo",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'dim the lights a bit'. Brightness control.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "dimmer"
+          },
+          "response": "Dimming the lights."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"brightness\", \"value\": \"dimmer\"}, \"response\": \"Dimming the lights.\"}",
+        "latency": 1.314450979232788,
+        "tok_per_sec": 56.356669760067696,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "brightness"
+        ],
+        "found_keywords": [
+          "brightness"
+        ]
+      },
+      {
+        "index": 21,
+        "input": "woh movie wala gaana laga do jisme Ranbir Kapoor pagal ho jaata hai",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play that movie song where Ranbir Kapoor goes crazy' → likely Ae Dil Hai Mushkil or Badtameez Dil",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Ranbir Kapoor crazy song",
+            "platform": "any"
+          },
+          "response": "Playing a crazy song with Ranbir Kapoor."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Ranbir Kapoor crazy song\", \"platform\": \"any\"}, \"response\": \"Playing a crazy song with Ranbir Kapoor.\"}",
+        "latency": 1.5677649974822998,
+        "tok_per_sec": 56.16031891551707,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 22,
+        "input": "Atif Aslam ka woh gaana jisme woh rota hai chhod ke jaane ke baad",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'that Atif Aslam song where he cries after being left' → Tere Sang Yaara / Pehli Nazar Mein",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Atif Aslam chhod ke jaan",
+            "platform": "any"
+          },
+          "response": "Playing Chhod Ke Jan by Atif Aslam."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Atif Aslam chhod ke jaan\", \"platform\": \"any\"}, \"response\": \"Playing Chhod Ke Jan by Atif Aslam.\"}",
+        "latency": 1.7993080615997314,
+        "tok_per_sec": 56.05754463918337,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 23,
+        "input": "woh old Bollywood wala romantic song, woh Shahrukh Khan movie se hai",
+        "task": "intent_classification",
+        "notes": "Hinglish: vague SRK movie song. Tests if model generates a reasonable search query even when it can't pin down ONE song.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Shah Rukh Khan romantic old Bollywood song"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Shah Rukh Khan romantic old Bollywood song\"}, \"response\": \"\"}",
+        "latency": 1.1864581108093262,
+        "tok_per_sec": 56.55241449256686,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 24,
+        "input": "pause",
+        "task": "intent_classification",
+        "notes": "Single word command",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "pause"
+          },
+          "response": "Paused."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"pause\"}, \"response\": \"Paused.\"}",
+        "latency": 1.2100169658660889,
+        "tok_per_sec": 57.71732732124,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "pause"
+        ],
+        "found_keywords": [
+          "pause"
+        ]
+      },
+      {
+        "index": 25,
+        "input": "skip this song",
+        "task": "intent_classification",
+        "notes": "Simple control",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "skip"
+          },
+          "response": "Skipping the current song."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"skip\"}, \"response\": \"Skipping the current song.\"}",
+        "latency": 1.0559158325195312,
+        "tok_per_sec": 56.562315660532775,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "skip"
+        ],
+        "found_keywords": [
+          "skip"
+        ]
+      },
+      {
+        "index": 26,
+        "input": "turn the volume up",
+        "task": "intent_classification",
+        "notes": "Volume control",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "volume_up"
+          },
+          "response": "Volume is up."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"volume_up\"}, \"response\": \"Volume is up.\"}",
+        "latency": 1.0467822551727295,
+        "tok_per_sec": 56.94108745392872,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "volume_up"
+        ],
+        "found_keywords": [
+          "volume_up"
+        ]
+      },
+      {
+        "index": 27,
+        "input": "stop the music",
+        "task": "intent_classification",
+        "notes": "Stop command",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "stop"
+          },
+          "response": "Stopped."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"stop\"}, \"response\": \"Stopped.\"}",
+        "latency": 0.940371036529541,
+        "tok_per_sec": 57.69856618365843,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "stop"
+        ],
+        "found_keywords": [
+          "stop"
+        ]
+      },
+      {
+        "index": 28,
+        "input": "turn off the lights",
+        "task": "intent_classification",
+        "notes": "Basic light toggle",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "off",
+            "value": ""
+          },
+          "response": "Lights are off."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"off\", \"value\": \"\"}, \"response\": \"Lights are off.\"}",
+        "latency": 1.1895549297332764,
+        "tok_per_sec": 56.42237123139921,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "off"
+        ],
+        "found_keywords": [
+          "off"
+        ]
+      },
+      {
+        "index": 29,
+        "input": "set the lights to purple",
+        "task": "intent_classification",
+        "notes": "Color command",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "color",
+            "value": "purple"
+          },
+          "response": "Setting the lights to purple."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"color\", \"value\": \"purple\"}, \"response\": \"Setting the lights to purple.\"}",
+        "latency": 1.2993600368499756,
+        "tok_per_sec": 56.42465202406785,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "purple"
+        ],
+        "found_keywords": [
+          "purple"
+        ]
+      },
+      {
+        "index": 30,
+        "input": "brightness 30 percent",
+        "task": "intent_classification",
+        "notes": "Brightness with number",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "30 percent"
+          },
+          "response": "Brightness set to 30 percent."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"brightness\", \"value\": \"30 percent\"}, \"response\": \"Brightness set to 30 percent.\"}",
+        "latency": 1.4160892963409424,
+        "tok_per_sec": 56.59536431183662,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "30"
+        ],
+        "found_keywords": [
+          "30"
+        ]
+      },
+      {
+        "index": 31,
+        "input": "make the room romantic",
+        "task": "intent_classification",
+        "notes": "Scene-based — model should map 'romantic' to a scene",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": "Setting the mood."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"scene\", \"value\": \"romantic\"}, \"response\": \"Setting the mood.\"}",
+        "latency": 1.257096767425537,
+        "tok_per_sec": 56.47932231850883,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "romantic"
+        ],
+        "found_keywords": [
+          "romantic"
+        ]
+      },
+      {
+        "index": 32,
+        "input": "movie mode",
+        "task": "intent_classification",
+        "notes": "Scene shorthand",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "scene"
+          },
+          "response": "Setting the room for movie mode."
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"scene\"}, \"response\": \"Setting the room for movie mode.\"}",
+        "latency": 1.0951099395751953,
+        "tok_per_sec": 55.89697717571906,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "system",
+        "intent_correct": false,
+        "expected_keywords": [
+          "movie"
+        ],
+        "found_keywords": [
+          "movie"
+        ]
+      },
+      {
+        "index": 33,
+        "input": "what is the meaning of life",
+        "task": "intent_classification",
+        "notes": "General knowledge question",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "what is the meaning of life"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"what is the meaning of life\"}, \"response\": \"\"}",
+        "latency": 1.027836799621582,
+        "tok_per_sec": 56.76952490154489,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 34,
+        "input": "tell me a joke",
+        "task": "intent_classification",
+        "notes": "Entertainment request",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "tell me a joke"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"tell me a joke\"}, \"response\": \"\"}",
+        "latency": 0.9645180702209473,
+        "tok_per_sec": 57.260900489215665,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 35,
+        "input": "who won the 2023 cricket world cup",
+        "task": "intent_classification",
+        "notes": "Factual question",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "who won the 2023 cricket world cup"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"who won the 2023 cricket world cup\"}, \"response\": \"\"}",
+        "latency": 1.1907551288604736,
+        "tok_per_sec": 57.23781821778166,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 36,
+        "input": "what time is it",
+        "task": "intent_classification",
+        "notes": "System info",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "time"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"time\"}, \"response\": \"\"}",
+        "latency": 0.8585379123687744,
+        "tok_per_sec": 57.495181198815104,
+        "json_valid": true,
+        "expected_intent": "system",
+        "got_intent": "system",
+        "intent_correct": true,
+        "expected_keywords": [
+          "time"
+        ],
+        "found_keywords": [
+          "time"
+        ]
+      },
+      {
+        "index": 37,
+        "input": "never gonna give you up",
+        "task": "intent_classification",
+        "notes": "Song title that sounds like a statement. Should recognize it as a Rick Astley song.",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Never Gonna Give You Up by Cyndi Lauper",
+            "platform": "any"
+          },
+          "response": "Playing Never Gonna Give You Up by Cyndi Lauper."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Never Gonna Give You Up by Cyndi Lauper\", \"platform\": \"any\"}, \"response\": \"Playing Never Gonna Give You Up by Cyndi Lauper.\"}",
+        "latency": 2.13364577293396,
+        "tok_per_sec": 54.38979072184695,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 38,
+        "input": "light me up",
+        "task": "intent_classification",
+        "notes": "Ambiguous: 'light' + 'me up'. This is more likely a song request than a light command.",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "on",
+            "value": ""
+          },
+          "response": "Room lights are on."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"on\", \"value\": \"\"}, \"response\": \"Room lights are on.\"}",
+        "latency": 1.2209019660949707,
+        "tok_per_sec": 56.61185572842206,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "light_control",
+        "intent_correct": false
+      },
+      {
+        "index": 39,
+        "input": "I'm feeling blue",
+        "task": "intent_classification",
+        "notes": "Ambiguous: 'blue' could mean light color, but 'feeling blue' is an emotional statement.",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "feeling blue song",
+            "platform": "any"
+          },
+          "response": "Finding a suitable track for you."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"feeling blue song\", \"platform\": \"any\"}, \"response\": \"Finding a suitable track for you.\"}",
+        "latency": 1.4146530628204346,
+        "tok_per_sec": 56.85052924229724,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "music_play",
+        "intent_correct": false
+      },
+      {
+        "index": 40,
+        "input": "make it brighter in here",
+        "task": "intent_classification",
+        "notes": "Indirect phrasing for brightness up",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "brighter"
+          },
+          "response": "Brightness increased."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"brightness\", \"value\": \"brighter\"}, \"response\": \"Brightness increased.\"}",
+        "latency": 1.2240090370178223,
+        "tok_per_sec": 56.56338565999178,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "brightness"
+        ],
+        "found_keywords": [
+          "brightness"
+        ]
+      },
+      {
+        "index": 41,
+        "input": "woh dhoop wala gaana, Agar Tum Saath Ho nahi, woh doosra wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'that sunshine song, NOT Agar Tum Saath Ho, the other one'. Negation + vague = very hard.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Doosra Wala dhoop wala song",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Doosra Wala dhoop wala song\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.4285931587219238,
+        "tok_per_sec": 56.396734535867346,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 42,
+        "input": "kuch bhi laga do mujhe kya pata",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play anything, I don't care'. Should still be music_play with a generic query.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "",
+            "platform": "any"
+          },
+          "response": "Sure, what kind of music or artist would you like to listen to?"
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"\", \"platform\": \"any\"}, \"response\": \"Sure, what kind of music or artist would you like to listen to?\"}",
+        "latency": 1.5345590114593506,
+        "tok_per_sec": 56.00565938007631,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 43,
+        "input": "play some jazz",
+        "task": "json_reliability",
+        "notes": "Simple request — JSON should be clean",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "jazz",
+            "platform": "any"
+          },
+          "response": "Playing some Jazz for you."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"jazz\", \"platform\": \"any\"}, \"response\": \"Playing some Jazz for you.\"}",
+        "latency": 1.3189680576324463,
+        "tok_per_sec": 56.32827741551739,
+        "json_valid": true
+      },
+      {
+        "index": 44,
+        "input": "set an alarm for 7 AM tomorrow and also make the lights warm",
+        "task": "json_reliability",
+        "notes": "Multi-intent in one sentence. Does it handle gracefully or break?",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "alarm"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"alarm\"}, \"response\": \"\"}",
+        "latency": 0.8514511585235596,
+        "tok_per_sec": 57.43606159503417,
+        "json_valid": true
+      },
+      {
+        "index": 45,
+        "input": "bhai gaana laga aur light bhi dim kar thodi",
+        "task": "json_reliability",
+        "notes": "Hinglish multi-intent: 'play a song AND dim the lights'. Compound request in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "any popular Bollywood song",
+            "platform": "any"
+          },
+          "response": "Playing a popular Bollywood song."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"any popular Bollywood song\", \"platform\": \"any\"}, \"response\": \"Playing a popular Bollywood song.\"}",
+        "latency": 1.4101099967956543,
+        "tok_per_sec": 56.243846296172315,
+        "json_valid": true
+      },
+      {
+        "index": 46,
+        "input": "the Coldplay song from Interstellar",
+        "task": "song_resolution",
+        "notes": "Should resolve to Atlas by Coldplay",
+        "is_hindi": false,
+        "output": "Interstellar - Gravity (Single Version) Coldplay",
+        "latency": 0.4930410385131836,
+        "tok_per_sec": 61.74008791373176,
+        "expected": [
+          "Atlas"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 47,
+        "input": "that song from the end of Fast and Furious 7",
+        "task": "song_resolution",
+        "notes": "Should resolve to See You Again by Wiz Khalifa",
+        "is_hindi": false,
+        "output": "Fast And Furious 7 ending song",
+        "latency": 0.28002500534057617,
+        "tok_per_sec": 65.92052759626102,
+        "expected": [
+          "See You Again"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 48,
+        "input": "that Punjabi song that goes tunak tunak",
+        "task": "song_resolution",
+        "notes": "Should resolve to Tunak Tunak Tun by Daler Mehndi",
+        "is_hindi": false,
+        "output": "tunak tunak tunak",
+        "latency": 0.31720590591430664,
+        "tok_per_sec": 64.16914987908126,
+        "expected": [
+          "Tunak Tunak Tun"
+        ],
+        "song_correct": true
+      },
+      {
+        "index": 49,
+        "input": "woh gaana jisme ladka train ke peechhe bhaagta hai",
+        "task": "song_resolution",
+        "notes": "Hindi: 'the song where the guy runs behind/on the train' → Chaiyya Chaiyya from Dil Se",
+        "is_hindi": true,
+        "output": "woh gaana jisme ladka train ke peechhe bhaagta hai soundtrack",
+        "latency": 0.509911060333252,
+        "tok_per_sec": 58.076913283145146,
+        "expected": [
+          "Chaiyya Chaiyya"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 50,
+        "input": "that song from YJHD when they're in the mountains",
+        "task": "song_resolution",
+        "notes": "YJHD = Yeh Jawaani Hai Deewani. Mountain scene → Kabira or Dilliwaali Girlfriend",
+        "is_hindi": false,
+        "output": "YJHD mountains song",
+        "latency": 0.3190929889678955,
+        "tok_per_sec": 67.39414830763016,
+        "expected": [
+          "Kabira"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 51,
+        "input": "Honey Singh ka woh gaana brown rang wala",
+        "task": "song_resolution",
+        "notes": "Hinglish: Should resolve to Brown Rang by Yo Yo Honey Singh",
+        "is_hindi": true,
+        "output": "Honey Singh Brown Rang Lyrics",
+        "latency": 0.28789305686950684,
+        "tok_per_sec": 64.18077568035092,
+        "expected": [
+          "Brown Rang"
+        ],
+        "song_correct": true
+      },
+      {
+        "index": 52,
+        "input": "that viral song from Money Heist, the Spanish one",
+        "task": "song_resolution",
+        "notes": "Should resolve to Bella Ciao",
+        "is_hindi": false,
+        "output": "Money Heist (La Casa de Papel) viral song",
+        "latency": 0.3820221424102783,
+        "tok_per_sec": 60.69267910385093,
+        "expected": [
+          "Bella Ciao"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 53,
+        "input": "Arijit ka woh breakup song, Ae Dil nahi, doosra wala",
+        "task": "song_resolution",
+        "notes": "Hinglish: 'Arijit's breakup song, NOT Ae Dil, the other one' → Channa Mereya / Tum Hi Ho. Hard — tests negation comprehension.",
+        "is_hindi": true,
+        "output": "Ae Dil - Arijit Singh",
+        "latency": 0.30068373680114746,
+        "tok_per_sec": 64.1010423876476
+      }
+    ]
+  },
+  {
+    "model": "llama3.2:3b",
+    "timestamp": "2026-03-25T00:33:45.279419",
+    "scores": {
+      "intent_accuracy": 88.4,
+      "json_reliability": 100.0,
+      "song_resolution": 25.0,
+      "hindi_intent_accuracy": 90.0,
+      "avg_latency": 1.44,
+      "avg_tok_per_sec": 55.9,
+      "total_tests": 54,
+      "intent_tests": 43,
+      "hindi_tests": 20,
+      "song_tests": 8
+    },
+    "details": [
+      {
+        "index": 0,
+        "input": "play Tum Hi Ho",
+        "task": "intent_classification",
+        "notes": "Direct song request, should be trivial",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho Arijit Singh",
+            "platform": "any"
+          },
+          "response": "Playing Tum Hi Ho by Arijit Singh."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Tum Hi Ho Arijit Singh\", \"platform\": \"any\"}, \"response\": \"Playing Tum Hi Ho by Arijit Singh.\"}",
+        "latency": 18.364957094192505,
+        "tok_per_sec": 51.973064990704344,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true,
+        "expected_keywords": [
+          "Tum Hi Ho"
+        ],
+        "found_keywords": [
+          "Tum Hi Ho"
+        ]
+      },
+      {
+        "index": 1,
+        "input": "play Bohemian Rhapsody by Queen",
+        "task": "intent_classification",
+        "notes": "Specific song + artist",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Bohemian Rhapsody Queen",
+            "platform": "any"
+          },
+          "response": "Playing Bohemian Rhapsody by Queen."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Bohemian Rhapsody Queen\", \"platform\": \"any\"}, \"response\": \"Playing Bohemian Rhapsody by Queen.\"}",
+        "latency": 1.6329751014709473,
+        "tok_per_sec": 55.02278837559061,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true,
+        "expected_keywords": [
+          "Bohemian Rhapsody",
+          "Queen"
+        ],
+        "found_keywords": [
+          "Bohemian Rhapsody",
+          "Queen"
+        ]
+      },
+      {
+        "index": 2,
+        "input": "play that sad Coldplay song from the space movie",
+        "task": "intent_classification",
+        "notes": "Requires cultural knowledge: Interstellar → Atlas or A Sky Full of Stars",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Atlas Coldplay Interstellar",
+            "platform": "any"
+          },
+          "response": "Playing Atlas by Coldplay."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Atlas Coldplay Interstellar\", \"platform\": \"any\"}, \"response\": \"Playing Atlas by Coldplay.\"}",
+        "latency": 1.4233689308166504,
+        "tok_per_sec": 54.96253884972819,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 3,
+        "input": "play something chill for studying",
+        "task": "intent_classification",
+        "notes": "Mood-based request, no specific song",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "study music",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"study music\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.1075162887573242,
+        "tok_per_sec": 55.62004177295289,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 4,
+        "input": "play that Arijit Singh song everyone cries to",
+        "task": "intent_classification",
+        "notes": "Requires Bollywood knowledge: probably Tum Hi Ho or Channa Mereya",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho Arijit Singh",
+            "platform": "any"
+          },
+          "response": "Playing Tum Hi Ho by Arijit Singh."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Tum Hi Ho Arijit Singh\", \"platform\": \"any\"}, \"response\": \"Playing Tum Hi Ho by Arijit Singh.\"}",
+        "latency": 1.6826820373535156,
+        "tok_per_sec": 54.66501271887285,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 5,
+        "input": "play that song that goes I'm just a kid and life is a nightmare",
+        "task": "intent_classification",
+        "notes": "Lyric-based reference: I'm Just a Kid by Simple Plan",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "I’m Just a Kid Life Is a Nightmare",
+            "platform": "any"
+          },
+          "response": "Playing I’m Just a Kid by Simple Minds."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"I\\u2019m Just a Kid Life Is a Nightmare\", \"platform\": \"any\"}, \"response\": \"Playing I\\u2019m Just a Kid by Simple Minds.\"}",
+        "latency": 1.864428997039795,
+        "tok_per_sec": 54.63180515644016,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 6,
+        "input": "woh Arijit Singh ka dard bhara gaana laga do",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play that painful Arijit Singh song' → Tum Hi Ho / Channa Mereya",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho Arijit Singh",
+            "platform": "any"
+          },
+          "response": "Playing Tum Hi Ho by Arijit Singh."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Tum Hi Ho Arijit Singh\", \"platform\": \"any\"}, \"response\": \"Playing Tum Hi Ho by Arijit Singh.\"}",
+        "latency": 1.7422800064086914,
+        "tok_per_sec": 54.43759338258793,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 7,
+        "input": "kuch romantic sa bajao",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play something romantic'. Mood request in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "romantic songs",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"romantic songs\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.1476619243621826,
+        "tok_per_sec": 55.34021968949344,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 8,
+        "input": "gaana band karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'stop the song'. Direct control in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "stop"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"stop\"}, \"response\": \"\"}",
+        "latency": 0.8729088306427002,
+        "tok_per_sec": 56.1296623571443,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "stop"
+        ],
+        "found_keywords": [
+          "stop"
+        ]
+      },
+      {
+        "index": 9,
+        "input": "light band karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'turn off the light'",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "off"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"off\"}, \"response\": \"\"}",
+        "latency": 0.9531271457672119,
+        "tok_per_sec": 55.798706309023274,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "off"
+        ],
+        "found_keywords": [
+          "off"
+        ]
+      },
+      {
+        "index": 10,
+        "input": "awaaz badha do thoda",
+        "task": "intent_classification",
+        "notes": "Hindi: 'increase the volume a bit'",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "volume_up"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"volume_up\"}, \"response\": \"\"}",
+        "latency": 0.913362979888916,
+        "tok_per_sec": 55.5733077372665,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "volume_up"
+        ],
+        "found_keywords": [
+          "volume_up"
+        ]
+      },
+      {
+        "index": 11,
+        "input": "awaaz kam karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'reduce the volume'",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "volume_down"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"volume_down\"}, \"response\": \"\"}",
+        "latency": 0.9732580184936523,
+        "tok_per_sec": 55.96096912184429,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "volume_down"
+        ],
+        "found_keywords": [
+          "volume_down"
+        ]
+      },
+      {
+        "index": 12,
+        "input": "woh gaana laga do jisme woh bolta hai senorita",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play that song where he says senorita' → Señorita by Shawn Mendes & Camila Cabello",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Senorita",
+            "platform": "any"
+          },
+          "response": "Playing Senorita"
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Senorita\", \"platform\": \"any\"}, \"response\": \"Playing Senorita\"}",
+        "latency": 1.2953317165374756,
+        "tok_per_sec": 54.618038969286474,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 13,
+        "input": "neeli light kar do",
+        "task": "intent_classification",
+        "notes": "Hindi: 'make the light blue'. 'neeli' = blue in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "color",
+            "value": "blue"
+          },
+          "response": "Setting the lights to blue."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"color\", \"value\": \"blue\"}, \"response\": \"Setting the lights to blue.\"}",
+        "latency": 1.2731409072875977,
+        "tok_per_sec": 55.218899638954795,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "blue"
+        ],
+        "found_keywords": [
+          "blue"
+        ]
+      },
+      {
+        "index": 14,
+        "input": "aaj ka din kaisa hai",
+        "task": "intent_classification",
+        "notes": "Hindi: 'how is today' — general chat, NOT system/weather.",
+        "is_hindi": true,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "Aaj ka din kaisa hai?"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"Aaj ka din kaisa hai?\"}, \"response\": \"\"}",
+        "latency": 1.1092700958251953,
+        "tok_per_sec": 55.49505488924025,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 15,
+        "input": "yaar woh sad wala song play kar do na",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'bro play that sad song'. Extremely vague but common.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "sad songs",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"sad songs\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.12644362449646,
+        "tok_per_sec": 55.08992087478357,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 16,
+        "input": "woh KK ka last concert wala gaana play karo",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play that song from KK's last concert' → Pal by KK (his last performance). Tests Indian pop culture knowledge.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "KK's Last Concert song",
+            "platform": "any"
+          },
+          "response": "Playing Last Concert by KK."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"KK's Last Concert song\", \"platform\": \"any\"}, \"response\": \"Playing Last Concert by KK.\"}",
+        "latency": 1.4551680088043213,
+        "tok_per_sec": 54.77406742937644,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 17,
+        "input": "bhai kuch Punjabi bajao party wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'bro play some Punjabi party song'. Genre + mood in Hinglish.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Punjabi party songs",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Punjabi party songs\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.2394349575042725,
+        "tok_per_sec": 53.93533418388681,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 18,
+        "input": "room ka mood change karo romantic wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'change the room mood to romantic'. Scene request.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"scene\", \"value\": \"romantic\"}, \"response\": \"\"}",
+        "latency": 1.1535999774932861,
+        "tok_per_sec": 54.674462143937845,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "romantic"
+        ],
+        "found_keywords": [
+          "romantic"
+        ]
+      },
+      {
+        "index": 19,
+        "input": "next song laga do",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play the next song' → skip intent.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "next song",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"next song\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.1285672187805176,
+        "tok_per_sec": 55.46384651036099,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_play",
+        "intent_correct": false,
+        "expected_keywords": [
+          "skip"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 20,
+        "input": "lights thoda dim karo",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'dim the lights a bit'. Brightness control.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "dimmed"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"brightness\", \"value\": \"dimmed\"}, \"response\": \"\"}",
+        "latency": 1.126404047012329,
+        "tok_per_sec": 55.214282842871015,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "brightness"
+        ],
+        "found_keywords": [
+          "brightness"
+        ]
+      },
+      {
+        "index": 21,
+        "input": "woh movie wala gaana laga do jisme Ranbir Kapoor pagal ho jaata hai",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play that movie song where Ranbir Kapoor goes crazy' → likely Ae Dil Hai Mushkil or Badtameez Dil",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Aashiqui 2 Ranbir Kapoor Pagal",
+            "platform": "any"
+          },
+          "response": "Playing Aashiqui 2 by Mithoon."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Aashiqui 2 Ranbir Kapoor Pagal\", \"platform\": \"any\"}, \"response\": \"Playing Aashiqui 2 by Mithoon.\"}",
+        "latency": 1.841102123260498,
+        "tok_per_sec": 54.570656227006175,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 22,
+        "input": "Atif Aslam ka woh gaana jisme woh rota hai chhod ke jaane ke baad",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'that Atif Aslam song where he cries after being left' → Tere Sang Yaara / Pehli Nazar Mein",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Chod Jayein Toh Kya Hoga Atif Aslam",
+            "platform": "any"
+          },
+          "response": "Playing Chod Jayein Toh Kya Hoga by Atif Aslam."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Chod Jayein Toh Kya Hoga Atif Aslam\", \"platform\": \"any\"}, \"response\": \"Playing Chod Jayein Toh Kya Hoga by Atif Aslam.\"}",
+        "latency": 2.1805241107940674,
+        "tok_per_sec": 54.13485593510335,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 23,
+        "input": "woh old Bollywood wala romantic song, woh Shahrukh Khan movie se hai",
+        "task": "intent_classification",
+        "notes": "Hinglish: vague SRK movie song. Tests if model generates a reasonable search query even when it can't pin down ONE song.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Old Bollywood Romantic Songs from Shah Rukh Khan Movies",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Old Bollywood Romantic Songs from Shah Rukh Khan Movies\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.431602954864502,
+        "tok_per_sec": 54.65756814924227,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 24,
+        "input": "pause",
+        "task": "intent_classification",
+        "notes": "Single word command",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "pause"
+          },
+          "response": "Paused."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"pause\"}, \"response\": \"Paused.\"}",
+        "latency": 0.9950459003448486,
+        "tok_per_sec": 56.20121357060168,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "pause"
+        ],
+        "found_keywords": [
+          "pause"
+        ]
+      },
+      {
+        "index": 25,
+        "input": "skip this song",
+        "task": "intent_classification",
+        "notes": "Simple control",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "skip"
+          },
+          "response": "Skipping..."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"skip\"}, \"response\": \"Skipping...\"}",
+        "latency": 0.9495031833648682,
+        "tok_per_sec": 55.99706179683614,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "skip"
+        ],
+        "found_keywords": [
+          "skip"
+        ]
+      },
+      {
+        "index": 26,
+        "input": "turn the volume up",
+        "task": "intent_classification",
+        "notes": "Volume control",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "volume_up"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"volume_up\"}, \"response\": \"\"}",
+        "latency": 0.9163508415222168,
+        "tok_per_sec": 56.22373870139664,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "volume_up"
+        ],
+        "found_keywords": [
+          "volume_up"
+        ]
+      },
+      {
+        "index": 27,
+        "input": "stop the music",
+        "task": "intent_classification",
+        "notes": "Stop command",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "stop"
+          },
+          "response": "Stopped."
+        },
+        "raw_text": "{\"intent\": \"music_control\", \"params\": {\"action\": \"stop\"}, \"response\": \"Stopped.\"}",
+        "latency": 0.945181131362915,
+        "tok_per_sec": 55.70622257678408,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "stop"
+        ],
+        "found_keywords": [
+          "stop"
+        ]
+      },
+      {
+        "index": 28,
+        "input": "turn off the lights",
+        "task": "intent_classification",
+        "notes": "Basic light toggle",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "off"
+          },
+          "response": "Lights off."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"off\"}, \"response\": \"Lights off.\"}",
+        "latency": 0.9653282165527344,
+        "tok_per_sec": 55.81972762638868,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "off"
+        ],
+        "found_keywords": [
+          "off"
+        ]
+      },
+      {
+        "index": 29,
+        "input": "set the lights to purple",
+        "task": "intent_classification",
+        "notes": "Color command",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "color",
+            "value": "purple"
+          },
+          "response": "Setting the lights to purple."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"color\", \"value\": \"purple\"}, \"response\": \"Setting the lights to purple.\"}",
+        "latency": 1.3271050453186035,
+        "tok_per_sec": 54.71650583329128,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "purple"
+        ],
+        "found_keywords": [
+          "purple"
+        ]
+      },
+      {
+        "index": 30,
+        "input": "brightness 30 percent",
+        "task": "intent_classification",
+        "notes": "Brightness with number",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "30%"
+          },
+          "response": "Setting the lights to 30% brightness."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"brightness\", \"value\": \"30%\"}, \"response\": \"Setting the lights to 30% brightness.\"}",
+        "latency": 1.4193129539489746,
+        "tok_per_sec": 54.57309354563247,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "30"
+        ],
+        "found_keywords": [
+          "30"
+        ]
+      },
+      {
+        "index": 31,
+        "input": "make the room romantic",
+        "task": "intent_classification",
+        "notes": "Scene-based — model should map 'romantic' to a scene",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": "Setting the mood."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"scene\", \"value\": \"romantic\"}, \"response\": \"Setting the mood.\"}",
+        "latency": 1.2753820419311523,
+        "tok_per_sec": 54.9390747636501,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "romantic"
+        ],
+        "found_keywords": [
+          "romantic"
+        ]
+      },
+      {
+        "index": 32,
+        "input": "movie mode",
+        "task": "intent_classification",
+        "notes": "Scene shorthand",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "mode"
+          },
+          "response": "Switching to movie mode..."
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"mode\"}, \"response\": \"Switching to movie mode...\"}",
+        "latency": 1.0382230281829834,
+        "tok_per_sec": 55.831313073823374,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "system",
+        "intent_correct": false,
+        "expected_keywords": [
+          "movie"
+        ],
+        "found_keywords": [
+          "movie"
+        ]
+      },
+      {
+        "index": 33,
+        "input": "what is the meaning of life",
+        "task": "intent_classification",
+        "notes": "General knowledge question",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "what is the meaning of life"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"what is the meaning of life\"}, \"response\": \"\"}",
+        "latency": 1.0172688961029053,
+        "tok_per_sec": 55.192680428236955,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 34,
+        "input": "tell me a joke",
+        "task": "intent_classification",
+        "notes": "Entertainment request",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "Why don’t eggs tell jokes?"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"Why don\\u2019t eggs tell jokes?\"}, \"response\": \"\"}",
+        "latency": 1.1297240257263184,
+        "tok_per_sec": 55.74278400556393,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 35,
+        "input": "who won the 2023 cricket world cup",
+        "task": "intent_classification",
+        "notes": "Factual question",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "cricket_world_cup_2023_winner"
+          },
+          "response": "India won the 2023 Cricket World Cup."
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"cricket_world_cup_2023_winner\"}, \"response\": \"India won the 2023 Cricket World Cup.\"}",
+        "latency": 1.4384241104125977,
+        "tok_per_sec": 55.22913070185209,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "system",
+        "intent_correct": false
+      },
+      {
+        "index": 36,
+        "input": "what time is it",
+        "task": "intent_classification",
+        "notes": "System info",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "time"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"time\"}, \"response\": \"\"}",
+        "latency": 0.8484969139099121,
+        "tok_per_sec": 56.07805407144244,
+        "json_valid": true,
+        "expected_intent": "system",
+        "got_intent": "system",
+        "intent_correct": true,
+        "expected_keywords": [
+          "time"
+        ],
+        "found_keywords": [
+          "time"
+        ]
+      },
+      {
+        "index": 37,
+        "input": "never gonna give you up",
+        "task": "intent_classification",
+        "notes": "Song title that sounds like a statement. Should recognize it as a Rick Astley song.",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Never Gonna Give You Up Rick Astley",
+            "platform": "any"
+          },
+          "response": "Playing Never Gonna Give You Up by Rick Astley."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Never Gonna Give You Up Rick Astley\", \"platform\": \"any\"}, \"response\": \"Playing Never Gonna Give You Up by Rick Astley.\"}",
+        "latency": 1.737274169921875,
+        "tok_per_sec": 54.8012354509256,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 38,
+        "input": "light me up",
+        "task": "intent_classification",
+        "notes": "Ambiguous: 'light' + 'me up'. This is more likely a song request than a light command.",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "on"
+          },
+          "response": "Setting the lights on."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"on\"}, \"response\": \"Setting the lights on.\"}",
+        "latency": 1.054434061050415,
+        "tok_per_sec": 55.69053681193367,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "light_control",
+        "intent_correct": false
+      },
+      {
+        "index": 39,
+        "input": "I'm feeling blue",
+        "task": "intent_classification",
+        "notes": "Ambiguous: 'blue' could mean light color, but 'feeling blue' is an emotional statement.",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "I’m feeling blue"
+          }
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"I\\u2019m feeling blue\"}}",
+        "latency": 0.8857269287109375,
+        "tok_per_sec": 55.52837525720617,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 40,
+        "input": "make it brighter in here",
+        "task": "intent_classification",
+        "notes": "Indirect phrasing for brightness up",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "higher"
+          },
+          "response": "Increasing the brightness."
+        },
+        "raw_text": "{\"intent\": \"light_control\", \"params\": {\"action\": \"brightness\", \"value\": \"higher\"}, \"response\": \"Increasing the brightness.\"}",
+        "latency": 1.218271017074585,
+        "tok_per_sec": 55.51497565043774,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "brightness"
+        ],
+        "found_keywords": [
+          "brightness"
+        ]
+      },
+      {
+        "index": 41,
+        "input": "woh dhoop wala gaana, Agar Tum Saath Ho nahi, woh doosra wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'that sunshine song, NOT Agar Tum Saath Ho, the other one'. Negation + vague = very hard.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Agar Tum Saath Ho Arijit Singh",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Agar Tum Saath Ho Arijit Singh\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.4263839721679688,
+        "tok_per_sec": 54.38635156760286,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 42,
+        "input": "kuch bhi laga do mujhe kya pata",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play anything, I don't care'. Should still be music_play with a generic query.",
+        "is_hindi": true,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "kya pata kyun?"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"kya pata kyun?\"}, \"response\": \"\"}",
+        "latency": 1.0391480922698975,
+        "tok_per_sec": 56.03849402873421,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "chat",
+        "intent_correct": false
+      },
+      {
+        "index": 43,
+        "input": "play some jazz",
+        "task": "json_reliability",
+        "notes": "Simple request — JSON should be clean",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "jazz music",
+            "platform": "any"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"jazz music\", \"platform\": \"any\"}, \"response\": \"\"}",
+        "latency": 1.1428821086883545,
+        "tok_per_sec": 55.26177699018529,
+        "json_valid": true
+      },
+      {
+        "index": 44,
+        "input": "set an alarm for 7 AM tomorrow and also make the lights warm",
+        "task": "json_reliability",
+        "notes": "Multi-intent in one sentence. Does it handle gracefully or break?",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "alarm|reminder",
+            "value": "7 AM tomorrow"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"system\", \"params\": {\"action\": \"alarm|reminder\", \"value\": \"7 AM tomorrow\"}, \"response\": \"\"}",
+        "latency": 1.211277961730957,
+        "tok_per_sec": 54.56741343275033,
+        "json_valid": true
+      },
+      {
+        "index": 45,
+        "input": "bhai gaana laga aur light bhi dim kar thodi",
+        "task": "json_reliability",
+        "notes": "Hinglish multi-intent: 'play a song AND dim the lights'. Compound request in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Arijit Singh gaane",
+            "platform": "any"
+          },
+          "response": "Playing Arijit Singh gaane."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"Arijit Singh gaane\", \"platform\": \"any\"}, \"response\": \"Playing Arijit Singh gaane.\"}",
+        "latency": 1.5225131511688232,
+        "tok_per_sec": 54.72984322199905,
+        "json_valid": true
+      },
+      {
+        "index": 46,
+        "input": "the Coldplay song from Interstellar",
+        "task": "song_resolution",
+        "notes": "Should resolve to Atlas by Coldplay",
+        "is_hindi": false,
+        "output": "\"Coldplay - A Sky Full of Stars (Interstellar Soundtrack)\"",
+        "latency": 0.609982967376709,
+        "tok_per_sec": 59.68064350534499,
+        "expected": [
+          "Atlas"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 47,
+        "input": "that song from the end of Fast and Furious 7",
+        "task": "song_resolution",
+        "notes": "Should resolve to See You Again by Wiz Khalifa",
+        "is_hindi": false,
+        "output": "\"Let Me Love You (DJ Snake & Justin Bieber)\"",
+        "latency": 0.4555649757385254,
+        "tok_per_sec": 59.92556516480432,
+        "expected": [
+          "See You Again"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 48,
+        "input": "that Punjabi song that goes tunak tunak",
+        "task": "song_resolution",
+        "notes": "Should resolve to Tunak Tunak Tun by Daler Mehndi",
+        "is_hindi": false,
+        "output": "\"Tunak Tunak Tun\" by Daler Mehndi",
+        "latency": 0.4083724021911621,
+        "tok_per_sec": 60.38793806666558,
+        "expected": [
+          "Tunak Tunak Tun"
+        ],
+        "song_correct": true
+      },
+      {
+        "index": 49,
+        "input": "woh gaana jisme ladka train ke peechhe bhaagta hai",
+        "task": "song_resolution",
+        "notes": "Hindi: 'the song where the guy runs behind/on the train' → Chaiyya Chaiyya from Dil Se",
+        "is_hindi": true,
+        "output": "\"Train Se Bhi Zyada Pyaar Karta Hai\"",
+        "latency": 0.42870020866394043,
+        "tok_per_sec": 59.19327428022872,
+        "expected": [
+          "Chaiyya Chaiyya"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 50,
+        "input": "that song from YJHD when they're in the mountains",
+        "task": "song_resolution",
+        "notes": "YJHD = Yeh Jawaani Hai Deewani. Mountain scene → Kabira or Dilliwaali Girlfriend",
+        "is_hindi": false,
+        "output": "\"Yeh Jawaani Hai Deewani soundtrack mountain scene\"",
+        "latency": 0.4343841075897217,
+        "tok_per_sec": 58.696354437513655,
+        "expected": [
+          "Kabira"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 51,
+        "input": "Honey Singh ka woh gaana brown rang wala",
+        "task": "song_resolution",
+        "notes": "Hinglish: Should resolve to Brown Rang by Yo Yo Honey Singh",
+        "is_hindi": true,
+        "output": "\"Honey Singh brown rang wala gaana\"",
+        "latency": 0.3597831726074219,
+        "tok_per_sec": 59.51565059798566,
+        "expected": [
+          "Brown Rang"
+        ],
+        "song_correct": true
+      },
+      {
+        "index": 52,
+        "input": "that viral song from Money Heist, the Spanish one",
+        "task": "song_resolution",
+        "notes": "Should resolve to Bella Ciao",
+        "is_hindi": false,
+        "output": "\"Mala Fama - Alejandro Sanz\"",
+        "latency": 0.3498358726501465,
+        "tok_per_sec": 60.472653900046836,
+        "expected": [
+          "Bella Ciao"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 53,
+        "input": "Arijit ka woh breakup song, Ae Dil nahi, doosra wala",
+        "task": "song_resolution",
+        "notes": "Hinglish: 'Arijit's breakup song, NOT Ae Dil, the other one' → Channa Mereya / Tum Hi Ho. Hard — tests negation comprehension.",
+        "is_hindi": true,
+        "output": "\"Arijit Singh - Ae Din Khara Ke\"",
+        "latency": 0.37137794494628906,
+        "tok_per_sec": 61.599916458193306
+      }
+    ]
+  },
+  {
+    "model": "phi4-mini",
+    "timestamp": "2026-03-25T00:35:03.247662",
+    "scores": {
+      "intent_accuracy": 74.4,
+      "json_reliability": 100.0,
+      "song_resolution": 12.5,
+      "hindi_intent_accuracy": 65.0,
+      "avg_latency": 2.31,
+      "avg_tok_per_sec": 45.2,
+      "total_tests": 54,
+      "intent_tests": 43,
+      "hindi_tests": 20,
+      "song_tests": 8
+    },
+    "details": [
+      {
+        "index": 0,
+        "input": "play Tum Hi Ho",
+        "task": "intent_classification",
+        "notes": "Direct song request, should be trivial",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho Arijit Singh",
+            "platform": "any"
+          },
+          "response": "Playing Tum Hi Ho by Arijit Singh."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Tum Hi Ho Arijit Singh\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Tum Hi Ho by Arijit Singh.\"\n}",
+        "latency": 20.91747498512268,
+        "tok_per_sec": 42.16304788717885,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true,
+        "expected_keywords": [
+          "Tum Hi Ho"
+        ],
+        "found_keywords": [
+          "Tum Hi Ho"
+        ]
+      },
+      {
+        "index": 1,
+        "input": "play Bohemian Rhapsody by Queen",
+        "task": "intent_classification",
+        "notes": "Specific song + artist",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Bohemian Rhapsody Queen",
+            "platform": "any"
+          },
+          "response": "Playing 'Bohemian Rhapsody' by Queen."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Bohemian Rhapsody Queen\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing 'Bohemian Rhapsody' by Queen.\"\n}",
+        "latency": 2.618208885192871,
+        "tok_per_sec": 43.977175467562674,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true,
+        "expected_keywords": [
+          "Bohemian Rhapsody",
+          "Queen"
+        ],
+        "found_keywords": [
+          "Bohemian Rhapsody",
+          "Queen"
+        ]
+      },
+      {
+        "index": 2,
+        "input": "play that sad Coldplay song from the space movie",
+        "task": "intent_classification",
+        "notes": "Requires cultural knowledge: Interstellar → Atlas or A Sky Full of Stars",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Atlas Interstellar Coldplay",
+            "platform": "any"
+          },
+          "response": "Playing Atlas by Coldplay."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Atlas Interstellar Coldplay\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Atlas by Coldplay.\"\n}",
+        "latency": 2.2840919494628906,
+        "tok_per_sec": 44.73815455388509,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 3,
+        "input": "play something chill for studying",
+        "task": "intent_classification",
+        "notes": "Mood-based request, no specific song",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "chill study music playlist",
+            "platform": "any"
+          },
+          "response": "Playing a relaxing tune to help you with your studies."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"chill study music playlist\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing a relaxing tune to help you with your studies.\"\n}",
+        "latency": 2.6285910606384277,
+        "tok_per_sec": 44.23436753134338,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 4,
+        "input": "play that Arijit Singh song everyone cries to",
+        "task": "intent_classification",
+        "notes": "Requires Bollywood knowledge: probably Tum Hi Ho or Channa Mereya",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho Arijit Singh",
+            "platform": "any"
+          },
+          "response": "Playing Tum Hi Ho by Arijit Singh."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Tum Hi Ho Arijit Singh\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Tum Hi Ho by Arijit Singh.\"\n}",
+        "latency": 2.537946939468384,
+        "tok_per_sec": 44.77702880161649,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 5,
+        "input": "play that song that goes I'm just a kid and life is a nightmare",
+        "task": "intent_classification",
+        "notes": "Lyric-based reference: I'm Just a Kid by Simple Plan",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "I'm Just A Kid And Life Is A Nightmare"
+          },
+          "response": "Playing 'I'm Just a Kid' by Blink-182."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"I'm Just A Kid And Life Is A Nightmare\"\n  },\n  \"response\": \"Playing 'I'm Just a Kid' by Blink-182.\"\n}",
+        "latency": 2.4139299392700195,
+        "tok_per_sec": 44.75960686251535,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 6,
+        "input": "woh Arijit Singh ka dard bhara gaana laga do",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play that painful Arijit Singh song' → Tum Hi Ho / Channa Mereya",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Tum Hi Ho Arijit Singh"
+          },
+          "response": "Playing Tum Hi Ho by Arijit Singh."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Tum Hi Ho Arijit Singh\"\n  },\n  \"response\": \"Playing Tum Hi Ho by Arijit Singh.\"\n}",
+        "latency": 2.233527183532715,
+        "tok_per_sec": 44.60820526042842,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 7,
+        "input": "kuch romantic sa bajao",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play something romantic'. Mood request in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "color",
+            "value": "romantic"
+          },
+          "response": "Setting the lights to a romantic mood."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"color\",\n    \"value\": \"romantic\"\n  },\n  \"response\": \"Setting the lights to a romantic mood.\"\n}",
+        "latency": 2.3860888481140137,
+        "tok_per_sec": 44.6570834837197,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "light_control",
+        "intent_correct": false
+      },
+      {
+        "index": 8,
+        "input": "gaana band karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'stop the song'. Direct control in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Light Band Play",
+            "platform": "any"
+          },
+          "response": "Playing Light Band."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Light Band Play\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Light Band.\"\n}",
+        "latency": 2.0836191177368164,
+        "tok_per_sec": 44.86890783717011,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_play",
+        "intent_correct": false,
+        "expected_keywords": [
+          "stop"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 9,
+        "input": "light band karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'turn off the light'",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "on"
+          },
+          "response": "Turning on the lights."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"on\"\n  },\n  \"response\": \"Turning on the lights.\"\n}",
+        "latency": 1.7871768474578857,
+        "tok_per_sec": 45.27440805137616,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "off"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 10,
+        "input": "awaaz badha do thoda",
+        "task": "intent_classification",
+        "notes": "Hindi: 'increase the volume a bit'",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Awaz Badha Do Thoda",
+            "platform": "any"
+          },
+          "response": "Playing Awaz Badha Do Thoda."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Awaz Badha Do Thoda\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Awaz Badha Do Thoda.\"\n}",
+        "latency": 2.473181962966919,
+        "tok_per_sec": 44.67732818703667,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_play",
+        "intent_correct": false,
+        "expected_keywords": [
+          "volume_up"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 11,
+        "input": "awaaz kam karo",
+        "task": "intent_classification",
+        "notes": "Hindi: 'reduce the volume'",
+        "is_hindi": true,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "please keep it low."
+          },
+          "response": "Understood. Playing at a lower volume now."
+        },
+        "raw_text": "{\n  \"intent\": \"chat\",\n  \"params\": {\n    \"message\": \"please keep it low.\"\n  },\n  \"response\": \"Understood. Playing at a lower volume now.\"\n}",
+        "latency": 2.004038095474243,
+        "tok_per_sec": 45.06412784726546,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "chat",
+        "intent_correct": false,
+        "expected_keywords": [
+          "volume_down"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 12,
+        "input": "woh gaana laga do jisme woh bolta hai senorita",
+        "task": "intent_classification",
+        "notes": "Hindi: 'play that song where he says senorita' → Señorita by Shawn Mendes & Camila Cabello",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "play that sad song from Senorita"
+          },
+          "response": "Playing 'That Way' by Shawn Mendes."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"play that sad song from Senorita\"\n  },\n  \"response\": \"Playing 'That Way' by Shawn Mendes.\"\n}",
+        "latency": 2.24113392829895,
+        "tok_per_sec": 44.81272236773038,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 13,
+        "input": "neeli light kar do",
+        "task": "intent_classification",
+        "notes": "Hindi: 'make the light blue'. 'neeli' = blue in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "on",
+            "value": ""
+          },
+          "response": "Turning on the lights."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"on\",\n    \"value\": \"\"\n  },\n  \"response\": \"Turning on the lights.\"\n}",
+        "latency": 2.002340793609619,
+        "tok_per_sec": 44.541330102308216,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "blue"
+        ],
+        "found_keywords": []
+      },
+      {
+        "index": 14,
+        "input": "aaj ka din kaisa hai",
+        "task": "intent_classification",
+        "notes": "Hindi: 'how is today' — general chat, NOT system/weather.",
+        "is_hindi": true,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "date"
+          },
+          "response": "Today's date is [insert today's date]. How can I assist you further?"
+        },
+        "raw_text": "{\n  \"intent\": \"system\",\n  \"params\": {\n    \"action\": \"date\"\n  },\n  \"response\": \"Today's date is [insert today's date]. How can I assist you further?\"\n}",
+        "latency": 2.1916778087615967,
+        "tok_per_sec": 45.074980175537114,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "system",
+        "intent_correct": false
+      },
+      {
+        "index": 15,
+        "input": "yaar woh sad wala song play kar do na",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'bro play that sad song'. Extremely vague but common.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "sad Coldplay Interstellar song"
+          },
+          "response": "Playing a Sad Coldplay Song."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"sad Coldplay Interstellar song\"\n  },\n  \"response\": \"Playing a Sad Coldplay Song.\"\n}",
+        "latency": 2.0447728633880615,
+        "tok_per_sec": 44.94061619202376,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 16,
+        "input": "woh KK ka last concert wala gaana play karo",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play that song from KK's last concert' → Pal by KK (his last performance). Tests Indian pop culture knowledge.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "KK Last Concert",
+            "platform": "any"
+          },
+          "response": "Playing the latest song from KK's concerts."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"KK Last Concert\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing the latest song from KK's concerts.\"\n}",
+        "latency": 2.2997119426727295,
+        "tok_per_sec": 44.8530729667268,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 17,
+        "input": "bhai kuch Punjabi bajao party wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'bro play some Punjabi party song'. Genre + mood in Hinglish.",
+        "is_hindi": true,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "party wala Punjabi shayari or song baane?"
+          }
+        },
+        "raw_text": "{\n  \"intent\": \"chat\",\n  \"params\": {\n    \"message\": \"party wala Punjabi shayari or song baane?\"\n  }\n}",
+        "latency": 1.6536431312561035,
+        "tok_per_sec": 45.17112643912831,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "chat",
+        "intent_correct": false
+      },
+      {
+        "index": 18,
+        "input": "room ka mood change karo romantic wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'change the room mood to romantic'. Scene request.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": "Setting the room to a romantic atmosphere."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"scene\",\n    \"value\": \"romantic\"\n  },\n  \"response\": \"Setting the room to a romantic atmosphere.\"\n}",
+        "latency": 2.207271099090576,
+        "tok_per_sec": 44.854686009416625,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "romantic"
+        ],
+        "found_keywords": [
+          "romantic"
+        ]
+      },
+      {
+        "index": 19,
+        "input": "next song laga do",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play the next song' → skip intent.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "skip"
+          },
+          "response": "Skipping to the next song."
+        },
+        "raw_text": "{\n  \"intent\": \"music_control\",\n  \"params\": {\n    \"action\": \"skip\"\n  },\n  \"response\": \"Skipping to the next song.\"\n}",
+        "latency": 1.817241907119751,
+        "tok_per_sec": 44.818203752052284,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "skip"
+        ],
+        "found_keywords": [
+          "skip"
+        ]
+      },
+      {
+        "index": 20,
+        "input": "lights thoda dim karo",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'dim the lights a bit'. Brightness control.",
+        "is_hindi": true,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "-dimmed"
+          },
+          "response": "Dimmed the lights."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"brightness\",\n    \"value\": \"-dimmed\"\n  },\n  \"response\": \"Dimmed the lights.\"\n}",
+        "latency": 2.0865981578826904,
+        "tok_per_sec": 44.796655707543366,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "brightness"
+        ],
+        "found_keywords": [
+          "brightness"
+        ]
+      },
+      {
+        "index": 21,
+        "input": "woh movie wala gaana laga do jisme Ranbir Kapoor pagal ho jaata hai",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play that movie song where Ranbir Kapoor goes crazy' → likely Ae Dil Hai Mushkil or Badtameez Dil",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Ranveer Kapoor Movie Song"
+          },
+          "response": "Playing a song from the latest Ranveer Kapoor film."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Ranveer Kapoor Movie Song\"\n  },\n  \"response\": \"Playing a song from the latest Ranveer Kapoor film.\"\n}",
+        "latency": 2.1911330223083496,
+        "tok_per_sec": 44.77678031717336,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 22,
+        "input": "Atif Aslam ka woh gaana jisme woh rota hai chhod ke jaane ke baad",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'that Atif Aslam song where he cries after being left' → Tere Sang Yaara / Pehli Nazar Mein",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Atif Aslam Chhod Ke Jaane Kya Baare"
+          },
+          "response": "Playing Atif Aslam's song where he says 'Chhod Ke Jaane'."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Atif Aslam Chhod Ke Jaane Kya Baare\"\n  },\n  \"response\": \"Playing Atif Aslam's song where he says 'Chhod Ke Jaane'.\"\n}",
+        "latency": 2.8885929584503174,
+        "tok_per_sec": 44.45743451163155,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 23,
+        "input": "woh old Bollywood wala romantic song, woh Shahrukh Khan movie se hai",
+        "task": "intent_classification",
+        "notes": "Hinglish: vague SRK movie song. Tests if model generates a reasonable search query even when it can't pin down ONE song.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "old Bollywood romantic songs from Shah Rukh Khan movies"
+          },
+          "response": "Playing an old Bollywood romantic song featuring Shah Rukh Khan."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"old Bollywood romantic songs from Shah Rukh Khan movies\"\n  },\n  \"response\": \"Playing an old Bollywood romantic song featuring Shah Rukh Khan.\"\n}",
+        "latency": 2.4553139209747314,
+        "tok_per_sec": 44.97967486233884,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 24,
+        "input": "pause",
+        "task": "intent_classification",
+        "notes": "Single word command",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "pause"
+          },
+          "response": "Music paused."
+        },
+        "raw_text": "{\n  \"intent\": \"music_control\",\n  \"params\": {\n    \"action\": \"pause\"\n  },\n  \"response\": \"Music paused.\"\n}",
+        "latency": 1.6320421695709229,
+        "tok_per_sec": 45.4607892372127,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "pause"
+        ],
+        "found_keywords": [
+          "pause"
+        ]
+      },
+      {
+        "index": 25,
+        "input": "skip this song",
+        "task": "intent_classification",
+        "notes": "Simple control",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "skip"
+          },
+          "response": "Skipped the current song."
+        },
+        "raw_text": "{\n  \"intent\": \"music_control\",\n  \"params\": {\n    \"action\": \"skip\"\n  },\n  \"response\": \"Skipped the current song.\"\n}",
+        "latency": 1.6994879245758057,
+        "tok_per_sec": 45.45600423807887,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "skip"
+        ],
+        "found_keywords": [
+          "skip"
+        ]
+      },
+      {
+        "index": 26,
+        "input": "turn the volume up",
+        "task": "intent_classification",
+        "notes": "Volume control",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "volume_up"
+          },
+          "response": "Increasing the volume."
+        },
+        "raw_text": "{\n  \"intent\": \"music_control\",\n  \"params\": {\n    \"action\": \"volume_up\"\n  },\n  \"response\": \"Increasing the volume.\"\n}",
+        "latency": 1.748103141784668,
+        "tok_per_sec": 44.7942616902346,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "volume_up"
+        ],
+        "found_keywords": [
+          "volume_up"
+        ]
+      },
+      {
+        "index": 27,
+        "input": "stop the music",
+        "task": "intent_classification",
+        "notes": "Stop command",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_control",
+          "params": {
+            "action": "stop"
+          },
+          "response": "Music stopped."
+        },
+        "raw_text": "{\n  \"intent\": \"music_control\",\n  \"params\": {\n    \"action\": \"stop\"\n  },\n  \"response\": \"Music stopped.\"\n}",
+        "latency": 1.6301512718200684,
+        "tok_per_sec": 44.85538714932712,
+        "json_valid": true,
+        "expected_intent": "music_control",
+        "got_intent": "music_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "stop"
+        ],
+        "found_keywords": [
+          "stop"
+        ]
+      },
+      {
+        "index": 28,
+        "input": "turn off the lights",
+        "task": "intent_classification",
+        "notes": "Basic light toggle",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "off"
+          },
+          "response": "Turning off the lights."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"off\"\n  },\n  \"response\": \"Turning off the lights.\"\n}",
+        "latency": 1.764927864074707,
+        "tok_per_sec": 44.74816361271573,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "off"
+        ],
+        "found_keywords": [
+          "off"
+        ]
+      },
+      {
+        "index": 29,
+        "input": "set the lights to purple",
+        "task": "intent_classification",
+        "notes": "Color command",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "color",
+            "value": "purple"
+          },
+          "response": "Setting the lights to purple."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"color\",\n    \"value\": \"purple\"\n  },\n  \"response\": \"Setting the lights to purple.\"\n}",
+        "latency": 2.1298680305480957,
+        "tok_per_sec": 44.24500857061315,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "purple"
+        ],
+        "found_keywords": [
+          "purple"
+        ]
+      },
+      {
+        "index": 30,
+        "input": "brightness 30 percent",
+        "task": "intent_classification",
+        "notes": "Brightness with number",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": 30
+          },
+          "response": "Brightness set to 30%."
+        },
+        "raw_text": "{\n    \"intent\": \"light_control\",\n    \"params\": {\n        \"action\": \"brightness\",\n        \"value\": 30\n    },\n    \"response\": \"Brightness set to 30%.\"\n}",
+        "latency": 2.1823511123657227,
+        "tok_per_sec": 45.06041826845786,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "30"
+        ],
+        "found_keywords": [
+          "30"
+        ]
+      },
+      {
+        "index": 31,
+        "input": "make the room romantic",
+        "task": "intent_classification",
+        "notes": "Scene-based — model should map 'romantic' to a scene",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "scene",
+            "value": "romantic"
+          },
+          "response": "Setting the mood."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"scene\",\n    \"value\": \"romantic\"\n  },\n  \"response\": \"Setting the mood.\"\n}",
+        "latency": 2.111168146133423,
+        "tok_per_sec": 44.385373289739626,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "romantic"
+        ],
+        "found_keywords": [
+          "romantic"
+        ]
+      },
+      {
+        "index": 32,
+        "input": "movie mode",
+        "task": "intent_classification",
+        "notes": "Scene shorthand",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "movie_mode"
+          },
+          "response": "Activating movie mode."
+        },
+        "raw_text": "{\n  \"intent\": \"system\",\n  \"params\": {\n    \"action\": \"movie_mode\"\n  },\n  \"response\": \"Activating movie mode.\"\n}",
+        "latency": 1.7375719547271729,
+        "tok_per_sec": 45.24745484650149,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "system",
+        "intent_correct": false,
+        "expected_keywords": [
+          "movie"
+        ],
+        "found_keywords": [
+          "movie"
+        ]
+      },
+      {
+        "index": 33,
+        "input": "what is the meaning of life",
+        "task": "intent_classification",
+        "notes": "General knowledge question",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "What's the meaning of life?"
+          },
+          "response": ""
+        },
+        "raw_text": "{\n  \"intent\": \"chat\",\n  \"params\": {\n    \"message\": \"What's the meaning of life?\"\n  },\n  \"response\": \"\"\n}",
+        "latency": 1.693044900894165,
+        "tok_per_sec": 44.92892285249211,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 34,
+        "input": "tell me a joke",
+        "task": "intent_classification",
+        "notes": "Entertainment request",
+        "is_hindi": false,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "Why don't scientists trust atoms? Because they make up everything!"
+          },
+          "response": "Haha, that's one for you! Want to hear another?"
+        },
+        "raw_text": "{\n  \"intent\": \"chat\",\n  \"params\": {\n    \"message\": \"Why don't scientists trust atoms? Because they make up everything!\"\n  },\n  \"response\": \"Haha, that's one for you! Want to hear another?\"\n}",
+        "latency": 2.5900866985321045,
+        "tok_per_sec": 44.480214366863635,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "chat",
+        "intent_correct": true
+      },
+      {
+        "index": 35,
+        "input": "who won the 2023 cricket world cup",
+        "task": "intent_classification",
+        "notes": "Factual question",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "weather",
+            "query": "2023 Cricket World Cup winner"
+          },
+          "response": "I'm sorry, but I can't provide real-time updates or events that happened after my last update in April 2023. However, as of the end of the tournament held before then, England won the ICC Men's T20 World Cup twice (2019 and 2021). Please check a reliable sports news source for any recent results."
+        },
+        "raw_text": "{\n  \"intent\": \"system\",\n  \"params\": {\n    \"action\": \"weather\",\n    \"query\": \"2023 Cricket World Cup winner\"\n  },\n  \"response\": \"I'm sorry, but I can't provide real-time updates or events that happened after my last update in April 2023. However, as of the end of the tournament held before then, England won the ICC Men's T20 World Cup twice (2019 and 2021). Please check a reliable sports news source for any recent results.\"\n}",
+        "latency": 5.057641983032227,
+        "tok_per_sec": 44.44850901365758,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "system",
+        "intent_correct": false
+      },
+      {
+        "index": 36,
+        "input": "what time is it",
+        "task": "intent_classification",
+        "notes": "System info",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "time"
+          },
+          "response": "Please wait while I check the current time for you."
+        },
+        "raw_text": "{\n  \"intent\": \"system\",\n  \"params\": {\n    \"action\": \"time\"\n  },\n  \"response\": \"Please wait while I check the current time for you.\"\n}",
+        "latency": 1.9604871273040771,
+        "tok_per_sec": 45.31032249209709,
+        "json_valid": true,
+        "expected_intent": "system",
+        "got_intent": "system",
+        "intent_correct": true,
+        "expected_keywords": [
+          "time"
+        ],
+        "found_keywords": [
+          "time"
+        ]
+      },
+      {
+        "index": 37,
+        "input": "never gonna give you up",
+        "task": "intent_classification",
+        "notes": "Song title that sounds like a statement. Should recognize it as a Rick Astley song.",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Never Gonna Give Up by Destiny's Child",
+            "platform": "any"
+          },
+          "response": "Playing Never Gonna Give You Up."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Never Gonna Give Up by Destiny's Child\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Never Gonna Give You Up.\"\n}",
+        "latency": 2.556868076324463,
+        "tok_per_sec": 44.50175266332431,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 38,
+        "input": "light me up",
+        "task": "intent_classification",
+        "notes": "Ambiguous: 'light' + 'me up'. This is more likely a song request than a light command.",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "on"
+          },
+          "response": "Turning on the lights."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"on\"\n  },\n  \"response\": \"Turning on the lights.\"\n}",
+        "latency": 1.7919909954071045,
+        "tok_per_sec": 44.77086670161992,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "light_control",
+        "intent_correct": false
+      },
+      {
+        "index": 39,
+        "input": "I'm feeling blue",
+        "task": "intent_classification",
+        "notes": "Ambiguous: 'blue' could mean light color, but 'feeling blue' is an emotional statement.",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "feeling blue song",
+            "platform": "any"
+          },
+          "response": "Playing a 'blue' mood music for you."
+        },
+        "raw_text": "{\"intent\": \"music_play\", \"params\": {\"query\": \"feeling blue song\", \"platform\": \"any\"}, \"response\": \"Playing a 'blue' mood music for you.\"}",
+        "latency": 2.260395050048828,
+        "tok_per_sec": 43.42974008625695,
+        "json_valid": true,
+        "expected_intent": "chat",
+        "got_intent": "music_play",
+        "intent_correct": false
+      },
+      {
+        "index": 40,
+        "input": "make it brighter in here",
+        "task": "intent_classification",
+        "notes": "Indirect phrasing for brightness up",
+        "is_hindi": false,
+        "output": {
+          "intent": "light_control",
+          "params": {
+            "action": "brightness",
+            "value": "brighter"
+          },
+          "response": "Making the room brighter."
+        },
+        "raw_text": "{\n  \"intent\": \"light_control\",\n  \"params\": {\n    \"action\": \"brightness\",\n    \"value\": \"brighter\"\n  },\n  \"response\": \"Making the room brighter.\"\n}",
+        "latency": 2.2038183212280273,
+        "tok_per_sec": 44.8360571655141,
+        "json_valid": true,
+        "expected_intent": "light_control",
+        "got_intent": "light_control",
+        "intent_correct": true,
+        "expected_keywords": [
+          "brightness"
+        ],
+        "found_keywords": [
+          "brightness"
+        ]
+      },
+      {
+        "index": 41,
+        "input": "woh dhoop wala gaana, Agar Tum Saath Ho nahi, woh doosra wala",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'that sunshine song, NOT Agar Tum Saath Ho, the other one'. Negation + vague = very hard.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "dhoop song without Sahir Aliyan"
+          },
+          "response": "Playing a sun-themed music track that doesn't feature Sahir Aliyan."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"dhoop song without Sahir Aliyan\"\n  },\n  \"response\": \"Playing a sun-themed music track that doesn't feature Sahir Aliyan.\"\n}",
+        "latency": 2.5216269493103027,
+        "tok_per_sec": 44.79004882533936,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "music_play",
+        "intent_correct": true
+      },
+      {
+        "index": 42,
+        "input": "kuch bhi laga do mujhe kya pata",
+        "task": "intent_classification",
+        "notes": "Hinglish: 'play anything, I don't care'. Should still be music_play with a generic query.",
+        "is_hindi": true,
+        "output": {
+          "intent": "chat",
+          "params": {
+            "message": "What else would you like to know?"
+          },
+          "response": ""
+        },
+        "raw_text": "{\"intent\": \"chat\", \"params\": {\"message\": \"What else would you like to know?\"}, \"response\": \"\"}",
+        "latency": 1.4325249195098877,
+        "tok_per_sec": 45.487873888066794,
+        "json_valid": true,
+        "expected_intent": "music_play",
+        "got_intent": "chat",
+        "intent_correct": false
+      },
+      {
+        "index": 43,
+        "input": "play some jazz",
+        "task": "json_reliability",
+        "notes": "Simple request — JSON should be clean",
+        "is_hindi": false,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "jazz music",
+            "platform": "any"
+          },
+          "response": "Playing Jazz Music."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"jazz music\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Jazz Music.\"\n}",
+        "latency": 2.125566005706787,
+        "tok_per_sec": 44.97855401101491,
+        "json_valid": true
+      },
+      {
+        "index": 44,
+        "input": "set an alarm for 7 AM tomorrow and also make the lights warm",
+        "task": "json_reliability",
+        "notes": "Multi-intent in one sentence. Does it handle gracefully or break?",
+        "is_hindi": false,
+        "output": {
+          "intent": "system",
+          "params": {
+            "action": "alarm_set",
+            "time": "07:00"
+          },
+          "response": "Alarm set for 7 AM."
+        },
+        "raw_text": "{\n  \"intent\": \"system\",\n  \"params\": {\n    \"action\": \"alarm_set\",\n    \"time\": \"07:00\"\n  },\n  \"response\": \"Alarm set for 7 AM.\"\n}",
+        "latency": 2.2363719940185547,
+        "tok_per_sec": 44.86498151539841,
+        "json_valid": true
+      },
+      {
+        "index": 45,
+        "input": "bhai gaana laga aur light bhi dim kar thodi",
+        "task": "json_reliability",
+        "notes": "Hinglish multi-intent: 'play a song AND dim the lights'. Compound request in Hindi.",
+        "is_hindi": true,
+        "output": {
+          "intent": "music_play",
+          "params": {
+            "query": "Bhajans",
+            "platform": "any"
+          },
+          "response": "Playing Bhajans."
+        },
+        "raw_text": "{\n  \"intent\": \"music_play\",\n  \"params\": {\n    \"query\": \"Bhajans\",\n    \"platform\": \"any\"\n  },\n  \"response\": \"Playing Bhajans.\"\n}",
+        "latency": 2.1564297676086426,
+        "tok_per_sec": 45.12248008049145,
+        "json_valid": true
+      },
+      {
+        "index": 46,
+        "input": "the Coldplay song from Interstellar",
+        "task": "song_resolution",
+        "notes": "Should resolve to Atlas by Coldplay",
+        "is_hindi": false,
+        "output": "YouTube search query for a Coldplay song featured in 'Interstellar': \"Coldplay Interstellar soundtrack song\"",
+        "latency": 0.8316481113433838,
+        "tok_per_sec": 47.52268236838269,
+        "expected": [
+          "Atlas"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 47,
+        "input": "that song from the end of Fast and Furious 7",
+        "task": "song_resolution",
+        "notes": "Should resolve to See You Again by Wiz Khalifa",
+        "is_hindi": false,
+        "output": "Fast And Furious 7 soundtrack - End Credits Theme by Brian Tyler",
+        "latency": 0.4878530502319336,
+        "tok_per_sec": 49.31430380297363,
+        "expected": [
+          "See You Again"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 48,
+        "input": "that Punjabi song that goes tunak tunak",
+        "task": "song_resolution",
+        "notes": "Should resolve to Tunak Tunak Tun by Daler Mehndi",
+        "is_hindi": false,
+        "output": "\"Tunak Tunak Song by Jazzy Meghna\"",
+        "latency": 0.44252586364746094,
+        "tok_per_sec": 49.23433753356664,
+        "expected": [
+          "Tunak Tunak Tun"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 49,
+        "input": "woh gaana jisme ladka train ke peechhe bhaagta hai",
+        "task": "song_resolution",
+        "notes": "Hindi: 'the song where the guy runs behind/on the train' → Chaiyya Chaiyya from Dil Se",
+        "is_hindi": true,
+        "output": "\"Ladki Train Ke Peechh Mein Gaata\" by Juban Nakaat Khan and Abida Parveen from movie Tanu Weds Manu (2015) soundtrack",
+        "latency": 1.0323052406311035,
+        "tok_per_sec": 46.30170592528662,
+        "expected": [
+          "Chaiyya Chaiyya"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 50,
+        "input": "that song from YJHD when they're in the mountains",
+        "task": "song_resolution",
+        "notes": "YJHD = Yeh Jawaani Hai Deewani. Mountain scene → Kabira or Dilliwaali Girlfriend",
+        "is_hindi": false,
+        "output": "Yung Jughlbekha Desh Hai (YJHD) - Mountains Song Search Query",
+        "latency": 0.6221539974212646,
+        "tok_per_sec": 48.04766828389513,
+        "expected": [
+          "Kabira"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 51,
+        "input": "Honey Singh ka woh gaana brown rang wala",
+        "task": "song_resolution",
+        "notes": "Hinglish: Should resolve to Brown Rang by Yo Yo Honey Singh",
+        "is_hindi": true,
+        "output": "\"Honey Singh Brown Rangwala Song Search\"",
+        "latency": 0.4087700843811035,
+        "tok_per_sec": 50.63429992591594,
+        "expected": [
+          "Brown Rang"
+        ],
+        "song_correct": true
+      },
+      {
+        "index": 52,
+        "input": "that viral song from Money Heist, the Spanish one",
+        "task": "song_resolution",
+        "notes": "Should resolve to Bella Ciao",
+        "is_hindi": false,
+        "output": "Search query: \"Money Heist soundtrack Spanish hit song\"",
+        "latency": 0.46172499656677246,
+        "tok_per_sec": 50.03082803410331,
+        "expected": [
+          "Bella Ciao"
+        ],
+        "song_correct": false
+      },
+      {
+        "index": 53,
+        "input": "Arijit ka woh breakup song, Ae Dil nahi, doosra wala",
+        "task": "song_resolution",
+        "notes": "Hinglish: 'Arijit's breakup song, NOT Ae Dil, the other one' → Channa Mereya / Tum Hi Ho. Hard — tests negation comprehension.",
+        "is_hindi": true,
+        "output": "\"Ae Dil Nahi Arijit Breakup Song Doosre Walon Ki\"",
+        "latency": 0.7416651248931885,
+        "tok_per_sec": 39.59314220437162
+      }
+    ]
+  }
+]
