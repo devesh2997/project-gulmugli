@@ -17,6 +17,8 @@ import argparse
 from core.config import config
 from core.logger import get_logger
 from core.registry import get_provider, list_providers
+from core.personality import personality_manager
+from core.voice_router import VoiceRouter
 
 # This import triggers provider auto-discovery via @register decorators
 import providers  # noqa: F401
@@ -69,6 +71,10 @@ def build_assistant() -> dict:
     except Exception as e:
         log.warning("Light provider not available (%s). Light features disabled.", e)
         assistant["lights"] = None
+
+    # Voice (TTS) — smart routing per personality with fallback
+    # VoiceRouter handles: preferred provider → fallback → text-only
+    assistant["voice_router"] = VoiceRouter()
 
     return assistant
 
@@ -162,10 +168,23 @@ def handle_intent(assistant: dict, intent) -> str:
         except Exception as e:
             return f"Light control failed: {e}"
 
+    elif intent.name == "switch_personality":
+        target = intent.params.get("personality", "")
+        try:
+            p = personality_manager.switch(target)
+            return intent.response or f"Switched to {p.display_name}."
+        except KeyError as e:
+            available = ", ".join(p.display_name for p in personality_manager.list())
+            return f"I don't know that personality. Available: {available}."
+
     elif intent.name == "chat":
         # For chat, we'd want a longer response from the LLM
+        # The active personality's tone is injected into the system prompt
+        # so the LLM responds in character.
         message = intent.params.get("message", "")
-        resp = assistant["brain"].generate(prompt=message, temperature=0.7)
+        p = personality_manager.active
+        system = f"You are {p.display_name}. {p.tone}\nRespond naturally and concisely."
+        resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.7)
         return resp.text
 
     elif intent.name == "system":
@@ -187,9 +206,13 @@ def run_text_mode(assistant: dict):
     name = assistant["name"]
     brain = assistant["brain"]
 
+    p = personality_manager.active
+    personalities = ", ".join(x.display_name for x in personality_manager.list())
+
     print(f"\n{'═' * 60}")
-    print(f"  {name} — Text Mode")
+    print(f"  {p.display_name} — Text Mode")
     print(f"  Model: {brain.model}")
+    print(f"  Personalities: {personalities}")
     print(f"  Type a command, or 'quit' to exit")
     print(f"{'═' * 60}\n")
 
@@ -226,7 +249,17 @@ def run_text_mode(assistant: dict):
         # Always use the actual response from handle_intent, not the LLM's pre-written text.
         # The LLM says "Playing Sajni" before it knows what song was found — the handler
         # knows the actual result.
-        print(f"{name}: {' '.join(responses)}\n")
+        # Use active personality's display name (may have changed mid-loop via switch_personality)
+        p = personality_manager.active
+        response_text = " ".join(responses)
+        print(f"{p.display_name}: {response_text}\n")
+
+        # Speak the response aloud via the voice router
+        # The router picks the right TTS provider for the active personality
+        # and handles fallback automatically (preferred → piper → text-only)
+        voice_router = assistant.get("voice_router")
+        if voice_router and voice_router.enabled and response_text.strip():
+            voice_router.speak_to_device(response_text, personality=p)
 
 
 def main():

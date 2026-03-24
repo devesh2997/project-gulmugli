@@ -4,8 +4,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.venv/
-venv/
+.venv*/
+venv*/
 env/
 
 # IDE
@@ -31,6 +31,13 @@ jarvis/assistant/config.yaml
 # Audio recordings saved during debug
 *.wav
 *.mp3
+
+# Voice models (large binary files, download separately)
+jarvis/assistant/voices/piper/*.onnx
+jarvis/assistant/voices/piper/*.onnx.json
+jarvis/assistant/voices/xtts/*.wav
+jarvis/assistant/voices/kokoro/*.onnx
+jarvis/assistant/voices/kokoro/*.bin
 
 # Logs
 *.log

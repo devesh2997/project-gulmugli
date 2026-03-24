@@ -19,15 +19,25 @@ from core.interfaces import BrainProvider, LLMResponse, Intent
 from core.registry import register
 from core.config import config
 from core.logger import get_logger
+from core.personality import personality_manager
 
 log = get_logger("brain.ollama")
 
 
-# The system prompt lives here, not in config, because it's tightly coupled
-# to how intents are structured. But the assistant name IS pulled from config.
-def _build_music_preference_block() -> str:
-    """Build the music preferences section from config, if present."""
-    music_prefs = config.get("music", {}).get("user_preferences", {})
+# ═══════════════════════════════════════════════════════════════
+# Prompt builders — these read from personality_manager.active
+# so they always reflect the current personality.
+# ═══════════════════════════════════════════════════════════════
+
+def _build_music_preference_block(override_prefs: dict = None) -> str:
+    """
+    Build the music preferences section for prompts.
+
+    Uses per-personality music_preferences if set, otherwise falls back
+    to the global config.music.user_preferences.
+    """
+    # Per-personality override takes priority
+    music_prefs = override_prefs or config.get("music", {}).get("user_preferences", {})
     if not music_prefs:
         return ""
 
@@ -55,12 +65,25 @@ def _build_music_preference_block() -> str:
     return "\n".join(lines)
 
 
-def _build_system_prompt() -> str:
-    name = config["assistant"]["name"]
-    personality = config["assistant"].get("personality", "")
-    music_prefs = _build_music_preference_block()
+def _get_personality_names_for_prompt() -> str:
+    """Build a list of available personality names for the classification prompt."""
+    return ", ".join(
+        f'"{p.id}" ({p.display_name})'
+        for p in personality_manager.list()
+    )
 
-    return f"""You are {name}, a smart voice assistant used in India. {personality}
+
+def _build_system_prompt() -> str:
+    """
+    Build the classification system prompt.
+
+    Called fresh each time because the active personality can change.
+    The personality's tone is injected so the LLM's response text
+    matches the character, but the intent extraction logic stays stable.
+    """
+    p = personality_manager.active
+
+    return f"""You are {p.display_name}, a smart voice assistant used in India. {p.tone}
 
 Your ONLY job is to classify the user's spoken request into structured intents.
 Extract parameters EXACTLY as the user said them. Do NOT modify, translate, or enrich song names.
@@ -88,15 +111,27 @@ Respond with valid JSON only. No explanation. No markdown.
 4. "light_control" — Change room lights
    Params: {{"action": "on|off|brightness|color|scene", "value": "..."}}
 
-5. "chat" — General question or conversation
+5. "switch_personality" — Switch assistant personality/character
+   Params: {{"personality": "name of the personality to switch to"}}
+   Available personalities: {_get_personality_names_for_prompt()}
+   "switch to Devesh mode" → personality: "devesh"
+   "talk like Chandler" → personality: "chandler"
+   "Devesh ban ja" → personality: "devesh"
+   "normal mode" / "default mode" / "Jarvis mode" → personality: "jarvis"
+
+6. "chat" — General question or conversation
    Params: {{"message": "the user's question"}}
 
-6. "system" — System info (time, date, weather, alarms)
+7. "system" — System info (time, date, weather, alarms)
    Params: {{"action": "time|date|weather|alarm|reminder"}}
 
 ## Format
 Always return an "intents" array, even for a single command.
-{{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "Brief spoken acknowledgment."}}
+{{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "Brief spoken acknowledgment IN CHARACTER."}}
+
+## Response tone
+Your "response" field MUST match your current personality:
+{p.tone}
 
 ## Examples
 
@@ -139,6 +174,15 @@ User: "movie mode"
 User: "what time is it"
 {{"intents": [{{"intent": "system", "params": {{"action": "time"}}}}], "response": ""}}
 
+User: "switch to Chandler mode"
+{{"intents": [{{"intent": "switch_personality", "params": {{"personality": "chandler"}}}}], "response": "Oh, so NOW you want the funny one."}}
+
+User: "Devesh ban ja"
+{{"intents": [{{"intent": "switch_personality", "params": {{"personality": "devesh"}}}}], "response": "Haan bolo, Devesh here."}}
+
+User: "normal mode"
+{{"intents": [{{"intent": "switch_personality", "params": {{"personality": "jarvis"}}}}], "response": "Back to normal."}}
+
 ### Chained commands
 User: "play Sajni and set the lights to red"
 {{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni"}}}}, {{"intent": "light_control", "params": {{"action": "color", "value": "red"}}}}], "response": "Playing Sajni with red lights."}}
@@ -157,14 +201,13 @@ User: "stop the music and turn off the lights"
 """
 
 
-def _build_enrichment_prompt() -> str:
+def _build_enrichment_prompt(personality_music_prefs: dict = None) -> str:
     """
     Separate prompt for Step 2: query enrichment.
 
-    This is a MUCH simpler task than classification — just add the artist name
-    if you know it. The music preference block helps here.
+    Uses per-personality music prefs if available, otherwise global.
     """
-    music_prefs = _build_music_preference_block()
+    music_prefs = _build_music_preference_block(personality_music_prefs or None)
 
     return f"""You are a music search query enhancer.
 Given a song name or music query, add the singer/artist name if you KNOW it.
@@ -195,8 +238,8 @@ class OllamaBrainProvider(BrainProvider):
         self.model = model or brain_config.get("model", "llama3.2:3b")
         self.endpoint = endpoint or brain_config.get("endpoint", "http://localhost:11434")
         self.temperature = brain_config.get("temperature", 0.3)
-        self.system_prompt = _build_system_prompt()
-        self.enrichment_prompt = _build_enrichment_prompt()
+        # Prompts are NOT cached — they rebuild each call to reflect the active personality.
+        # _build_system_prompt() and _build_enrichment_prompt() read from personality_manager.active.
 
     def generate(self, prompt: str, system: str = "", json_mode: bool = False,
                  temperature: float = None) -> LLMResponse:
@@ -233,7 +276,7 @@ class OllamaBrainProvider(BrainProvider):
     def classify_intent(self, user_input: str) -> list[Intent]:
         resp = self.generate(
             prompt=user_input,
-            system=self.system_prompt,
+            system=_build_system_prompt(),
             json_mode=True,
             temperature=self.temperature,
         )
@@ -289,9 +332,13 @@ class OllamaBrainProvider(BrainProvider):
           - Enrichment adds artist when confident ("Sajni" → "Sajni Arijit Singh")
           - The raw query is always available for fallback search
         """
+        # Use per-personality music prefs if available
+        p = personality_manager.active
+        enrichment_prompt = _build_enrichment_prompt(p.music_preferences)
+
         resp = self.generate(
             prompt=raw_query,
-            system=self.enrichment_prompt,
+            system=enrichment_prompt,
             json_mode=True,
             temperature=0.2,  # lower temp = more conservative
         )

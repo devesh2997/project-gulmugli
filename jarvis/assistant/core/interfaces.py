@@ -61,6 +61,32 @@ class SongResult:
 
 
 @dataclass
+class Personality:
+    """
+    A personality the assistant can adopt.
+
+    Each personality changes how the assistant talks (tone), what it sounds like
+    (voice_model), and optionally what music it prefers (music_preferences).
+
+    The tone string is injected directly into the LLM system prompt, so it
+    should be written as instructions to the LLM:
+        "You speak casually in Hinglish. You're nerdy and have dry humor."
+
+    Music preferences override the global ones when set. When None, the global
+    config.music.user_preferences are used instead.
+    """
+    id: str                           # config key: "devesh", "jarvis", "chandler"
+    display_name: str                 # what the assistant calls itself in this mode
+    description: str                  # one-liner for listing: "The sarcastic one"
+    tone: str                         # injected into system prompt
+    voice_provider: str = ""          # TTS provider: "piper", "xtts", "" = use default
+    voice_model: str = ""             # TTS model ID (empty = use default from voice config)
+    fallback_voice: str = ""          # voice to use when preferred provider unavailable
+    music_preferences: dict = field(default_factory=dict)  # override global prefs, empty = use global
+    wake_word: str = ""               # optional per-personality wake word
+
+
+@dataclass
 class TranscriptionResult:
     """Output from any speech-to-text provider."""
     text: str
@@ -252,18 +278,36 @@ class VoiceProvider(ABC):
     """
     Interface for text-to-speech.
 
-    Current implementations: Piper TTS
-    Possible future implementations: Coqui XTTS, ElevenLabs, system TTS, etc.
+    Each implementation handles one TTS engine (Piper, XTTS, etc.).
+    The voice_model parameter maps to personality.voice_model from config.
+
+    For Piper: voice_model = "en_US-lessac-medium" (a pre-built model name)
+    For XTTS:  voice_model = "voices/devesh.wav" (path to reference audio for cloning)
+
+    Current implementations: Piper TTS, Coqui XTTS
+    Possible future implementations: ElevenLabs, system TTS, etc.
     """
 
     @abstractmethod
-    def speak(self, text: str) -> bytes:
-        """Convert text to audio bytes (WAV format)."""
+    def speak(self, text: str, voice_model: str = "") -> bytes:
+        """
+        Convert text to audio bytes (WAV format).
+
+        voice_model: which voice to use. Empty = provider's default.
+        The meaning depends on the provider:
+          - Piper: model name like "en_US-lessac-medium"
+          - XTTS: path to reference WAV for voice cloning
+        """
         ...
 
     @abstractmethod
-    def speak_to_device(self, text: str) -> None:
-        """Convert text to audio and play it through the configured output device."""
+    def speak_to_device(self, text: str, voice_model: str = "") -> None:
+        """Convert text to audio and play through the configured output device."""
+        ...
+
+    @abstractmethod
+    def list_voices(self) -> list[str]:
+        """List available voice models for this provider."""
         ...
 
 
