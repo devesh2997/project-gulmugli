@@ -1,16 +1,8 @@
 /**
  * JARVIS Dashboard — layered full-screen composition.
- *
- * Single responsive layout built from stacked layers:
- *   Layer 1: Canvas (time-of-day gradient background)
- *   Layer 2: Avatar + Clock + PillCluster (center column)
- *   Layer 3: StatusDot (top-right), NowPlaying (bottom-center)
- *   Layer 4: SlidePanel overlays (transcript, settings, lights)
- *
- * The entire UI is optional — the assistant works without it.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { TokenProvider, useTokens } from './context/TokenProvider'
 import { useAssistant } from './hooks/useAssistant'
@@ -33,45 +25,54 @@ type PanelId = 'transcript' | 'settings' | 'lights' | null
 
 function AppContent() {
   const { updateToken } = useTokens()
-  const assistant = useAssistant('ws://localhost:8765', updateToken)
+
+  // Stable ref for updateToken to avoid re-creating useAssistant
+  const updateTokenRef = useRef(updateToken)
+  updateTokenRef.current = updateToken
+  const stableUpdateToken = useCallback((path: string, value: any) => {
+    updateTokenRef.current(path, value)
+  }, [])
+
+  const assistant = useAssistant('ws://localhost:8765', stableUpdateToken)
 
   useTimeOfDay()
 
-  // ── Panel state (slide panels) ──
+  // ── Panel state ──
   const [openPanel, setOpenPanel] = useState<PanelId>(null)
 
-  useGesture((direction) => {
-    if (openPanel) {
+  // Stable gesture callback
+  const openPanelRef = useRef(openPanel)
+  openPanelRef.current = openPanel
+  const handleGesture = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+    if (openPanelRef.current) {
       if (direction === 'down') setOpenPanel(null)
     } else {
       if (direction === 'up') setOpenPanel('transcript')
       if (direction === 'left') setOpenPanel('settings')
       if (direction === 'right') setOpenPanel('lights')
     }
-  })
+  }, [])
+
+  useGesture(handleGesture)
 
   // ── Now-playing expanded/collapsed ──
   const [nowPlayingExpanded, setNowPlayingExpanded] = useState(false)
 
   // ── Fullscreen toggle (F11 / Cmd+F) ──
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.()
-    } else {
-      document.exitFullscreen?.()
-    }
-  }, [])
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'F11' || (e.key === 'f' && e.metaKey)) {
         e.preventDefault()
-        toggleFullscreen()
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.()
+        } else {
+          document.exitFullscreen?.()
+        }
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggleFullscreen])
+  }, [])
 
   // ── Avatar size: responsive clamp ──
   const avatarSize = Math.max(120, Math.min(window.innerWidth * 0.2, 260))

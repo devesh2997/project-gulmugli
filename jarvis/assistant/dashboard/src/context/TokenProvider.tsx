@@ -148,9 +148,13 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
     syncCSSVars(tokens)
   }, [tokens])
 
+  // Use a ref so getToken always reads current tokens without causing re-renders
+  const tokensRef = React.useRef(tokens)
+  tokensRef.current = tokens
+
   const getToken = useCallback(
-    (path: string) => getNestedValue(tokens, path),
-    [tokens],
+    (path: string) => getNestedValue(tokensRef.current, path),
+    [],
   )
 
   const updateToken = useCallback((path: string, value: any) => {

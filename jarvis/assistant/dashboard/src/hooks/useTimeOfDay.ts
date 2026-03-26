@@ -17,7 +17,7 @@
  * immediately on mount so the palette is correct before the first render.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTokens } from '../context/TokenProvider'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -155,12 +155,18 @@ function computeBlend(fractionalHour: number): BlendResult {
 export function useTimeOfDay(): void {
   const { getToken, updateToken } = useTokens()
 
+  // Stable refs to avoid re-triggering the effect when token state changes
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
+  const updateTokenRef = useRef(updateToken)
+  updateTokenRef.current = updateToken
+
   useEffect(() => {
     function update() {
       // Read all three palettes from the token store (they live at time.morning, etc.)
-      const morning   = getToken('time.morning')   as TimePalette | undefined
-      const afternoon = getToken('time.afternoon') as TimePalette | undefined
-      const night     = getToken('time.night')     as TimePalette | undefined
+      const morning   = getTokenRef.current('time.morning')   as TimePalette | undefined
+      const afternoon = getTokenRef.current('time.afternoon') as TimePalette | undefined
+      const night     = getTokenRef.current('time.night')     as TimePalette | undefined
 
       if (!morning || !afternoon || !night) {
         console.warn('[useTimeOfDay] time.* tokens not found — TokenProvider not ready?')
@@ -175,10 +181,12 @@ export function useTimeOfDay(): void {
       const { fromName, toName, t } = computeBlend(fractionalHour)
       const interpolated = lerpPalettes(palettes[fromName], palettes[toName], t)
 
-      // Push each property into the token store under `time.current.*`
-      // TokenProvider syncs these to CSS vars automatically as `--time-current-<property>`
+      // Push interpolated values directly to CSS vars — bypass TokenProvider state
+      // to avoid triggering re-render cascades. The time-of-day palette is a derived
+      // value that changes every 60s; it doesn't need to live in React state.
+      const root = document.documentElement.style
       for (const [key, value] of Object.entries(interpolated)) {
-        updateToken(`time.current.${key}`, value)
+        root.setProperty(`--time-current-${key}`, String(value))
       }
     }
 
@@ -187,5 +195,5 @@ export function useTimeOfDay(): void {
 
     const intervalId = setInterval(update, 60_000)
     return () => clearInterval(intervalId)
-  }, [getToken, updateToken])
+  }, []) // Empty deps — runs once on mount, refs keep it current
 }
