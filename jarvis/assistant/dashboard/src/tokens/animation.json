@@ -1,0 +1,20 @@
+{
+  "orb": {
+    "breathe_duration": "4s",
+    "scale_range": [0.97, 1.03]
+  },
+  "pill": {
+    "enter_duration": "300ms",
+    "exit_duration": "200ms",
+    "resolve_delay": "2000ms"
+  },
+  "transition": {
+    "dissolve": "600ms",
+    "pause": "400ms",
+    "reform": "800ms"
+  },
+  "spring": {
+    "stiffness": 200,
+    "damping": 20
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "morning": {
+    "hours": { "start": 6, "end": 12 },
+    "canvas_gradient_start": "#0d2a2a",
+    "canvas_gradient_end": "#0a1a2e",
+    "accent_primary": "#2dd4bf",
+    "accent_glow": "#0ea5e9",
+    "text_primary_opacity": 0.7,
+    "orb_breathe_duration": "4s"
+  },
+  "afternoon": {
+    "hours": { "start": 12, "end": 21 },
+    "canvas_gradient_start": "#2a1a0a",
+    "canvas_gradient_end": "#1a1000",
+    "accent_primary": "#c99568",
+    "accent_glow": "#e8a44d",
+    "text_primary_opacity": 0.8,
+    "orb_breathe_duration": "4s"
+  },
+  "night": {
+    "hours": { "start": 21, "end": 6 },
+    "canvas_gradient_start": "#0d0a14",
+    "canvas_gradient_end": "#080608",
+    "accent_primary": "#7c5cbf",
+    "accent_glow": "#c47db5",
+    "text_primary_opacity": 0.4,
+    "orb_breathe_duration": "6s"
+  }
+}

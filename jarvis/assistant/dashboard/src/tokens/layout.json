@@ -1,0 +1,21 @@
+{
+  "avatar_size": {
+    "compact": "clamp(80px, 30vw, 120px)",
+    "medium": "clamp(120px, 20vw, 180px)",
+    "large": "clamp(160px, 15vw, 260px)"
+  },
+  "clock_size": {
+    "compact": "24px",
+    "medium": "32px",
+    "large": "42px"
+  },
+  "pill": {
+    "height": "32px",
+    "padding": "6px 12px",
+    "gap": "8px"
+  },
+  "panel": {
+    "compact_width": "100%",
+    "standard_width": "60%"
+  }
+}

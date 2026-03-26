@@ -1,0 +1,30 @@
+{
+  "jarvis": {
+    "avatarType": "orb",
+    "accent": "#c99568",
+    "tint": "neutral",
+    "glow_color": "#c9956830",
+    "mood_default": "neutral"
+  },
+  "devesh": {
+    "avatarType": "pixel",
+    "accent": "#2dd4bf",
+    "tint": "cool",
+    "glow_color": "#2dd4bf30",
+    "mood_default": "neutral"
+  },
+  "girlfriend": {
+    "avatarType": "light",
+    "accent": "#db8fa5",
+    "tint": "warm",
+    "glow_color": "#db8fa530",
+    "mood_default": "neutral"
+  },
+  "chandler": {
+    "avatarType": "caricature",
+    "accent": "#e8944d",
+    "tint": "warm",
+    "glow_color": "#e8944d30",
+    "mood_default": "neutral"
+  }
+}

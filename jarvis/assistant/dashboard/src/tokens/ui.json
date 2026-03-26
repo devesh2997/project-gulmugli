@@ -1,0 +1,17 @@
+{
+  "pill": {
+    "background": "rgba(255,255,255,0.05)",
+    "border": "rgba(255,255,255,0.08)",
+    "border_radius": "16px",
+    "icon_size": "14px"
+  },
+  "status_dot": {
+    "size": "6px",
+    "connected": "#4ade8040",
+    "disconnected": "#ffffff15"
+  },
+  "night_mode": {
+    "opacity_multiplier": 0.35,
+    "breathe_slowdown": 1.5
+  }
+}
