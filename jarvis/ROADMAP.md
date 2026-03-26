@@ -16,6 +16,9 @@ No hardware until software works on your Mac.
 No integration until individual pieces are solid.
 Reliability over features — a smooth 4-feature demo beats a buggy 8-feature one.
 
+**Local-first, internet-enhanced:**
+The core of JARVIS (LLM, TTS, STT, wake word, lights) runs entirely offline — no internet dependency whatsoever. This is the opposite of Alexa, which is a paperweight without WiFi. When internet IS connected, optional features light up: web search answers current-events questions, YouTube Music plays songs, cloud TTS provides extra voice options. If internet drops mid-conversation, core features keep working without skipping a beat. Internet features fail gracefully and the assistant says "I couldn't check online" instead of crashing.
+
 ---
 
 ## Project Modules

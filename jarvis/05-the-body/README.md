@@ -40,6 +40,7 @@ Order of purchase (stagger to avoid buying things you don't need):
 | 5 | Cables, jumper wires, HDMI | Week 4 (order with Jetson) | Cheap, bundle shipping |
 | 6 | NeoPixel LED strip | Week 5 | Only after enclosure design finalized |
 | 7 | Enclosure materials (acrylic) | Week 5–6 | Last — design depends on everything fitting |
+| 8 | IR transmitter module (e.g., IR LED + TSOP38238 receiver) | After Jetson setup | For controlling AC, TV, and other IR devices. GPIO-driven, needs Jetson to test |
 
 ---
 

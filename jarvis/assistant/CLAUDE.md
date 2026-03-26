@@ -8,21 +8,28 @@ Every capability is an abstract interface (`core/interfaces.py`) with swappable 
 
 ```
 core/
-  interfaces.py    — ABC for every provider type (BrainProvider, MusicProvider, etc.)
+  interfaces.py    — ABC for every provider type (BrainProvider, MusicProvider, KnowledgeProvider, etc.)
   registry.py      — @register("brain", "ollama") maps config names to classes
   config.py        — Loads config.yaml once at import time, singleton `config` dict
   logger.py        — Centralized logging, reads debug.log_level from config
   personality.py   — PersonalityManager, loads profiles from config, tracks active personality
+  voice_router.py  — Personality→voice provider routing + streaming TTS with interrupt support
+  mic.py           — Microphone input with VAD-based auto-stop recording
 
 providers/
-  brain/ollama.py     — Ollama LLM: intent classification + query enrichment
-  music/youtube.py    — YouTube Music search + mpv playback via IPC socket
-  lights/tuya.py      — Tuya/Wipro smart light control via tinytuya
-  ears/               — (empty, faster-whisper planned)
-  voice/              — (empty, Piper TTS planned)
-  wake_word/          — (empty, OpenWakeWord planned)
+  brain/ollama.py         — Ollama LLM: intent classification + query enrichment
+  music/youtube.py        — YouTube Music search + mpv playback via IPC socket
+  lights/tuya.py          — Tuya/Wipro smart light control via tinytuya
+  ears/faster_whisper.py  — CTranslate2-optimized Whisper for local STT
+  voice/piper_tts.py      — Piper TTS (CPU-only, English, ultra-fast)
+  voice/kokoro_tts.py     — Kokoro TTS (82M params, Hindi support, preset voices)
+  voice/edge_tts.py       — Microsoft Edge TTS (cloud-based, zero local resources)
+  voice/xtts.py           — Coqui XTTS (voice cloning from reference WAV)
+  wake_word/openwakeword.py — OpenWakeWord for always-on activation phrase detection
+  memory/sqlite.py        — SQLite-backed interaction logging and recall
+  knowledge/duckduckgo.py — DuckDuckGo web search for current events (no API key)
 
-main.py               — Entry point, wires providers, handles intents, runs text loop
+main.py               — Entry point, wires providers, handles intents, runs text/voice/wake word loop
 config.yaml            — ALL configuration (gitignored, has secrets)
 config.example.yaml    — Safe template with redacted values
 ```
@@ -98,6 +105,9 @@ Current profiles: jarvis (default), devesh, girlfriend (template), chandler
 | switch_personality | personality (id or display_name) | personality_manager.switch() |
 | chat | message | LLM generate with personality tone |
 | system | action (time/date/weather) | built-in handlers |
+| knowledge_search | query | web search → inject results → LLM summarize |
+| memory_recall | query | search interaction history → LLM summarize |
+| memory_stats | (none) | return interaction statistics |
 
 ## Hardware portability patterns
 
@@ -191,6 +201,28 @@ The whole architecture is designed for this. Platform-specific code lives in pro
 - Config picks: `audio.provider: "coreaudio"` vs `audio.provider: "alsa"`
 
 Same for GPIO, camera, display — each gets a provider with platform-specific implementations.
+
+## Local-first, internet-enhanced
+
+The core design principle: everything that CAN run locally DOES run locally. Internet is a bonus, not a requirement.
+
+**Local-only (works with zero internet):** LLM inference (Ollama), TTS (Piper, Kokoro), STT (faster-whisper), wake word (OpenWakeWord), lights (Tuya on local network), memory (SQLite), personality system.
+
+**Internet-enhanced (activates when online, degrades gracefully when not):** YouTube Music search/playback, web search for current events (KnowledgeProvider), Edge TTS (cloud-based voice), future: RSS feeds, cloud APIs.
+
+**The graceful degradation pattern:** Every internet-dependent provider implements `is_available()` (or try/except in `build_assistant()`). The `handle_intent()` function checks for provider existence before use and falls back to LLM-only responses. The user never sees a crash — they get "I couldn't check online for that" instead.
+
+## Knowledge system (web search / RAG)
+
+The KnowledgeProvider interface (`core/interfaces.py`) enables the assistant to answer questions about current events, news, and real-time information. Three capability levels:
+
+- **Level 1 — Search:** Query → list of results with snippets. Current: DuckDuckGo (no API key).
+- **Level 2 — Fetch:** Retrieve full page content from a URL. Not yet implemented.
+- **Level 3 — Browse:** Navigate websites, fill forms, take actions. Future capability.
+
+The pipeline: classifier detects `knowledge_search` intent → KnowledgeProvider.search() fetches snippets → snippets injected into LLM prompt as grounding context → LLM summarizes conversationally.
+
+On edge hardware: max_results is kept low (3) to limit context window usage. Each result adds ~100-150 tokens. The KV cache grows linearly with input length, and on Jetson's 8GB shared memory, keeping total prompt under ~1000 tokens is important.
 
 ## Known issues / tech debt
 

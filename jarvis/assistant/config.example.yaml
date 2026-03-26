@@ -36,9 +36,12 @@ brain:
 # How spoken words become text.
 ears:
   provider: "faster_whisper" # options: faster_whisper, whisper_cpp, google_cloud, azure, custom
-  model_size: "base" # tiny, base, small, medium, large-v3
+  model_size: "medium" # tiny, base, small, medium, large-v3 (medium recommended for Hindi)
   language: "auto" # auto-detect, or force: "en", "hi"
   device: "auto" # auto (picks GPU if available), cpu, cuda, metal
+  # initial_prompt: Biases Whisper's decoder toward expected vocabulary.
+  # Default includes Hindi/Hinglish phrases. Override to add domain-specific terms.
+  # Set to "" to disable.
 
 # --- Voice (Text-to-Speech) ---
 # How text becomes spoken audio.
@@ -91,6 +94,37 @@ music:
     # prefer recent Bollywood hit by a favorite artist.
     # When the song is clearly English, prefer the globally popular version.
     disambiguation_bias: "recent_bollywood" # applies to Hindi songs only
+
+# --- Knowledge (Web Search / RAG) ---
+# Gives the assistant access to current information beyond the LLM's training data.
+# This is the "internet-enhanced" layer: local-first, but smarter when online.
+#
+# Philosophy: The core assistant (music, lights, chat, TTS, wake word) works
+# entirely offline. Knowledge is an OPTIONAL upgrade that activates when
+# internet is available — like how Alexa degrades without WiFi, except
+# our core features don't degrade at all.
+#
+# How it works (lightweight RAG):
+#   1. The classifier detects a "knowledge_search" intent (news, facts, current events)
+#   2. KnowledgeProvider searches the web and returns short snippets
+#   3. Snippets are injected into the LLM prompt as context
+#   4. The LLM generates a grounded, conversational answer
+#
+# On edge hardware (Jetson 8GB): keep max_results LOW. Each result adds ~100-150
+# tokens to the prompt. The model's KV cache (working memory) grows linearly with
+# input length, eating into shared GPU RAM. 3 results ≈ 400 tokens — safe.
+knowledge:
+  enabled: true                    # master switch — false disables all web search
+  provider: "duckduckgo"           # options: duckduckgo (no API key), searxng, tavily, brave
+  max_results: 3                   # keep low for edge hardware context windows
+  region: "in-en"                  # DuckDuckGo region (India-English)
+  safesearch: "moderate"           # off, moderate, strict
+  timeout: 5                       # seconds before giving up on a search
+  # Future options:
+  # api_key: ""                    # needed for tavily, brave, google_custom
+  # searxng_url: "http://localhost:8888"  # for self-hosted SearXNG
+  # cache_ttl: 300                 # seconds to cache results (for RSS/news feeds)
+  # max_snippet_length: 200        # truncate snippets to save context window
 
 # --- Audio Output ---
 # System-level audio routing. Volume lives here, not in music,
@@ -146,10 +180,17 @@ hardware:
     count: 0 # number of LEDs
 
 # --- Wake Word ---
+# Detects spoken activation phrases using a small neural model (~1-2MB).
+# Runs in a background thread, continuously processing 80ms audio chunks.
+# Each personality can have its own wake word — saying that phrase both
+# activates the assistant AND switches to that personality.
 wake_word:
   provider: "openwakeword" # options: openwakeword, porcupine, snowboy, custom
   sensitivity: 0.5 # 0.0 (never triggers) to 1.0 (triggers on everything)
-  custom_model: null # path to custom-trained wake word model
+  cooldown: 2.0 # seconds between detections (prevents rapid re-triggering)
+  custom_models: [] # paths to custom-trained .onnx/.tflite models
+  # Note: The system wake word comes from assistant.wake_word above.
+  # Per-personality wake words are set in each personality's profile below.
 
 # --- Personalities ---
 # Multiple personalities the assistant can switch between.
@@ -157,12 +198,13 @@ wake_word:
 # Switch via voice: "switch to Devesh mode", "talk like Chandler"
 # Future: auto-switch via speaker recognition (voice ID)
 personalities:
-  default: "jarvis"  # which personality to start with
+  default: "jarvis" # which personality to start with
 
   profiles:
     jarvis:
       display_name: "Jarvis"
       description: "Default — helpful, concise, warm"
+      wake_word: "hey jarvis" # pre-trained model ships with openwakeword
       tone: >
         You speak concisely and warmly. You're efficient but friendly.
         You understand Hindi, English, and Hinglish naturally.
@@ -173,6 +215,7 @@ personalities:
     devesh:
       display_name: "Devesh"
       description: "Devesh's personality — for his girlfriend to talk to"
+      wake_word: "hey devesh" # needs custom-trained model (see 02-the-ears/README.md)
       tone: >
         You ARE Devesh — not an assistant pretending to be him, but actually him.
         You speak casually in Hinglish (mix of Hindi and English).
@@ -193,7 +236,7 @@ personalities:
 
     # TODO: Fill in your girlfriend's personality details
     girlfriend:
-      display_name: "Girlfriend"  # change to her name
+      display_name: "Girlfriend" # change to her name
       description: "Girlfriend's personality — for Devesh to talk to"
       tone: >
         You ARE [name] — not an assistant, but actually her.
@@ -203,11 +246,12 @@ personalities:
       voice_provider: "kokoro" # natural sounding (or "xtts" with her WAV later)
       voice_model: "af_bella" # Kokoro preset: American Female (soft tone)
       music_preferences:
-        favorite_artists: []  # fill in her favorites
+        favorite_artists: [] # fill in her favorites
 
     chandler:
       display_name: "Chandler"
       description: "The sarcastic one — could this BE any more helpful?"
+      wake_word: "hey chandler" # needs custom-trained model
       tone: >
         You're Chandler Bing. EVERYTHING gets a sarcastic spin.
         You use "Could this BE any more..." and similar patterns.
@@ -218,6 +262,29 @@ personalities:
       voice_provider: "xtts" # voice cloning
       voice_model: "chandler" # XTTS ref WAV: voices/xtts/chandler.wav
       fallback_voice: "am_adam" # Kokoro American Male — used when XTTS unavailable
+
+# --- Memory ---
+# Persistent memory: logs every interaction so Jarvis can recall what happened.
+# "What did I play yesterday?" "When was the last time I asked about lights?"
+memory:
+  enabled: true # master switch — false disables all logging
+  provider: "sqlite" # options: sqlite (local, zero deps). Future: postgres, chromadb
+  db_path: "data/memory.db" # relative to assistant/ dir. Gitignored via data/
+  fact_extraction: "silent" # "silent" = store facts without asking. "confirm" = ask user first.
+  # v1: keyword search only. v2+ will add these:
+  # embedding_model: "all-MiniLM-L6-v2"  # 22MB, runs on CPU
+  # max_context_memories: 5               # how many memories to inject into LLM context
+
+# --- UI (Face Display) ---
+# Browser-based animated face that shows assistant state.
+# Opens in a browser on the Jetson's display (or any connected screen).
+# Communicates with the assistant via WebSocket — purely cosmetic.
+ui:
+  enabled: true
+  port: 8765 # WebSocket port for face.html to connect to
+  # Open ui/face.html in a browser, or navigate to http://localhost:8765
+  # The face auto-connects and shows: idle, listening, thinking, speaking states
+  # Each personality has its own face style, colors, and animations
 
 # --- Logging & Debug ---
 debug:

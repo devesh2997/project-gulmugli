@@ -44,8 +44,30 @@ try:
 except Exception:
     pass  # coqui-tts not installed or missing PyTorch
 
+# Ears (STT) providers — optional (whisper model may not be installed)
+try:
+    from providers.ears.faster_whisper import FasterWhisperProvider
+except Exception:
+    pass  # faster-whisper not installed
+
+# Memory providers
+from providers.memory.sqlite import SQLiteMemoryProvider
+
+# Wake word providers — optional (openwakeword may not be installed)
+try:
+    from providers.wake_word.openwakeword import OpenWakeWordProvider
+except Exception:
+    pass  # openwakeword not installed or missing sounddevice
+
+# Knowledge providers — optional (needs internet + duckduckgo_search library)
+try:
+    from providers.knowledge.duckduckgo import DuckDuckGoKnowledgeProvider
+except Exception:
+    pass  # duckduckgo_search not installed
+
 # As you add more providers, import them here:
 # from providers.music.spotify import SpotifyMusicProvider
 # from providers.brain.llamacpp import LlamaCppBrainProvider
 # from providers.lights.hue import HueLightProvider
-# from providers.ears.faster_whisper import FasterWhisperProvider
+# from providers.knowledge.searxng import SearXNGKnowledgeProvider
+# from providers.knowledge.tavily import TavilyKnowledgeProvider

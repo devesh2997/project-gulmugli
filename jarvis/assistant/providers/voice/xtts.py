@@ -142,6 +142,25 @@ class XTTSVoiceProvider(VoiceProvider):
         """Lazy-load the XTTS model on first use."""
         if self._tts is None:
             log.info("Loading XTTS model (this takes a moment on first run)...")
+
+            # PyTorch 2.6+ changed torch.load default to weights_only=True for security.
+            # Coqui TTS's checkpoint loader doesn't pass weights_only=False, so it fails
+            # with newer PyTorch. We monkey-patch TTS.utils.io.load_fsspec to fix this.
+            # This is safe — the XTTS model is from Coqui's official repo (trusted source).
+            try:
+                import torch
+                import TTS.utils.io as tts_io
+                _original_load_fsspec = tts_io.load_fsspec
+
+                def _patched_load_fsspec(path, map_location=None, **kwargs):
+                    kwargs.setdefault("weights_only", False)
+                    return _original_load_fsspec(path, map_location=map_location, **kwargs)
+
+                tts_io.load_fsspec = _patched_load_fsspec
+                log.debug("Patched torch.load weights_only for XTTS compatibility")
+            except Exception as e:
+                log.debug("Could not patch load_fsspec (may not be needed): %s", e)
+
             gpu = self._device == "cuda"
             self._tts = CoquiTTS(model_name=self._model_name, gpu=gpu)
             log.info("XTTS model loaded.")
@@ -215,14 +234,18 @@ class XTTSVoiceProvider(VoiceProvider):
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-    def speak_to_device(self, text: str, voice_model: str = "") -> None:
-        """Synthesize with cloned voice and play through speakers."""
+    def speak_to_device(self, text: str, voice_model: str = "", interrupt_event=None) -> bool:
+        """
+        Synthesize with cloned voice and play through speakers.
+
+        Returns True if playback completed, False if interrupted.
+        """
         log.debug('Speaking: "%s" (voice: %s)', text[:60], voice_model or "default")
         wav_bytes = self.speak(text, voice_model)
 
         # Reuse Piper's playback function — it's platform-safe
         from providers.voice.piper_tts import _play_wav_bytes
-        _play_wav_bytes(wav_bytes)
+        return _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event)
 
     def list_voices(self) -> list[str]:
         """List available reference voice WAV files."""

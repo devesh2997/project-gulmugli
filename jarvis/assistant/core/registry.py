@@ -19,6 +19,8 @@ from core.interfaces import (
     EarsProvider,
     VoiceProvider,
     WakeWordProvider,
+    MemoryProvider,
+    KnowledgeProvider,
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -32,6 +34,8 @@ _registry: dict[str, dict[str, type]] = {
     "ears": {},
     "voice": {},
     "wake_word": {},
+    "memory": {},
+    "knowledge": {},
 }
 
 

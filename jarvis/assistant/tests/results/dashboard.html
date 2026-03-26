@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JARVIS Test Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #121212; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; }
+        .header { text-align: center; margin-bottom: 32px; }
+        .header h1 { font-size: 28px; color: #fff; }
+        .header p { color: #888; margin-top: 4px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; text-align: center; }
+        .card .value { font-size: 32px; font-weight: 700; color: #fff; }
+        .card .label { font-size: 13px; color: #888; margin-top: 4px; }
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+        .chart-box { background: #1e1e1e; padding: 20px; border-radius: 8px; }
+        .chart-box h3 { margin-bottom: 12px; font-size: 15px; color: #aaa; }
+        .section { margin-bottom: 32px; }
+        .section h2 { margin-bottom: 12px; font-size: 18px; color: #fff; }
+        canvas { max-height: 280px; }
+        @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>JARVIS Test Dashboard</h1>
+        <p>Last run: 2026-03-27T01:34:27 | Model: llama3.2:3b | Runs: 3</p>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <div class="value" style="color:#ff9800">89.2%</div>
+            <div class="label">Overall Score</div>
+        </div>
+        <div class="card">
+            <div class="value">91/102</div>
+            <div class="label">Tests Passed</div>
+        </div>
+        <div class="card">
+            <div class="value">80.3s</div>
+            <div class="label">Total Latency</div>
+        </div>
+        <div class="card">
+            <div class="value">3</div>
+            <div class="label">Historical Runs</div>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-box">
+            <h3>Overall Score Over Time</h3>
+            <canvas id="scoreChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h3>Total Latency Over Time</h3>
+            <canvas id="latencyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-box">
+            <h3>Per-Suite Score Trends</h3>
+            <canvas id="suiteChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h3>Latest Run — Latency Breakdown</h3>
+            <canvas id="latencyBreakdown"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Latest Run — Details</h2>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #4caf50">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">prefilter</strong>
+                <span>28/28 (100%) — 0.00s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ Bare 'pause' → music_control.pause   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Pause the music → music_control.pause   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Bare 'stop' → music_control.stop   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Hindi stop → music_control.stop   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Bare 'skip' → music_control.skip   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Next song → music_control.skip   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Skip this one → music_control.skip   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Hindi skip → music_control.skip   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Volume 50 → volume.50   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Volume 100 → volume.100   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Volume up → volume.80   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Hindi volume down → volume.30   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Mute → volume.0   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Lights off → light_control.off   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Turn off the lights → light_control.off   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Hindi lights off → light_control.off   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Lights on → light_control.on   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Turn on the lights → light_control.on   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ What time is it → system.time   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ What's the date → system.date   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Music play request → should NOT match (needs LLM)   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Light scene → should NOT match (needs LLM for scene parsing)   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chat → should NOT match   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Personality switch → should NOT match   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chained command → should NOT match (too complex for pre-filter)   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Mood-based music → should NOT match   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Knowledge search → should NOT match   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Brightness with value → should NOT match (needs LLM for value parsing)   <span style="color:#888">(0.00s)</span></div></div>
+        </div>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #ff9800">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">intent</strong>
+                <span>26/28 (93%) — 40.33s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ Indian indie song with artist   <span style="color:#888">(1.66s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Indie rock song in Hinglish   <span style="color:#888">(1.35s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Indie artist request   <span style="color:#888">(1.62s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Hinglish mood request (lo-fi genre)   <span style="color:#888">(1.35s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Alt rock song (Arctic Monkeys) — conversational title   <span style="color:#888">(1.39s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Kerala indie-folk band specific song in Hinglish   <span style="color:#888">(1.29s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Pause in English   <span style="color:#888">(1.16s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Pause/stop in Hindi   <span style="color:#888">(1.19s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Skip in English   <span style="color:#888">(1.20s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Explicit volume level   <span style="color:#888">(1.47s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Volume down in Hindi   <span style="color:#888">(1.39s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Lights off in English   <span style="color:#888">(1.22s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Color in Hinglish   <span style="color:#888">(1.48s)</span></div><div style="padding:2px 0;color:#f44336">  ✗ Scene in Hinglish   <span style="color:#888">(1.50s)</span> <span style="color:#999;font-size:12px">— expected 'light_control', got 'switch_personality' (params: {'personality': 'jarvis'})</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Brightness in English   <span style="color:#888">(1.54s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Personality switch English   <span style="color:#888">(1.64s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Personality switch Hindi   <span style="color:#888">(1.62s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chat — joke request   <span style="color:#888">(1.71s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chat — knowledge question (should NOT be knowledge_search)   <span style="color:#888">(1.16s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chat — story request (single intent, NOT double chat)   <span style="color:#888">(3.22s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ System time English   <span style="color:#888">(1.16s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ System date Hindi   <span style="color:#888">(1.08s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Memory recall English   <span style="color:#888">(1.16s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Memory stats Hindi   <span style="color:#888">(0.96s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Knowledge — current affairs English   <span style="color:#888">(1.17s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Knowledge — news Hindi   <span style="color:#888">(1.17s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chained: indie song + lights   <span style="color:#888">(2.28s)</span></div><div style="padding:2px 0;color:#f44336">  ✗ Chained: stop + lights off   <span style="color:#888">(1.19s)</span> <span style="color:#999;font-size:12px">— expected ['music_control', 'light_control'], got ['music_control']</span></div></div>
+        </div>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #f44336">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">enrichment</strong>
+                <span>6/14 (43%) — 9.20s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#f44336">  ✗ Husn → should add Anuv Jain (indie, not Bollywood)   <span style="color:#888">(1.16s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Husn Arijit Singh' but missing 'anuv'</span></div><div style="padding:2px 0;color:#f44336">  ✗ Baarishein → should add Anuv Jain (his debut, 200M+ streams)   <span style="color:#888">(0.67s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Baarishein Arijit Singh' but missing 'anuv'</span></div><div style="padding:2px 0;color:#f44336">  ✗ Choo Lo → should add The Local Train (indie rock band)   <span style="color:#888">(0.79s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Choo Lo Darshan Raval & Nisha Mallick' but missing 'local train'</span></div><div style="padding:2px 0;color:#f44336">  ✗ Khoj → should add When Chai Met Toast (Kerala indie-folk)   <span style="color:#888">(0.63s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Khoj Arijit Singh' but missing 'chai'</span></div><div style="padding:2px 0;color:#f44336">  ✗ Kun Faya Kun → should add A.R. Rahman (Rockstar, not generic)   <span style="color:#888">(0.71s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Kun Faya Kun Arijit Singh' but missing 'rahman'</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Gerua → should add Arijit Singh (from Dilwale, NOT Dum Maaro Dum)   <span style="color:#888">(0.60s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Ilahi → should add artist (Yeh Jawaani Hai Deewani — Mohit Chauhan or Arijit)   <span style="color:#888">(0.60s)</span></div><div style="padding:2px 0;color:#f44336">  ✗ Do I Wanna Know → should add Arctic Monkeys (alt rock)   <span style="color:#888">(0.63s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Do I Wanna Know The Weeknd' but missing 'arctic'</span></div><div style="padding:2px 0;color:#f44336">  ✗ Creep → should add Radiohead (classic alt, ambiguous title)   <span style="color:#888">(0.53s)</span> <span style="color:#999;font-size:12px">— Enriched to 'Creep Coldplay' but missing 'radiohead'</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Electric Feel → should add MGMT (indie classic)   <span style="color:#888">(0.53s)</span></div><div style="padding:2px 0;color:#f44336">  ✗ Artist-only (indie band) → should stay as-is   <span style="color:#888">(0.60s)</span> <span style="color:#999;font-size:12px">— Mangled: 'Chai Met Toast Coldplay'</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Vague mood → should NOT enrich   <span style="color:#888">(0.57s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Genre mood query → should NOT enrich   <span style="color:#888">(0.57s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Artist-only (Indian indie) → should stay as-is   <span style="color:#888">(0.61s)</span></div></div>
+        </div>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #4caf50">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">personality</strong>
+                <span>6/6 (100%) — 1.01s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ Default personality loaded   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Multiple personalities exist   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Switch personality   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Switch back to original   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Personality tone influences response   <span style="color:#888">(1.01s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Fuzzy personality name matching   <span style="color:#888">(0.00s)</span></div></div>
+        </div>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #4caf50">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">knowledge</strong>
+                <span>7/7 (100%) — 5.70s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ Knowledge provider loads   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ is_available() works   <span style="color:#888">(0.51s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Capabilities reported   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Search returns results   <span style="color:#888">(3.74s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ SearchResult structure valid   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ max_results limits output   <span style="color:#888">(1.45s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ fetch() returns None (Level 1)   <span style="color:#888">(0.00s)</span></div></div>
+        </div>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #ff9800">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">latency</strong>
+                <span>8/9 (89%) — 16.41s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ Pre-filter: 20 commands (should be <10ms total)   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#f44336">  ✗ Classify: simple English command   <span style="color:#888">(6.77s)</span> <span style="color:#999;font-size:12px">— 6.770s (threshold: 3.0s) (52.0 tok/s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Classify: Hinglish command   <span style="color:#888">(2.25s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Classify: chained command   <span style="color:#888">(3.24s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Enrich: well-known song   <span style="color:#888">(1.17s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Enrich: vague mood query   <span style="color:#888">(0.61s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chat: short response   <span style="color:#888">(0.61s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Chat: medium response   <span style="color:#888">(1.47s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Generate: raw LLM call (no system prompt)   <span style="color:#888">(0.29s)</span></div></div>
+        </div>
+        
+        <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #4caf50">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:16px">integration</strong>
+                <span>10/10 (100%) — 7.62s</span>
+            </div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ Config loads with required sections   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Assistant name configured   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Provider registry complete   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Brain provider instantiates   <span style="color:#888">(0.16s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Personality manager works   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ VoiceRouter instantiates   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Memory provider instantiates   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Full classify→handle path works   <span style="color:#888">(6.70s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ Brain returns valid JSON   <span style="color:#888">(0.44s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ LLM metadata populated   <span style="color:#888">(0.31s)</span></div></div>
+        </div>
+        
+    </div>
+
+    <script>
+    const labels = ["2026-03-27T00:54", "2026-03-27T01:20", "2026-03-27T01:34"];
+
+    new Chart(document.getElementById('scoreChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Score %',
+                data: [88.05970149253731, 92.42424242424242, 89.2156862745098],
+                borderColor: '#4caf50',
+                backgroundColor: '#4caf5033',
+                tension: 0.3,
+                fill: true,
+            }]
+        },
+        options: { scales: { y: { min: 0, max: 100, ticks: { color: '#888' } }, x: { ticks: { color: '#888' } } }, plugins: { legend: { labels: { color: '#ccc' } } } }
+    });
+
+    new Chart(document.getElementById('latencyChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Total Latency (s)',
+                data: [75.64981126785278, 76.37950325012207, 80.26407551765442],
+                borderColor: '#2196f3',
+                backgroundColor: '#2196f333',
+                tension: 0.3,
+                fill: true,
+            }]
+        },
+        options: { scales: { y: { min: 0, ticks: { color: '#888' } }, x: { ticks: { color: '#888' } } }, plugins: { legend: { labels: { color: '#ccc' } } } }
+    });
+
+    new Chart(document.getElementById('suiteChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+            label: 'intent',
+            data: [84.61538461538461, 92.0, 92.85714285714286],
+            borderColor: '#4caf50',
+            backgroundColor: '#4caf5033',
+            tension: 0.3,
+            fill: false,
+        },{
+            label: 'enrichment',
+            data: [90.0, 100.0, 42.857142857142854],
+            borderColor: '#2196f3',
+            backgroundColor: '#2196f333',
+            tension: 0.3,
+            fill: false,
+        },{
+            label: 'personality',
+            data: [100.0, 100.0, 100.0],
+            borderColor: '#ff9800',
+            backgroundColor: '#ff980033',
+            tension: 0.3,
+            fill: false,
+        },{
+            label: 'knowledge',
+            data: [71.42857142857143, 71.42857142857143, 100.0],
+            borderColor: '#e91e63',
+            backgroundColor: '#e91e6333',
+            tension: 0.3,
+            fill: false,
+        },{
+            label: 'latency',
+            data: [87.5, 87.5, 88.88888888888889],
+            borderColor: '#9c27b0',
+            backgroundColor: '#9c27b033',
+            tension: 0.3,
+            fill: false,
+        },{
+            label: 'integration',
+            data: [100.0, 100.0, 100.0],
+            borderColor: '#00bcd4',
+            backgroundColor: '#00bcd433',
+            tension: 0.3,
+            fill: false,
+        },{
+            label: 'prefilter',
+            data: [0, 0, 100.0],
+            borderColor: '#4caf50',
+            backgroundColor: '#4caf5033',
+            tension: 0.3,
+            fill: false,
+        },]
+        },
+        options: { scales: { y: { min: 0, max: 100, ticks: { color: '#888' } }, x: { ticks: { color: '#888' } } }, plugins: { legend: { labels: { color: '#ccc' } } } }
+    });
+
+    new Chart(document.getElementById('latencyBreakdown'), {
+        type: 'bar',
+        data: {
+            labels: ["intent:Indian indie song wi", "intent:Indie rock song in H", "intent:Indie artist request", "intent:Hinglish mood reques", "intent:Alt rock song (Arcti", "intent:Kerala indie-folk ba", "intent:Pause in English", "intent:Pause/stop in Hindi", "intent:Skip in English", "intent:Explicit volume leve", "intent:Volume down in Hindi", "intent:Lights off in Englis", "intent:Color in Hinglish", "intent:Scene in Hinglish", "intent:Brightness in Englis", "intent:Personality switch E", "intent:Personality switch H", "intent:Chat \u2014 joke request", "intent:Chat \u2014 knowledge que", "intent:Chat \u2014 story request", "intent:System time English", "intent:System date Hindi", "intent:Memory recall Englis", "intent:Memory stats Hindi", "intent:Knowledge \u2014 current ", "intent:Knowledge \u2014 news Hin", "intent:Chained: indie song ", "intent:Chained: stop + ligh", "enrichment:Husn \u2192 should add An", "enrichment:Baarishein \u2192 should ", "enrichment:Choo Lo \u2192 should add", "enrichment:Khoj \u2192 should add Wh", "enrichment:Kun Faya Kun \u2192 shoul", "enrichment:Gerua \u2192 should add A", "enrichment:Ilahi \u2192 should add a", "enrichment:Do I Wanna Know \u2192 sh", "enrichment:Creep \u2192 should add R", "enrichment:Electric Feel \u2192 shou", "enrichment:Artist-only (indie b", "enrichment:Vague mood \u2192 should ", "enrichment:Genre mood query \u2192 s", "enrichment:Artist-only (Indian ", "personality:Personality tone inf", "knowledge:is_available() works", "knowledge:Search returns resul", "knowledge:max_results limits o", "latency:Classify: simple Eng", "latency:Classify: Hinglish c", "latency:Classify: chained co", "latency:Enrich: well-known s", "latency:Enrich: vague mood q", "latency:Chat: short response", "latency:Chat: medium respons", "latency:Generate: raw LLM ca", "integration:Brain provider insta", "integration:Full classify\u2192handle", "integration:Brain returns valid ", "integration:LLM metadata populat"],
+            datasets: [{
+                label: 'Latency (s)',
+                data: [1.663, 1.351, 1.615, 1.346, 1.39, 1.291, 1.165, 1.192, 1.195, 1.465, 1.389, 1.224, 1.476, 1.503, 1.54, 1.637, 1.616, 1.711, 1.165, 3.218, 1.157, 1.077, 1.165, 0.958, 1.17, 1.17, 2.283, 1.194, 1.16, 0.666, 0.793, 0.631, 0.711, 0.598, 0.598, 0.633, 0.53, 0.533, 0.604, 0.565, 0.571, 0.606, 1.012, 0.507, 3.74, 1.449, 6.77, 2.251, 3.239, 1.171, 0.606, 0.609, 1.467, 0.293, 0.162, 6.703, 0.442, 0.309],
+                backgroundColor: ["#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#ff9800", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#ff9800", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#ff9800", "#4caf50", "#ff9800", "#ff9800", "#ff9800", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50", "#ff9800", "#4caf50", "#4caf50"],
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: { x: { ticks: { color: '#888' } }, y: { ticks: { color: '#888', font: { size: 10 } } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+    </script>
+</body>
+</html>

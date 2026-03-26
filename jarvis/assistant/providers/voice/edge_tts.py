@@ -212,8 +212,12 @@ class EdgeTTSVoiceProvider(VoiceProvider):
             log.warning("ffmpeg conversion error: %s", e)
             return None
 
-    def speak_to_device(self, text: str, voice_model: str = "") -> None:
-        """Synthesize and play through speakers."""
+    def speak_to_device(self, text: str, voice_model: str = "", interrupt_event=None) -> bool:
+        """
+        Synthesize and play through speakers.
+
+        Returns True if playback completed, False if interrupted.
+        """
         voice = voice_model or self._default_voice
         log.debug('Speaking: "%s" (voice: %s)', text[:60], voice)
 
@@ -221,17 +225,18 @@ class EdgeTTSVoiceProvider(VoiceProvider):
 
         if not mp3_bytes:
             log.warning("Edge TTS returned empty audio.")
-            return
+            return True
 
         # Try WAV conversion + our standard playback first
         wav_bytes = self._mp3_to_wav(mp3_bytes)
         if wav_bytes:
             from providers.voice.piper_tts import _play_wav_bytes
-            _play_wav_bytes(wav_bytes)
-            return
+            return _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event)
 
         # Fallback: write MP3 to temp file and play with mpv/afplay
+        # (doesn't support interrupt_event yet)
         self._play_mp3_bytes(mp3_bytes)
+        return True
 
     def _play_mp3_bytes(self, mp3_bytes: bytes) -> None:
         """Play MP3 bytes using system audio player (fallback when ffmpeg unavailable)."""

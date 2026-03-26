@@ -39,5 +39,8 @@ jarvis/assistant/voices/xtts/*.wav
 jarvis/assistant/voices/kokoro/*.onnx
 jarvis/assistant/voices/kokoro/*.bin
 
+# Memory database (user interaction history — personal data)
+jarvis/assistant/data/
+
 # Logs
 *.log

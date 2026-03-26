@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Face UI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Ambient glow behind the face ── */
+  .glow {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    transition: all 0.8s ease;
+    pointer-events: none;
+  }
+
+  /* ── Face container ── */
+  .face-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── SVG face ── */
+  svg.face {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Eyes ── */
+  .eye {
+    transition: all 0.3s ease;
+  }
+
+  .eye-pupil {
+    transition: all 0.15s ease;
+  }
+
+  /* ── Blink animation ── */
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.05); }
+  }
+
+  .eye-group {
+    animation: blink 4s infinite;
+    transform-origin: center;
+  }
+
+  /* State: listening — eyes wide, glow intensifies */
+  .state-listening .eye { ry: 22; }
+  .state-listening .glow { opacity: 0.5; transform: scale(1.2); }
+  .state-listening .eye-group { animation: none; }
+
+  /* State: thinking — eyes squint, pulse */
+  @keyframes think-pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+  .state-thinking .eye { ry: 12; }
+  .state-thinking .face-container { animation: think-pulse 1.5s infinite; }
+
+  /* State: speaking — mouth animates */
+  @keyframes speak {
+    0%, 100% { ry: 4; }
+    30% { ry: 12; }
+    60% { ry: 8; }
+  }
+  .state-speaking .mouth {
+    animation: speak 0.4s infinite;
+  }
+
+  /* State: sleeping — eyes closed, dim */
+  .state-sleeping .eye { ry: 2; }
+  .state-sleeping .glow { opacity: 0.1; }
+  .state-sleeping .eye-group { animation: none; }
+
+  /* ── Mouth ── */
+  .mouth {
+    transition: all 0.3s ease;
+  }
+
+  /* ── Status text ── */
+  .status {
+    position: absolute;
+    bottom: 60px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.5s ease;
+  }
+
+  .state-listening .status { color: rgba(255, 255, 255, 0.8); }
+  .state-speaking .status { color: rgba(255, 255, 255, 0.6); }
+
+  /* ── Personality name ── */
+  .personality-name {
+    position: absolute;
+    top: 40px;
+    font-size: 18px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    transition: all 0.8s ease;
+  }
+
+  /* ── Transcript bubble ── */
+  .transcript {
+    position: absolute;
+    bottom: 90px;
+    max-width: 80%;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s ease;
+  }
+
+  .transcript.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Thinking dots ── */
+  .thinking-dots {
+    position: absolute;
+    bottom: 100px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .state-thinking .thinking-dots { opacity: 1; }
+
+  .thinking-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: dot-bounce 1.2s infinite;
+  }
+
+  .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-12px); opacity: 1; }
+  }
+
+  /* ── Sound wave (listening indicator) ── */
+  .sound-wave {
+    position: absolute;
+    bottom: 100px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .state-listening .sound-wave { opacity: 1; }
+
+  .wave-bar {
+    width: 4px;
+    border-radius: 2px;
+    animation: wave 1s infinite;
+  }
+
+  .wave-bar:nth-child(1) { animation-delay: 0s; height: 12px; }
+  .wave-bar:nth-child(2) { animation-delay: 0.1s; height: 20px; }
+  .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 28px; }
+  .wave-bar:nth-child(4) { animation-delay: 0.3s; height: 20px; }
+  .wave-bar:nth-child(5) { animation-delay: 0.4s; height: 12px; }
+
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.5); }
+    50% { transform: scaleY(1.2); }
+  }
+
+  /* ── Control bar ── */
+  .controls {
+    position: fixed;
+    bottom: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .controls button {
+    padding: 8px 16px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .controls button:hover {
+    background: rgba(255,255,255,0.15);
+    color: white;
+  }
+
+  .controls button.active {
+    border-color: currentColor;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<div class="glow" id="glow"></div>
+<div class="personality-name" id="personalityName">JARVIS</div>
+
+<div class="face-container" id="faceContainer">
+  <svg class="face" viewBox="0 0 200 200" id="faceSvg">
+    <!-- Face outline (subtle) -->
+    <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+    <!-- Left eye -->
+    <g class="eye-group" style="transform-origin: 70px 85px">
+      <ellipse class="eye" cx="70" cy="85" rx="18" ry="18" fill="currentColor"/>
+      <ellipse class="eye-pupil" cx="70" cy="85" rx="8" ry="8" fill="#0a0a0f"/>
+      <ellipse class="eye-highlight" cx="74" cy="80" rx="4" ry="3" fill="rgba(255,255,255,0.3)"/>
+    </g>
+
+    <!-- Right eye -->
+    <g class="eye-group" style="transform-origin: 130px 85px">
+      <ellipse class="eye" cx="130" cy="85" rx="18" ry="18" fill="currentColor"/>
+      <ellipse class="eye-pupil" cx="130" cy="85" rx="8" ry="8" fill="#0a0a0f"/>
+      <ellipse class="eye-highlight" cx="134" cy="80" rx="4" ry="3" fill="rgba(255,255,255,0.3)"/>
+    </g>
+
+    <!-- Mouth -->
+    <ellipse class="mouth" cx="100" cy="135" rx="20" ry="4" fill="currentColor" opacity="0.6"/>
+  </svg>
+</div>
+
+<!-- Sound wave (listening) -->
+<div class="sound-wave" id="soundWave">
+  <div class="wave-bar"></div>
+  <div class="wave-bar"></div>
+  <div class="wave-bar"></div>
+  <div class="wave-bar"></div>
+  <div class="wave-bar"></div>
+</div>
+
+<!-- Thinking dots -->
+<div class="thinking-dots" id="thinkingDots">
+  <div class="thinking-dot"></div>
+  <div class="thinking-dot"></div>
+  <div class="thinking-dot"></div>
+</div>
+
+<!-- Transcript bubble -->
+<div class="transcript" id="transcript"></div>
+
+<!-- Status line -->
+<div class="status" id="status">idle</div>
+
+<!-- Demo controls (remove in production) -->
+<div class="controls">
+  <button onclick="setState('idle')" id="btn-idle" class="active">Idle</button>
+  <button onclick="setState('listening')" id="btn-listening">Listening</button>
+  <button onclick="setState('thinking')" id="btn-thinking">Thinking</button>
+  <button onclick="setState('speaking')" id="btn-speaking">Speaking</button>
+  <button onclick="setState('sleeping')" id="btn-sleeping">Sleep</button>
+  <span style="color: rgba(255,255,255,0.3); padding: 8px">|</span>
+  <button onclick="setPersonality('jarvis')">Jarvis</button>
+  <button onclick="setPersonality('devesh')">Devesh</button>
+  <button onclick="setPersonality('chandler')">Chandler</button>
+  <button onclick="setPersonality('girlfriend')">GF</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// Personality themes — colors, face style, glow
+// ═══════════════════════════════════════════════════════════
+const personalities = {
+  jarvis: {
+    name: "JARVIS",
+    color: "#4fc3f7",        // cool blue — the classic AI assistant
+    glowColor: "#1565c0",
+    eyeStyle: "round",       // round, narrow, soft
+    mouthStyle: "line",      // line, smile, smirk
+  },
+  devesh: {
+    name: "DEVESH",
+    color: "#81c784",        // warm green — friendly, nerdy
+    glowColor: "#2e7d32",
+    eyeStyle: "soft",
+    mouthStyle: "smile",
+  },
+  chandler: {
+    name: "CHANDLER",
+    color: "#ffb74d",        // sarcastic orange
+    glowColor: "#e65100",
+    eyeStyle: "narrow",
+    mouthStyle: "smirk",
+  },
+  girlfriend: {
+    name: "❤️",
+    color: "#f48fb1",        // pink
+    glowColor: "#c2185b",
+    eyeStyle: "soft",
+    mouthStyle: "smile",
+  },
+};
+
+let currentState = "idle";
+let currentPersonality = "jarvis";
+
+// ═══════════════════════════════════════════════════════════
+// State management
+// ═══════════════════════════════════════════════════════════
+function setState(state) {
+  currentState = state;
+  const body = document.body;
+
+  // Remove all state classes
+  body.className = "";
+  body.classList.add(`state-${state}`);
+
+  // Update status text
+  const statusEl = document.getElementById("status");
+  const statusText = {
+    idle: "idle",
+    listening: "listening...",
+    thinking: "thinking...",
+    speaking: "speaking",
+    sleeping: "zzz",
+  };
+  statusEl.textContent = statusText[state] || state;
+
+  // Update control buttons
+  document.querySelectorAll(".controls button").forEach(b => b.classList.remove("active"));
+  const btn = document.getElementById(`btn-${state}`);
+  if (btn) btn.classList.add("active");
+}
+
+function setPersonality(id) {
+  const p = personalities[id];
+  if (!p) return;
+  currentPersonality = id;
+
+  // Update colors
+  document.documentElement.style.setProperty("color", p.color);
+  document.body.style.color = p.color;
+
+  // Glow
+  const glow = document.getElementById("glow");
+  glow.style.background = `radial-gradient(circle, ${p.glowColor}, transparent 70%)`;
+
+  // Name
+  document.getElementById("personalityName").textContent = p.name;
+  document.getElementById("personalityName").style.color = p.color;
+
+  // Wave bars + thinking dots color
+  document.querySelectorAll(".wave-bar, .thinking-dot").forEach(el => {
+    el.style.background = p.color;
+  });
+
+  // Eye style
+  const eyes = document.querySelectorAll(".eye");
+  const mouth = document.querySelector(".mouth");
+
+  switch (p.eyeStyle) {
+    case "round":
+      eyes.forEach(e => { e.setAttribute("rx", "18"); e.setAttribute("ry", "18"); });
+      break;
+    case "narrow":
+      eyes.forEach(e => { e.setAttribute("rx", "20"); e.setAttribute("ry", "14"); });
+      break;
+    case "soft":
+      eyes.forEach(e => { e.setAttribute("rx", "16"); e.setAttribute("ry", "18"); });
+      break;
+  }
+
+  // Mouth style
+  switch (p.mouthStyle) {
+    case "line":
+      mouth.setAttribute("rx", "20");
+      mouth.setAttribute("ry", "4");
+      mouth.setAttribute("cy", "135");
+      break;
+    case "smile":
+      mouth.setAttribute("rx", "22");
+      mouth.setAttribute("ry", "6");
+      mouth.setAttribute("cy", "133");
+      break;
+    case "smirk":
+      mouth.setAttribute("rx", "18");
+      mouth.setAttribute("ry", "4");
+      mouth.setAttribute("cy", "136");
+      // Offset smirk to the right
+      mouth.setAttribute("cx", "105");
+      break;
+  }
+
+  // Reset mouth cx for non-smirk
+  if (p.mouthStyle !== "smirk") {
+    mouth.setAttribute("cx", "100");
+  }
+}
+
+function showTranscript(text, duration) {
+  const el = document.getElementById("transcript");
+  el.textContent = text;
+  el.classList.add("visible");
+  if (duration) {
+    setTimeout(() => el.classList.remove("visible"), duration);
+  }
+}
+
+function hideTranscript() {
+  document.getElementById("transcript").classList.remove("visible");
+}
+
+// ═══════════════════════════════════════════════════════════
+// WebSocket connection to assistant backend (for live mode)
+// ═══════════════════════════════════════════════════════════
+//
+// The assistant's main.py can optionally run a tiny WebSocket
+// server that pushes state changes to this UI:
+//
+//   { "type": "state", "state": "listening" }
+//   { "type": "personality", "id": "devesh" }
+//   { "type": "transcript", "text": "Play Sajni by Arijit Singh", "role": "user" }
+//   { "type": "transcript", "text": "Playing Sajni...", "role": "assistant" }
+//
+// For now this is optional — the demo controls work standalone.
+
+let ws = null;
+
+function connectWebSocket() {
+  const port = new URLSearchParams(window.location.search).get("port") || "8765";
+  const url = `ws://localhost:${port}`;
+
+  try {
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      console.log("Connected to assistant backend");
+      document.getElementById("status").textContent = "connected";
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+
+        switch (msg.type) {
+          case "state":
+            setState(msg.state);
+            break;
+          case "personality":
+            setPersonality(msg.id);
+            break;
+          case "transcript":
+            showTranscript(msg.text, msg.role === "user" ? 3000 : 5000);
+            break;
+        }
+      } catch (e) {
+        console.error("Bad message:", e);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("Disconnected. Reconnecting in 3s...");
+      setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onerror = () => {
+      // Silently fail — standalone mode is fine
+      ws.close();
+    };
+  } catch (e) {
+    // No WebSocket server running — standalone demo mode
+    console.log("No backend connection — running in demo mode");
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Eye tracking — eyes follow cursor (delightful touch)
+// ═══════════════════════════════════════════════════════════
+function setupEyeTracking() {
+  const svg = document.getElementById("faceSvg");
+  const pupils = document.querySelectorAll(".eye-pupil");
+  const eyeCenters = [
+    { x: 70, y: 85 },   // left eye
+    { x: 130, y: 85 },  // right eye
+  ];
+  const maxOffset = 5;
+
+  document.addEventListener("mousemove", (e) => {
+    if (currentState === "sleeping") return;
+
+    const rect = svg.getBoundingClientRect();
+    const faceCenterX = rect.left + rect.width / 2;
+    const faceCenterY = rect.top + rect.height / 2;
+
+    const dx = (e.clientX - faceCenterX) / window.innerWidth;
+    const dy = (e.clientY - faceCenterY) / window.innerHeight;
+
+    pupils.forEach((pupil, i) => {
+      const ox = eyeCenters[i].x + dx * maxOffset * 2;
+      const oy = eyeCenters[i].y + dy * maxOffset * 2;
+      pupil.setAttribute("cx", ox);
+      pupil.setAttribute("cy", oy);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════
+setPersonality("jarvis");
+setState("idle");
+setupEyeTracking();
+connectWebSocket();
+
+// Demo: cycle through states every 5 seconds (remove in production)
+// Uncomment for auto-demo:
+// const states = ["idle", "listening", "thinking", "speaking", "idle"];
+// let si = 0;
+// setInterval(() => { setState(states[si++ % states.length]); }, 3000);
+</script>
+</body>
+</html>

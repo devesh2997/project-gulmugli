@@ -17,6 +17,7 @@ import json
 import os
 import platform
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ytmusicapi import YTMusic
 
@@ -61,13 +62,19 @@ class YouTubeMusicProvider(MusicProvider):
         """
         limit = limit or self.default_limit
 
-        enriched_results = self._raw_search(query, limit)
-
-        # If no raw_input, or raw and enriched are the same query, just return
+        # If no raw_input, or raw and enriched are the same query, single search
         if not raw_input or raw_input.strip().lower() == query.strip().lower():
-            return enriched_results
+            return self._raw_search(query, limit)
 
-        raw_results = self._raw_search(raw_input, limit)
+        # Dual search: run BOTH searches in parallel to halve the wait.
+        # Each ytmusicapi call takes ~100-200ms (network I/O bound), so
+        # running them concurrently saves ~100-200ms per music request.
+        with ThreadPoolExecutor(max_workers=2, thread_name_prefix="yt-search") as pool:
+            future_enriched = pool.submit(self._raw_search, query, limit)
+            future_raw = pool.submit(self._raw_search, raw_input, limit)
+
+        enriched_results = future_enriched.result()
+        raw_results = future_raw.result()
 
         # If one search failed, return the other
         if not enriched_results:
@@ -149,9 +156,11 @@ class YouTubeMusicProvider(MusicProvider):
         try:
             import socket
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect(self.ipc_socket)
-            sock.send(json.dumps(command).encode() + b"\n")
-            sock.close()
+            try:
+                sock.connect(self.ipc_socket)
+                sock.send(json.dumps(command).encode() + b"\n")
+            finally:
+                sock.close()
         except Exception:
             pass
 

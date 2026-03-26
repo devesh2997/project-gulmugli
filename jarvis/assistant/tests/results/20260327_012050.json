@@ -1,0 +1,500 @@
+{
+  "timestamp": "2026-03-27T01:20:50.923871",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "intent": {
+      "total": 25,
+      "passed": 23,
+      "total_latency": 42.146342277526855,
+      "tests": [
+        {
+          "name": "English artist request",
+          "input": "play some Coldplay songs",
+          "passed": true,
+          "latency": 6.4635467529296875,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish mood-based request",
+          "input": "kuch sad sa bajao yaar",
+          "passed": true,
+          "latency": 1.336991310119629,
+          "detail": ""
+        },
+        {
+          "name": "English song in Hinglish sentence",
+          "input": "Bohemian Rhapsody laga do",
+          "passed": true,
+          "latency": 1.5659699440002441,
+          "detail": ""
+        },
+        {
+          "name": "Pause in English",
+          "input": "pause the music",
+          "passed": true,
+          "latency": 1.1506102085113525,
+          "detail": ""
+        },
+        {
+          "name": "Pause/stop in Hindi",
+          "input": "gaana rok do",
+          "passed": true,
+          "latency": 1.1529860496520996,
+          "detail": ""
+        },
+        {
+          "name": "Skip in English",
+          "input": "next song please",
+          "passed": false,
+          "latency": 1.1493730545043945,
+          "detail": "expected 'music_control', got 'music_play' (params: {'query': ''})"
+        },
+        {
+          "name": "Explicit volume level",
+          "input": "volume 40",
+          "passed": true,
+          "latency": 1.462496042251587,
+          "detail": ""
+        },
+        {
+          "name": "Volume down in Hindi",
+          "input": "awaaz kam karo",
+          "passed": true,
+          "latency": 1.4630537033081055,
+          "detail": ""
+        },
+        {
+          "name": "Lights off in English",
+          "input": "turn off the lights",
+          "passed": true,
+          "latency": 1.2181289196014404,
+          "detail": ""
+        },
+        {
+          "name": "Color in Hinglish",
+          "input": "light ka colour green karo",
+          "passed": true,
+          "latency": 1.4644429683685303,
+          "detail": ""
+        },
+        {
+          "name": "Scene in Hinglish",
+          "input": "study mode laga do",
+          "passed": true,
+          "latency": 1.434067964553833,
+          "detail": ""
+        },
+        {
+          "name": "Brightness in English",
+          "input": "brightness 30 percent",
+          "passed": true,
+          "latency": 1.5492730140686035,
+          "detail": ""
+        },
+        {
+          "name": "Personality switch English",
+          "input": "switch to Chandler mode",
+          "passed": true,
+          "latency": 1.5858826637268066,
+          "detail": ""
+        },
+        {
+          "name": "Personality switch Hindi",
+          "input": "Devesh ban ja",
+          "passed": true,
+          "latency": 1.5658650398254395,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2014 joke request",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 1.7532331943511963,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2014 knowledge question (should NOT be knowledge_search)",
+          "input": "what is machine learning",
+          "passed": true,
+          "latency": 1.1536529064178467,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2014 story request (single intent, NOT double chat)",
+          "input": "tell me a bedtime story about a dragon",
+          "passed": true,
+          "latency": 3.204310894012451,
+          "detail": ""
+        },
+        {
+          "name": "System time English",
+          "input": "what time is it",
+          "passed": true,
+          "latency": 1.1566078662872314,
+          "detail": ""
+        },
+        {
+          "name": "System date Hindi",
+          "input": "aaj kya date hai",
+          "passed": true,
+          "latency": 1.0487349033355713,
+          "detail": ""
+        },
+        {
+          "name": "Memory recall English",
+          "input": "what songs did I play today",
+          "passed": true,
+          "latency": 1.2625720500946045,
+          "detail": ""
+        },
+        {
+          "name": "Memory stats Hindi",
+          "input": "kitna yaad hai tujhe",
+          "passed": true,
+          "latency": 0.9577000141143799,
+          "detail": ""
+        },
+        {
+          "name": "Knowledge \u2014 current affairs English",
+          "input": "who is the current prime minister of UK",
+          "passed": true,
+          "latency": 1.3608722686767578,
+          "detail": ""
+        },
+        {
+          "name": "Knowledge \u2014 news Hindi",
+          "input": "aaj India mein kya news hai",
+          "passed": true,
+          "latency": 1.3788223266601562,
+          "detail": ""
+        },
+        {
+          "name": "Chained: music + lights",
+          "input": "play Tum Hi Ho and set lights to purple",
+          "passed": true,
+          "latency": 2.2977921962738037,
+          "detail": ""
+        },
+        {
+          "name": "Chained: stop + lights off",
+          "input": "stop music and turn off lights",
+          "passed": false,
+          "latency": 2.0093560218811035,
+          "detail": "expected ['music_control', 'light_control'], got ['light_control']"
+        }
+      ]
+    },
+    "enrichment": {
+      "total": 10,
+      "passed": 10,
+      "total_latency": 6.405641078948975,
+      "tests": [
+        {
+          "name": "Tum Hi Ho \u2192 should add Arijit Singh",
+          "input": "Tum Hi Ho",
+          "passed": true,
+          "latency": 1.169097900390625,
+          "detail": "\u2192 'Tum Hi Ho Arijit Singh'"
+        },
+        {
+          "name": "Kesariya \u2192 should add Arijit Singh",
+          "input": "Kesariya",
+          "passed": true,
+          "latency": 0.6556417942047119,
+          "detail": "\u2192 'Kesariya Arijit Singh'"
+        },
+        {
+          "name": "Shape of You \u2192 should add Ed Sheeran",
+          "input": "Shape of You",
+          "passed": true,
+          "latency": 0.6337480545043945,
+          "detail": "\u2192 'Shape of You Ed Sheeran'"
+        },
+        {
+          "name": "Blinding Lights \u2192 should add The Weeknd",
+          "input": "Blinding Lights",
+          "passed": true,
+          "latency": 0.5996010303497314,
+          "detail": "\u2192 'Blinding Lights The Weeknd'"
+        },
+        {
+          "name": "Fix You \u2192 should add Coldplay",
+          "input": "Fix You",
+          "passed": true,
+          "latency": 0.5335519313812256,
+          "detail": "\u2192 'Fix You Coldplay'"
+        },
+        {
+          "name": "Jai Ho \u2192 should add A.R. Rahman",
+          "input": "Jai Ho",
+          "passed": true,
+          "latency": 0.6247830390930176,
+          "detail": "\u2192 'Jai Ho A.R. Rahman'"
+        },
+        {
+          "name": "Mood query \u2192 should NOT enrich",
+          "input": "romantic Hindi songs",
+          "passed": true,
+          "latency": 0.5272300243377686,
+          "detail": "\u2192 'romantic Hindi songs'"
+        },
+        {
+          "name": "Artist-only query \u2192 should stay as-is",
+          "input": "Coldplay",
+          "passed": true,
+          "latency": 0.4637451171875,
+          "detail": "\u2192 'Coldplay'"
+        },
+        {
+          "name": "Vague mood \u2192 should NOT enrich",
+          "input": "some chill music",
+          "passed": true,
+          "latency": 0.503737211227417,
+          "detail": "\u2192 'chill music'"
+        },
+        {
+          "name": "Gerua \u2192 should add Arijit Singh (from Dilwale, NOT Dum Maaro Dum)",
+          "input": "Gerua",
+          "passed": true,
+          "latency": 0.694504976272583,
+          "detail": "\u2192 'Gerua Arijit Singh'"
+        }
+      ]
+    },
+    "personality": {
+      "total": 6,
+      "passed": 6,
+      "total_latency": 0.9739298820495605,
+      "tests": [
+        {
+          "name": "Default personality loaded",
+          "passed": true,
+          "latency": 1.9073486328125e-06,
+          "detail": "Active: jarvis (Jarvis)"
+        },
+        {
+          "name": "Multiple personalities exist",
+          "passed": true,
+          "latency": 4.76837158203125e-06,
+          "detail": "4 personalities: ['jarvis', 'devesh', 'girlfriend', 'chandler']"
+        },
+        {
+          "name": "Switch personality",
+          "passed": true,
+          "latency": 4.7206878662109375e-05,
+          "detail": "Switched to devesh"
+        },
+        {
+          "name": "Switch back to original",
+          "passed": true,
+          "latency": 1.0967254638671875e-05,
+          "detail": "Back to jarvis"
+        },
+        {
+          "name": "Personality tone influences response",
+          "passed": true,
+          "latency": 0.9738261699676514,
+          "detail": "Response: Could this BE any more obvious? I'm Chandler Muriel Bing, the sarcastic one with a heart of gold and"
+        },
+        {
+          "name": "Fuzzy personality name matching",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": "Switched via display name 'Devesh'"
+        }
+      ]
+    },
+    "knowledge": {
+      "total": 7,
+      "passed": 5,
+      "total_latency": 3.525822639465332,
+      "tests": [
+        {
+          "name": "Knowledge provider loads",
+          "passed": true,
+          "latency": 0.0001571178436279297,
+          "detail": "Provider: duckduckgo"
+        },
+        {
+          "name": "is_available() works",
+          "passed": true,
+          "latency": 0.5149579048156738,
+          "detail": "Available: True"
+        },
+        {
+          "name": "Capabilities reported",
+          "passed": true,
+          "latency": 2.9087066650390625e-05,
+          "detail": "Capabilities: ['search']"
+        },
+        {
+          "name": "Search returns results",
+          "passed": false,
+          "latency": 1.6862881183624268,
+          "detail": "Empty results"
+        },
+        {
+          "name": "SearchResult structure valid",
+          "passed": false,
+          "latency": 1.1920928955078125e-06,
+          "detail": "No results to check structure"
+        },
+        {
+          "name": "max_results limits output",
+          "passed": true,
+          "latency": 1.324303150177002,
+          "detail": "Requested 1, got 0"
+        },
+        {
+          "name": "fetch() returns None (Level 1)",
+          "passed": true,
+          "latency": 8.606910705566406e-05,
+          "detail": "fetch() correctly returns None (Level 1)"
+        }
+      ]
+    },
+    "latency": {
+      "total": 8,
+      "passed": 7,
+      "total_latency": 16.174392223358154,
+      "tests": [
+        {
+          "name": "Classify: simple English command",
+          "passed": false,
+          "latency": 6.48322606086731,
+          "detail": "6.483s (threshold: 3.0s) (52.0 tok/s)",
+          "threshold": 3.0
+        },
+        {
+          "name": "Classify: Hinglish command",
+          "passed": true,
+          "latency": 2.254822015762329,
+          "detail": "2.255s (threshold: 3.5s) (50.9 tok/s)",
+          "threshold": 3.5
+        },
+        {
+          "name": "Classify: chained command",
+          "passed": true,
+          "latency": 3.2374658584594727,
+          "detail": "3.237s (threshold: 4.0s) (50.9 tok/s)",
+          "threshold": 4.0
+        },
+        {
+          "name": "Enrich: well-known song",
+          "passed": true,
+          "latency": 1.186187982559204,
+          "detail": "1.186s (threshold: 2.0s)",
+          "threshold": 2.0
+        },
+        {
+          "name": "Enrich: vague mood query",
+          "passed": true,
+          "latency": 0.5386931896209717,
+          "detail": "0.539s (threshold: 2.0s)",
+          "threshold": 2.0
+        },
+        {
+          "name": "Chat: short response",
+          "passed": true,
+          "latency": 0.43708324432373047,
+          "detail": "0.437s (threshold: 4.0s) (61.3 tok/s)",
+          "threshold": 4.0
+        },
+        {
+          "name": "Chat: medium response",
+          "passed": true,
+          "latency": 1.7410218715667725,
+          "detail": "1.741s (threshold: 6.0s) (58.1 tok/s)",
+          "threshold": 6.0
+        },
+        {
+          "name": "Generate: raw LLM call (no system prompt)",
+          "passed": true,
+          "latency": 0.29589200019836426,
+          "detail": "0.296s (threshold: 3.0s) (64.9 tok/s)",
+          "threshold": 3.0
+        }
+      ]
+    },
+    "integration": {
+      "total": 10,
+      "passed": 10,
+      "total_latency": 7.153375148773193,
+      "tests": [
+        {
+          "name": "Config loads with required sections",
+          "passed": true,
+          "latency": 9.5367431640625e-07,
+          "detail": "Config has 12 sections"
+        },
+        {
+          "name": "Assistant name configured",
+          "passed": true,
+          "latency": 1.1920928955078125e-06,
+          "detail": "Name: 'Jarvis'"
+        },
+        {
+          "name": "Provider registry complete",
+          "passed": true,
+          "latency": 5.078315734863281e-05,
+          "detail": "All 8 categories registered. Providers: {'brain': 1, 'music': 1, 'lights': 1, 'ears': 1, 'voice': 4, 'wake_word': 1, 'memory': 1, 'knowledge': 1}"
+        },
+        {
+          "name": "Brain provider instantiates",
+          "passed": true,
+          "latency": 0.16218900680541992,
+          "detail": "Model: llama3.2:3b"
+        },
+        {
+          "name": "Personality manager works",
+          "passed": true,
+          "latency": 4.76837158203125e-06,
+          "detail": "Active: jarvis, Total: 4"
+        },
+        {
+          "name": "VoiceRouter instantiates",
+          "passed": true,
+          "latency": 0.002203226089477539,
+          "detail": "VoiceRouter created"
+        },
+        {
+          "name": "Memory provider instantiates",
+          "passed": true,
+          "latency": 0.0086212158203125,
+          "detail": "Provider: sqlite"
+        },
+        {
+          "name": "Full classify\u2192handle path works",
+          "passed": true,
+          "latency": 6.320903062820435,
+          "detail": "Classified as system.time, response: It's 01:22 AM."
+        },
+        {
+          "name": "Brain returns valid JSON",
+          "passed": true,
+          "latency": 0.3617689609527588,
+          "detail": "Valid JSON: {\"message\": \"hello\"}"
+        },
+        {
+          "name": "LLM metadata populated",
+          "passed": true,
+          "latency": 0.29763197898864746,
+          "detail": "8 tokens, 65.6 tok/s, 0.30s"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 66,
+    "passed": 61,
+    "failed": 5,
+    "score": 92.42424242424242,
+    "total_latency": 76.37950325012207
+  }
+}

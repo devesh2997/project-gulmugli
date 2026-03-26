@@ -12,6 +12,7 @@ ET (Devesh) — experienced full-stack developer, new to AI/ML and hardware. **D
 - **Unopinionated on models/libraries/platforms** — every component is swappable via the provider pattern
 - **Config-driven** — change one line in config.yaml, no code changes needed
 - **Multi-platform from day one** — must run on MacBook (dev), Jetson Orin Nano (primary target), and Raspberry Pi (fallback). See "Hardware portability" section below.
+- **Local-first, internet-enhanced** — the core of the system (LLM, TTS, STT, wake word, lights) runs entirely offline with zero internet dependency. When internet IS available, optional providers (web search, cloud TTS, etc.) activate to elevate the experience. Internet features degrade gracefully when the connection drops — no crashes, no broken core features. This is the opposite of Alexa/Google Home, which are paperweights without WiFi.
 
 ## Project structure
 
@@ -32,7 +33,7 @@ project-gulmugli/
 │       ├── config.example.yaml    # Template with redacted secrets
 │       ├── main.py                # Entry point, intent handling loop
 │       ├── core/                  # Interfaces, config, registry, logger, personality
-│       └── providers/             # Swappable implementations (brain, music, lights, etc.)
+│       └── providers/             # Swappable implementations (brain, music, lights, knowledge, etc.)
 ```
 
 ## Key technical decisions (already made)
@@ -66,7 +67,7 @@ This assistant MUST run on three platforms with zero code changes — only confi
 
 5. **External process commands must be platform-checked.** `mpv`, `aplay`, `pactl`, `amixer` — check availability before calling. Use `shutil.which()` not hardcoded paths. Provide clear error messages when a dependency is missing, with platform-specific install instructions.
 
-6. **Network assumptions = zero.** The assistant is local-first. Don't assume internet for core features. YouTube Music search needs internet, but LLM inference, TTS, STT, wake word, and lights are all local. If internet is down, music fails gracefully but everything else keeps working.
+6. **Network assumptions = zero for core, graceful upgrade when online.** The assistant is local-first, internet-enhanced. Core features (LLM, TTS, STT, wake word, lights) run entirely offline. Internet-dependent features (YouTube Music, web search/knowledge, cloud TTS) activate when available and degrade gracefully when not. Every provider that touches the network must: (a) check availability before use via `is_available()` or try/except, (b) return empty results or fall back to a local alternative on failure, (c) never block startup or crash the assistant if the network is down.
 
 7. **Config.yaml `hardware.platform` field.** Set to `"auto"` by default (auto-detect via `platform.system()`, checking for Jetson via `/etc/nv_tegra_release`, Pi via `/proc/device-tree/model`). Can be forced in config for testing.
 
@@ -91,14 +92,16 @@ These are gitignored but be aware:
 - Personality system (4 profiles, voice-command switching)
 - Structured logging with color-coded terminal output
 - Text-mode interactive loop
+- Knowledge/web search via KnowledgeProvider (DuckDuckGo, no API key needed)
+- Streaming sentence-by-sentence TTS (producer-consumer overlap)
+- Wake word detection with barge-in/interruption support
+- Memory system (SQLite interaction logging + recall)
 
 ### Not started
-- Speech-to-text (02-the-ears) — faster-whisper planned
-- Text-to-speech (03-the-voice) — Piper TTS planned
-- Wake word detection — OpenWakeWord planned
 - AudioOutputProvider — interface defined, no implementation
 - Hardware setup (05-the-body) — Jetson Orin Nano planned
 - Speaker recognition for auto personality switching
+- Level 2/3 knowledge capabilities (page fetch, web browsing/actions)
 
 ## Running the assistant
 

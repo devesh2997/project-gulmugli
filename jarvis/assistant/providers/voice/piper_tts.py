@@ -105,12 +105,21 @@ def _find_model(voice_model: str) -> tuple[Path | None, Path | None]:
     return None, None
 
 
-def _play_wav_bytes(wav_bytes: bytes) -> None:
+def _play_wav_bytes(wav_bytes: bytes, interrupt_event=None) -> bool:
     """
     Play WAV audio bytes through the system default output.
 
     Uses sounddevice if available (preferred — pure Python, cross-platform),
     falls back to platform-specific commands (afplay on Mac, aplay on Linux).
+
+    Args:
+        wav_bytes: WAV audio data to play.
+        interrupt_event: Optional threading.Event. If set during playback,
+            audio stops immediately. Used for wake word interruption — when
+            the user says "Hey Jarvis" while the assistant is speaking.
+
+    Returns:
+        True if playback completed normally, False if interrupted.
     """
     try:
         import sounddevice as sd
@@ -124,13 +133,35 @@ def _play_wav_bytes(wav_bytes: bytes) -> None:
                 audio = np.frombuffer(frames, dtype=np.int16)
                 if n_channels > 1:
                     audio = audio.reshape(-1, n_channels)
-                sd.play(audio, samplerate=sample_rate)
-                sd.wait()
-        return
+
+                if interrupt_event is not None:
+                    # Interruptible playback: start non-blocking, then poll
+                    # the interrupt event every 100ms. If it fires, stop
+                    # playback immediately (kills audio mid-word).
+                    sd.play(audio, samplerate=sample_rate)
+                    try:
+                        stream = sd.get_stream()
+                        while stream is not None and stream.active:
+                            if interrupt_event.wait(timeout=0.1):
+                                sd.stop()
+                                log.info("Audio playback interrupted by wake word.")
+                                return False
+                    except RuntimeError:
+                        # get_stream() can raise if the stream ended between
+                        # play() and our first poll — that means playback
+                        # finished almost instantly (very short audio).
+                        pass
+                else:
+                    # Simple blocking playback (text mode, no interruption needed)
+                    sd.play(audio, samplerate=sample_rate)
+                    sd.wait()
+        return True
     except ImportError:
         pass  # sounddevice not available, try fallback
 
     # Fallback: write to temp file and play with system command
+    # Note: subprocess fallback doesn't support interrupt_event (yet).
+    # To support it, we'd need to Popen + poll + terminate.
     import platform as plat
     system = plat.system()
 
@@ -140,13 +171,26 @@ def _play_wav_bytes(wav_bytes: bytes) -> None:
 
     try:
         if system == "Darwin" and shutil.which("afplay"):
-            subprocess.run(["afplay", tmp_path], check=True)
+            proc = subprocess.Popen(["afplay", tmp_path])
         elif shutil.which("aplay"):
-            subprocess.run(["aplay", "-q", tmp_path], check=True)
+            proc = subprocess.Popen(["aplay", "-q", tmp_path])
         elif shutil.which("mpv"):
-            subprocess.run(["mpv", "--no-video", "--really-quiet", tmp_path], check=True)
+            proc = subprocess.Popen(["mpv", "--no-video", "--really-quiet", tmp_path])
         else:
             log.error("No audio player found. Install sounddevice: pip install sounddevice")
+            return True
+
+        # Poll for interrupt or completion
+        if interrupt_event is not None:
+            while proc.poll() is None:
+                if interrupt_event.wait(timeout=0.1):
+                    proc.terminate()
+                    proc.wait(timeout=2.0)
+                    log.info("Audio playback interrupted (subprocess).")
+                    return False
+        else:
+            proc.wait()
+        return True
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
@@ -236,11 +280,15 @@ class PiperVoiceProvider(VoiceProvider):
 
         return buf.getvalue()
 
-    def speak_to_device(self, text: str, voice_model: str = "") -> None:
-        """Synthesize and play through speakers."""
+    def speak_to_device(self, text: str, voice_model: str = "", interrupt_event=None) -> bool:
+        """
+        Synthesize and play through speakers.
+
+        Returns True if playback completed, False if interrupted.
+        """
         log.debug('Speaking: "%s" (voice: %s)', text[:60], voice_model or self._default_model)
         wav_bytes = self.speak(text, voice_model)
-        _play_wav_bytes(wav_bytes)
+        return _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event)
 
     def list_voices(self) -> list[str]:
         """List available voice models in the models directory."""

@@ -206,13 +206,19 @@ class KokoroVoiceProvider(VoiceProvider):
         self._model_name = voice_cfg.get("kokoro_model", "kokoro-v1.0.onnx")
         self._default_voice = voice_cfg.get("kokoro_default_voice", "af_heart")
 
-        # Lazy-load the model
-        self._kokoro = None  # Kokoro instance, loaded on first speak()
+        # Eager-load the model at init time. On edge hardware (Jetson, Pi),
+        # lazy-loading adds 3-5 seconds to the first TTS response — unacceptable
+        # for a real-time voice assistant. The model is ~170-310MB depending on
+        # the variant (fp16 vs fp32), which fits comfortably alongside Whisper
+        # and a 3B LLM in 8GB shared memory.
+        self._kokoro = None
+        try:
+            self._ensure_model()
+        except FileNotFoundError as e:
+            # Models not downloaded yet — fall back to lazy load with a warning
+            log.warning("Kokoro models not found, will retry on first speak: %s", e)
 
-        log.info(
-            "Kokoro TTS ready (model loads on first speak). Models dir: %s",
-            self._models_dir,
-        )
+        log.info("Kokoro TTS ready. Models dir: %s", self._models_dir)
 
     def _ensure_model(self):
         """Lazy-load the Kokoro ONNX model on first use."""
@@ -270,14 +276,23 @@ class KokoroVoiceProvider(VoiceProvider):
 
         return _samples_to_wav(samples, sample_rate)
 
-    def speak_to_device(self, text: str, voice_model: str = "") -> None:
-        """Synthesize and play through speakers."""
+    def speak_to_device(self, text: str, voice_model: str = "", interrupt_event=None) -> bool:
+        """
+        Synthesize and play through speakers.
+
+        Args:
+            interrupt_event: Optional threading.Event. If set during playback,
+                audio stops immediately. Returns False if interrupted.
+
+        Returns:
+            True if playback completed, False if interrupted.
+        """
         log.debug('Speaking: "%s" (voice: %s)', text[:60], voice_model or self._default_voice)
         wav_bytes = self.speak(text, voice_model)
 
         # Reuse Piper's cross-platform playback function
         from providers.voice.piper_tts import _play_wav_bytes
-        _play_wav_bytes(wav_bytes)
+        return _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event)
 
     def list_voices(self) -> list[str]:
         """List all available Kokoro preset voices."""

@@ -1,0 +1,759 @@
+{
+  "timestamp": "2026-03-27T01:34:27.846728",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "prefilter": {
+      "total": 28,
+      "passed": 28,
+      "total_latency": 0.0017039775848388672,
+      "tests": [
+        {
+          "name": "Bare 'pause' \u2192 music_control.pause",
+          "input": "pause",
+          "passed": true,
+          "latency": 0.00014638900756835938,
+          "detail": ""
+        },
+        {
+          "name": "Pause the music \u2192 music_control.pause",
+          "input": "pause the music",
+          "passed": true,
+          "latency": 1.6927719116210938e-05,
+          "detail": ""
+        },
+        {
+          "name": "Bare 'stop' \u2192 music_control.stop",
+          "input": "stop",
+          "passed": true,
+          "latency": 0.0002372264862060547,
+          "detail": ""
+        },
+        {
+          "name": "Hindi stop \u2192 music_control.stop",
+          "input": "gaana rok do",
+          "passed": true,
+          "latency": 1.5974044799804688e-05,
+          "detail": ""
+        },
+        {
+          "name": "Bare 'skip' \u2192 music_control.skip",
+          "input": "skip",
+          "passed": true,
+          "latency": 0.00017213821411132812,
+          "detail": ""
+        },
+        {
+          "name": "Next song \u2192 music_control.skip",
+          "input": "next song",
+          "passed": true,
+          "latency": 1.2159347534179688e-05,
+          "detail": ""
+        },
+        {
+          "name": "Skip this one \u2192 music_control.skip",
+          "input": "skip this one",
+          "passed": true,
+          "latency": 1.0967254638671875e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi skip \u2192 music_control.skip",
+          "input": "dusra gaana",
+          "passed": true,
+          "latency": 1.1920928955078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Volume 50 \u2192 volume.50",
+          "input": "volume 50",
+          "passed": true,
+          "latency": 6.389617919921875e-05,
+          "detail": ""
+        },
+        {
+          "name": "Volume 100 \u2192 volume.100",
+          "input": "volume 100",
+          "passed": true,
+          "latency": 1.1920928955078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Volume up \u2192 volume.80",
+          "input": "volume up",
+          "passed": true,
+          "latency": 7.867813110351562e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi volume down \u2192 volume.30",
+          "input": "awaaz kam karo",
+          "passed": true,
+          "latency": 7.295608520507812e-05,
+          "detail": ""
+        },
+        {
+          "name": "Mute \u2192 volume.0",
+          "input": "mute",
+          "passed": true,
+          "latency": 8.58306884765625e-05,
+          "detail": ""
+        },
+        {
+          "name": "Lights off \u2192 light_control.off",
+          "input": "lights off",
+          "passed": true,
+          "latency": 0.0001957416534423828,
+          "detail": ""
+        },
+        {
+          "name": "Turn off the lights \u2192 light_control.off",
+          "input": "turn off the lights",
+          "passed": true,
+          "latency": 1.621246337890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi lights off \u2192 light_control.off",
+          "input": "batti band karo",
+          "passed": true,
+          "latency": 1.3828277587890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "Lights on \u2192 light_control.on",
+          "input": "lights on",
+          "passed": true,
+          "latency": 0.00016689300537109375,
+          "detail": ""
+        },
+        {
+          "name": "Turn on the lights \u2192 light_control.on",
+          "input": "turn on the lights",
+          "passed": true,
+          "latency": 5.817413330078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "What time is it \u2192 system.time",
+          "input": "what time is it",
+          "passed": true,
+          "latency": 0.00016689300537109375,
+          "detail": ""
+        },
+        {
+          "name": "What's the date \u2192 system.date",
+          "input": "what's the date",
+          "passed": true,
+          "latency": 0.0001163482666015625,
+          "detail": ""
+        },
+        {
+          "name": "Music play request \u2192 should NOT match (needs LLM)",
+          "input": "play Husn by Anuv Jain",
+          "passed": true,
+          "latency": 5.7220458984375e-06,
+          "detail": ""
+        },
+        {
+          "name": "Light scene \u2192 should NOT match (needs LLM for scene parsing)",
+          "input": "study mode laga do",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2192 should NOT match",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 3.0994415283203125e-06,
+          "detail": ""
+        },
+        {
+          "name": "Personality switch \u2192 should NOT match",
+          "input": "switch to Chandler mode",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": ""
+        },
+        {
+          "name": "Chained command \u2192 should NOT match (too complex for pre-filter)",
+          "input": "play Tum Hi Ho and set lights to purple",
+          "passed": true,
+          "latency": 3.814697265625e-06,
+          "detail": ""
+        },
+        {
+          "name": "Mood-based music \u2192 should NOT match",
+          "input": "kuch sad sa bajao",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": ""
+        },
+        {
+          "name": "Knowledge search \u2192 should NOT match",
+          "input": "who is the PM of India",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": ""
+        },
+        {
+          "name": "Brightness with value \u2192 should NOT match (needs LLM for value parsing)",
+          "input": "brightness 30 percent",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": ""
+        }
+      ]
+    },
+    "intent": {
+      "total": 28,
+      "passed": 26,
+      "total_latency": 40.32569122314453,
+      "tests": [
+        {
+          "name": "Indian indie song with artist",
+          "input": "play Husn by Anuv Jain",
+          "passed": true,
+          "latency": 1.662513017654419,
+          "detail": ""
+        },
+        {
+          "name": "Indie rock song in Hinglish",
+          "input": "Choo Lo laga do The Local Train wala",
+          "passed": true,
+          "latency": 1.3507640361785889,
+          "detail": ""
+        },
+        {
+          "name": "Indie artist request",
+          "input": "play something by Prateek Kuhad",
+          "passed": true,
+          "latency": 1.615250825881958,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish mood request (lo-fi genre)",
+          "input": "kuch lo-fi type bajao yaar",
+          "passed": true,
+          "latency": 1.346130132675171,
+          "detail": ""
+        },
+        {
+          "name": "Alt rock song (Arctic Monkeys) \u2014 conversational title",
+          "input": "play Do I Wanna Know",
+          "passed": true,
+          "latency": 1.389936923980713,
+          "detail": ""
+        },
+        {
+          "name": "Kerala indie-folk band specific song in Hinglish",
+          "input": "When Chai Met Toast ka Firefly laga do",
+          "passed": true,
+          "latency": 1.2905259132385254,
+          "detail": ""
+        },
+        {
+          "name": "Pause in English",
+          "input": "pause the music",
+          "passed": true,
+          "latency": 1.164963960647583,
+          "detail": ""
+        },
+        {
+          "name": "Pause/stop in Hindi",
+          "input": "gaana rok do",
+          "passed": true,
+          "latency": 1.1924610137939453,
+          "detail": ""
+        },
+        {
+          "name": "Skip in English",
+          "input": "next song please",
+          "passed": true,
+          "latency": 1.1953790187835693,
+          "detail": ""
+        },
+        {
+          "name": "Explicit volume level",
+          "input": "volume 40",
+          "passed": true,
+          "latency": 1.4653098583221436,
+          "detail": ""
+        },
+        {
+          "name": "Volume down in Hindi",
+          "input": "awaaz kam karo",
+          "passed": true,
+          "latency": 1.388512134552002,
+          "detail": ""
+        },
+        {
+          "name": "Lights off in English",
+          "input": "turn off the lights",
+          "passed": true,
+          "latency": 1.2238998413085938,
+          "detail": ""
+        },
+        {
+          "name": "Color in Hinglish",
+          "input": "light ka colour green karo",
+          "passed": true,
+          "latency": 1.4757750034332275,
+          "detail": ""
+        },
+        {
+          "name": "Scene in Hinglish",
+          "input": "study mode laga do",
+          "passed": false,
+          "latency": 1.5033681392669678,
+          "detail": "expected 'light_control', got 'switch_personality' (params: {'personality': 'jarvis'})"
+        },
+        {
+          "name": "Brightness in English",
+          "input": "brightness 30 percent",
+          "passed": true,
+          "latency": 1.5402319431304932,
+          "detail": ""
+        },
+        {
+          "name": "Personality switch English",
+          "input": "switch to Chandler mode",
+          "passed": true,
+          "latency": 1.637073040008545,
+          "detail": ""
+        },
+        {
+          "name": "Personality switch Hindi",
+          "input": "Devesh ban ja",
+          "passed": true,
+          "latency": 1.615901231765747,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2014 joke request",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 1.7105109691619873,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2014 knowledge question (should NOT be knowledge_search)",
+          "input": "what is machine learning",
+          "passed": true,
+          "latency": 1.1649882793426514,
+          "detail": ""
+        },
+        {
+          "name": "Chat \u2014 story request (single intent, NOT double chat)",
+          "input": "tell me a bedtime story about a dragon",
+          "passed": true,
+          "latency": 3.2176201343536377,
+          "detail": ""
+        },
+        {
+          "name": "System time English",
+          "input": "what time is it",
+          "passed": true,
+          "latency": 1.156898021697998,
+          "detail": ""
+        },
+        {
+          "name": "System date Hindi",
+          "input": "aaj kya date hai",
+          "passed": true,
+          "latency": 1.0774950981140137,
+          "detail": ""
+        },
+        {
+          "name": "Memory recall English",
+          "input": "what songs did I play today",
+          "passed": true,
+          "latency": 1.164823055267334,
+          "detail": ""
+        },
+        {
+          "name": "Memory stats Hindi",
+          "input": "kitna yaad hai tujhe",
+          "passed": true,
+          "latency": 0.9578208923339844,
+          "detail": ""
+        },
+        {
+          "name": "Knowledge \u2014 current affairs English",
+          "input": "who is the current prime minister of UK",
+          "passed": true,
+          "latency": 1.1700639724731445,
+          "detail": ""
+        },
+        {
+          "name": "Knowledge \u2014 news Hindi",
+          "input": "aaj India mein kya news hai",
+          "passed": true,
+          "latency": 1.1704659461975098,
+          "detail": ""
+        },
+        {
+          "name": "Chained: indie song + lights",
+          "input": "play Husn and set lights to warm white",
+          "passed": true,
+          "latency": 2.28316593170166,
+          "detail": ""
+        },
+        {
+          "name": "Chained: stop + lights off",
+          "input": "stop music and turn off lights",
+          "passed": false,
+          "latency": 1.193842887878418,
+          "detail": "expected ['music_control', 'light_control'], got ['music_control']"
+        }
+      ]
+    },
+    "enrichment": {
+      "total": 14,
+      "passed": 6,
+      "total_latency": 9.199918985366821,
+      "tests": [
+        {
+          "name": "Husn \u2192 should add Anuv Jain (indie, not Bollywood)",
+          "input": "Husn",
+          "passed": false,
+          "latency": 1.1600921154022217,
+          "detail": "Enriched to 'Husn Arijit Singh' but missing 'anuv'"
+        },
+        {
+          "name": "Baarishein \u2192 should add Anuv Jain (his debut, 200M+ streams)",
+          "input": "Baarishein",
+          "passed": false,
+          "latency": 0.6661031246185303,
+          "detail": "Enriched to 'Baarishein Arijit Singh' but missing 'anuv'"
+        },
+        {
+          "name": "Choo Lo \u2192 should add The Local Train (indie rock band)",
+          "input": "Choo Lo",
+          "passed": false,
+          "latency": 0.7929787635803223,
+          "detail": "Enriched to 'Choo Lo Darshan Raval & Nisha Mallick' but missing 'local train'"
+        },
+        {
+          "name": "Khoj \u2192 should add When Chai Met Toast (Kerala indie-folk)",
+          "input": "Khoj",
+          "passed": false,
+          "latency": 0.6306717395782471,
+          "detail": "Enriched to 'Khoj Arijit Singh' but missing 'chai'"
+        },
+        {
+          "name": "Kun Faya Kun \u2192 should add A.R. Rahman (Rockstar, not generic)",
+          "input": "Kun Faya Kun",
+          "passed": false,
+          "latency": 0.7107119560241699,
+          "detail": "Enriched to 'Kun Faya Kun Arijit Singh' but missing 'rahman'"
+        },
+        {
+          "name": "Gerua \u2192 should add Arijit Singh (from Dilwale, NOT Dum Maaro Dum)",
+          "input": "Gerua",
+          "passed": true,
+          "latency": 0.5980739593505859,
+          "detail": "\u2192 'Gerua Arijit Singh'"
+        },
+        {
+          "name": "Ilahi \u2192 should add artist (Yeh Jawaani Hai Deewani \u2014 Mohit Chauhan or Arijit)",
+          "input": "Ilahi",
+          "passed": true,
+          "latency": 0.598175048828125,
+          "detail": "\u2192 'Ilahi Arijit Singh'"
+        },
+        {
+          "name": "Do I Wanna Know \u2192 should add Arctic Monkeys (alt rock)",
+          "input": "Do I Wanna Know",
+          "passed": false,
+          "latency": 0.6331427097320557,
+          "detail": "Enriched to 'Do I Wanna Know The Weeknd' but missing 'arctic'"
+        },
+        {
+          "name": "Creep \u2192 should add Radiohead (classic alt, ambiguous title)",
+          "input": "Creep",
+          "passed": false,
+          "latency": 0.5297627449035645,
+          "detail": "Enriched to 'Creep Coldplay' but missing 'radiohead'"
+        },
+        {
+          "name": "Electric Feel \u2192 should add MGMT (indie classic)",
+          "input": "Electric Feel",
+          "passed": true,
+          "latency": 0.5332748889923096,
+          "detail": "\u2192 'Electric Feel MGMT'"
+        },
+        {
+          "name": "Artist-only (indie band) \u2192 should stay as-is",
+          "input": "When Chai Met Toast",
+          "passed": false,
+          "latency": 0.6044671535491943,
+          "detail": "Mangled: 'Chai Met Toast Coldplay'"
+        },
+        {
+          "name": "Vague mood \u2192 should NOT enrich",
+          "input": "lo-fi beats for studying",
+          "passed": true,
+          "latency": 0.5653829574584961,
+          "detail": "\u2192 'lo-fi beats for studying'"
+        },
+        {
+          "name": "Genre mood query \u2192 should NOT enrich",
+          "input": "soft acoustic indie vibes",
+          "passed": true,
+          "latency": 0.571044921875,
+          "detail": "\u2192 'soft acoustic indie vibes'"
+        },
+        {
+          "name": "Artist-only (Indian indie) \u2192 should stay as-is",
+          "input": "Prateek Kuhad",
+          "passed": true,
+          "latency": 0.606036901473999,
+          "detail": "\u2192 'Prateek Kuhad'"
+        }
+      ]
+    },
+    "personality": {
+      "total": 6,
+      "passed": 6,
+      "total_latency": 1.0117437839508057,
+      "tests": [
+        {
+          "name": "Default personality loaded",
+          "passed": true,
+          "latency": 1.9073486328125e-06,
+          "detail": "Active: jarvis (Jarvis)"
+        },
+        {
+          "name": "Multiple personalities exist",
+          "passed": true,
+          "latency": 4.291534423828125e-06,
+          "detail": "4 personalities: ['jarvis', 'devesh', 'girlfriend', 'chandler']"
+        },
+        {
+          "name": "Switch personality",
+          "passed": true,
+          "latency": 3.981590270996094e-05,
+          "detail": "Switched to devesh"
+        },
+        {
+          "name": "Switch back to original",
+          "passed": true,
+          "latency": 1.1205673217773438e-05,
+          "detail": "Back to jarvis"
+        },
+        {
+          "name": "Personality tone influences response",
+          "passed": true,
+          "latency": 1.011638879776001,
+          "detail": "Response: Could this BE any more exciting? I'm Chandler Bing, a sarcastic and slightly awkward guy with a love"
+        },
+        {
+          "name": "Fuzzy personality name matching",
+          "passed": true,
+          "latency": 4.76837158203125e-05,
+          "detail": "Switched via display name 'Devesh'"
+        }
+      ]
+    },
+    "knowledge": {
+      "total": 7,
+      "passed": 7,
+      "total_latency": 5.696186542510986,
+      "tests": [
+        {
+          "name": "Knowledge provider loads",
+          "passed": true,
+          "latency": 0.00012302398681640625,
+          "detail": "Provider: duckduckgo"
+        },
+        {
+          "name": "is_available() works",
+          "passed": true,
+          "latency": 0.5067756175994873,
+          "detail": "Available: True"
+        },
+        {
+          "name": "Capabilities reported",
+          "passed": true,
+          "latency": 7.867813110351562e-06,
+          "detail": "Capabilities: ['search']"
+        },
+        {
+          "name": "Search returns results",
+          "passed": true,
+          "latency": 3.7403249740600586,
+          "detail": "3 results, first: Python (programming language)"
+        },
+        {
+          "name": "SearchResult structure valid",
+          "passed": true,
+          "latency": 7.152557373046875e-06,
+          "detail": "title=True, snippet=True, source=duckduckgo"
+        },
+        {
+          "name": "max_results limits output",
+          "passed": true,
+          "latency": 1.4489197731018066,
+          "detail": "Requested 1, got 1"
+        },
+        {
+          "name": "fetch() returns None (Level 1)",
+          "passed": true,
+          "latency": 2.8133392333984375e-05,
+          "detail": "fetch() correctly returns None (Level 1)"
+        }
+      ]
+    },
+    "latency": {
+      "total": 9,
+      "passed": 8,
+      "total_latency": 16.4073269367218,
+      "tests": [
+        {
+          "name": "Pre-filter: 20 commands (should be <10ms total)",
+          "passed": true,
+          "latency": 0.0004019737243652344,
+          "detail": "0.000s (threshold: 0.01s)",
+          "threshold": 0.01
+        },
+        {
+          "name": "Classify: simple English command",
+          "passed": false,
+          "latency": 6.770333290100098,
+          "detail": "6.770s (threshold: 3.0s) (52.0 tok/s)",
+          "threshold": 3.0
+        },
+        {
+          "name": "Classify: Hinglish command",
+          "passed": true,
+          "latency": 2.2505640983581543,
+          "detail": "2.251s (threshold: 3.5s) (50.9 tok/s)",
+          "threshold": 3.5
+        },
+        {
+          "name": "Classify: chained command",
+          "passed": true,
+          "latency": 3.239409923553467,
+          "detail": "3.239s (threshold: 4.0s) (50.6 tok/s)",
+          "threshold": 4.0
+        },
+        {
+          "name": "Enrich: well-known song",
+          "passed": true,
+          "latency": 1.171205997467041,
+          "detail": "1.171s (threshold: 2.0s)",
+          "threshold": 2.0
+        },
+        {
+          "name": "Enrich: vague mood query",
+          "passed": true,
+          "latency": 0.6058487892150879,
+          "detail": "0.606s (threshold: 2.0s)",
+          "threshold": 2.0
+        },
+        {
+          "name": "Chat: short response",
+          "passed": true,
+          "latency": 0.6090269088745117,
+          "detail": "0.609s (threshold: 4.0s) (59.8 tok/s)",
+          "threshold": 4.0
+        },
+        {
+          "name": "Chat: medium response",
+          "passed": true,
+          "latency": 1.467216968536377,
+          "detail": "1.467s (threshold: 6.0s) (58.2 tok/s)",
+          "threshold": 6.0
+        },
+        {
+          "name": "Generate: raw LLM call (no system prompt)",
+          "passed": true,
+          "latency": 0.2933189868927002,
+          "detail": "0.293s (threshold: 3.0s) (65.6 tok/s)",
+          "threshold": 3.0
+        }
+      ]
+    },
+    "integration": {
+      "total": 10,
+      "passed": 10,
+      "total_latency": 7.621504068374634,
+      "tests": [
+        {
+          "name": "Config loads with required sections",
+          "passed": true,
+          "latency": 2.1457672119140625e-06,
+          "detail": "Config has 12 sections"
+        },
+        {
+          "name": "Assistant name configured",
+          "passed": true,
+          "latency": 1.1920928955078125e-06,
+          "detail": "Name: 'Jarvis'"
+        },
+        {
+          "name": "Provider registry complete",
+          "passed": true,
+          "latency": 4.1961669921875e-05,
+          "detail": "All 8 categories registered. Providers: {'brain': 1, 'music': 1, 'lights': 1, 'ears': 1, 'voice': 4, 'wake_word': 1, 'memory': 1, 'knowledge': 1}"
+        },
+        {
+          "name": "Brain provider instantiates",
+          "passed": true,
+          "latency": 0.16223382949829102,
+          "detail": "Model: llama3.2:3b"
+        },
+        {
+          "name": "Personality manager works",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": "Active: jarvis, Total: 4"
+        },
+        {
+          "name": "VoiceRouter instantiates",
+          "passed": true,
+          "latency": 0.0008630752563476562,
+          "detail": "VoiceRouter created"
+        },
+        {
+          "name": "Memory provider instantiates",
+          "passed": true,
+          "latency": 0.004687786102294922,
+          "detail": "Provider: sqlite"
+        },
+        {
+          "name": "Full classify\u2192handle path works",
+          "passed": true,
+          "latency": 6.703243970870972,
+          "detail": "Classified as system.time, response: It's 01:35 AM."
+        },
+        {
+          "name": "Brain returns valid JSON",
+          "passed": true,
+          "latency": 0.44167518615722656,
+          "detail": "Valid JSON: {\"message\": \"hello\"}"
+        },
+        {
+          "name": "LLM metadata populated",
+          "passed": true,
+          "latency": 0.30875086784362793,
+          "detail": "8 tokens, 65.8 tok/s, 0.31s"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 102,
+    "passed": 91,
+    "failed": 11,
+    "score": 89.2156862745098,
+    "total_latency": 80.26407551765442
+  }
+}

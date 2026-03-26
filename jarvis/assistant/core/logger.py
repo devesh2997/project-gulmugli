@@ -174,7 +174,7 @@ def _highlight_quotes(text: str, base_color: str) -> str:
         else:
             result.append(part)
 
-    return base_color.join("").join("") + "".join(result)
+    return "".join(result)
 
 
 # ═══════════════════════════════════════════════════════════════

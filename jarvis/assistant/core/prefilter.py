@@ -1,0 +1,191 @@
+"""
+Keyword pre-filter for instant intent resolution.
+
+This is the FIRST line of defense before the LLM even sees the input.
+Pattern-based matching resolves obvious commands in <1ms, bypassing the
+LLM entirely. The LLM is only called for ambiguous inputs.
+
+Why this matters for latency:
+  - LLM classification takes 1-3 seconds (Mac) or 3-6 seconds (Jetson)
+  - "pause", "volume 50", "lights off" don't NEED an LLM
+  - This handles ~40-60% of real-world commands at near-zero cost
+  - The remaining ambiguous commands still go to the LLM
+
+Architecture:
+  - Each pattern returns a list[Intent] (same as brain.classify_intent)
+  - If no pattern matches, returns None → caller falls through to LLM
+  - Patterns are intentionally conservative — false negatives are fine
+    (the LLM catches them), false positives are NOT (wrong action taken)
+  - All regex is case-insensitive and handles Hindi/Hinglish equivalents
+
+Adding new patterns:
+  - Add a function that takes user_input and returns list[Intent] or None
+  - Register it in PREFILTER_CHAIN
+  - Test it in the test suite — if it ever misclassifies, remove it
+"""
+
+import re
+import time
+from core.interfaces import Intent
+from core.logger import get_logger
+
+log = get_logger("core.prefilter")
+
+
+# ─── Pattern matchers ──────────────────────────────────────────────
+# Each returns list[Intent] on match, None on no match.
+# Order matters: more specific patterns first.
+
+def _match_music_control(text: str) -> list[Intent] | None:
+    """Match unambiguous playback control commands."""
+    t = text.strip().lower()
+
+    # Pause
+    if re.fullmatch(r"(pause|pause (the )?(music|song|gaana))", t):
+        return [Intent(name="music_control", params={"action": "pause"},
+                       response="Paused.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Resume / continue — only match explicit resume words, NOT bare "play"
+    # (bare "play" is ambiguous — could mean resume OR "play something")
+    if re.fullmatch(r"(resume|continue)", t):
+        return [Intent(name="music_control", params={"action": "resume"},
+                       response="Resuming.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Stop
+    if re.fullmatch(r"(stop|stop (the )?(music|song|gaana)|gaana (band|rok|stop) (karo?|do))", t):
+        return [Intent(name="music_control", params={"action": "stop"},
+                       response="Stopped.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Skip / next
+    if re.fullmatch(
+        r"(skip|skip (this )?(one|song|track)|"
+        r"next|next (song|track|one)|"
+        r"agl[ae] (gaana|song|track)|"
+        r"dusra gaana|"
+        r"change the song)",
+        t,
+    ):
+        return [Intent(name="music_control", params={"action": "skip"},
+                       response="Skipping.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
+def _match_volume(text: str) -> list[Intent] | None:
+    """Match unambiguous volume commands."""
+    t = text.strip().lower()
+
+    # Explicit level: "volume 50", "volume 50%"
+    m = re.fullmatch(r"volume\s+(\d{1,3})%?", t)
+    if m:
+        level = int(m.group(1))
+        if level > 100:
+            return None  # out of range — let the LLM handle it conversationally
+        return [Intent(name="volume", params={"level": str(level), "output": "default"},
+                       response=f"Volume set to {level}.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Relative: "volume up", "volume down", "awaaz badha/kam"
+    if re.fullmatch(r"(volume up|awaaz badha(o| do)?|loud(er)?)", t):
+        return [Intent(name="volume", params={"level": "80", "output": "default"},
+                       response="Volume up.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    if re.fullmatch(r"(volume down|awaaz kam (karo?|do)|quiet(er)?)", t):
+        return [Intent(name="volume", params={"level": "30", "output": "default"},
+                       response="Volume down.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Mute
+    if re.fullmatch(r"(mute|mute (the )?(volume|sound|audio)|awaaz band (karo?|do))", t):
+        return [Intent(name="volume", params={"level": "0", "output": "default"},
+                       response="Muted.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
+def _match_lights_simple(text: str) -> list[Intent] | None:
+    """Match unambiguous light on/off commands."""
+    t = text.strip().lower()
+
+    # Lights off
+    if re.fullmatch(
+        r"(lights? off|turn off (the )?lights?|"
+        r"batti band (karo?|do)|light band (karo?|do)|"
+        r"lights? (band|off) (karo?|do))",
+        t,
+    ):
+        return [Intent(name="light_control", params={"action": "off"},
+                       response="Lights off.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Lights on
+    if re.fullmatch(
+        r"(lights? on|turn on (the )?lights?|"
+        r"batti (jala(o)?|on (karo?|do))|light on (karo?|do)|"
+        r"lights? (on|jala(o)?) (karo?|do)?)",
+        t,
+    ):
+        return [Intent(name="light_control", params={"action": "on"},
+                       response="Lights on.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
+def _match_system(text: str) -> list[Intent] | None:
+    """Match unambiguous system queries."""
+    t = text.strip().lower()
+
+    if re.fullmatch(r"(what time is it|what'?s the time|time (bata(o)?|kya hai)|kitne baje hain?)", t):
+        return [Intent(name="system", params={"action": "time"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    if re.fullmatch(r"(what'?s the date|what date is it|aaj (kya )?date (hai|bata(o)?)|aaj kya (tarikh|taareekh) hai)", t):
+        return [Intent(name="system", params={"action": "date"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
+# ─── Chain of matchers ─────────────────────────────────────────────
+# Tried in order. First match wins.
+# IMPORTANT: Only include patterns where we're 100% confident.
+# If there's any ambiguity, let the LLM handle it.
+PREFILTER_CHAIN = [
+    _match_music_control,
+    _match_volume,
+    _match_lights_simple,
+    _match_system,
+]
+
+
+def prefilter_intent(user_input: str) -> list[Intent] | None:
+    """
+    Try to resolve the user's input via keyword/regex patterns.
+
+    Returns:
+        list[Intent] if a pattern matched (bypass the LLM)
+        None if no pattern matched (fall through to LLM)
+    """
+    start = time.time()
+
+    for matcher in PREFILTER_CHAIN:
+        result = matcher(user_input)
+        if result is not None:
+            elapsed_ms = (time.time() - start) * 1000
+            intent_names = " + ".join(i.name for i in result)
+            log.debug(
+                "Pre-filter matched: [%s] in %.1fms (skipping LLM)",
+                intent_names, elapsed_ms,
+            )
+            return result
+
+    return None

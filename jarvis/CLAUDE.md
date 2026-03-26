@@ -48,6 +48,8 @@ See `assistant/CLAUDE.md` for the concrete coding patterns (conditional imports,
 
 Key principle: **05-the-body** module handles hardware-specific setup and testing. The `assistant/` codebase itself should be hardware-agnostic — all platform differences are isolated in providers and config.
 
+**Design philosophy — Local-first, internet-enhanced:** The core assistant (LLM, TTS, STT, wake word, lights) runs entirely offline. Internet-dependent features (YouTube Music, web search via KnowledgeProvider, cloud TTS) activate when available and degrade gracefully when not. No internet = no crashes, no broken core features. This is the opposite of Alexa/Google Home.
+
 ## What's been learned so far (key insights for any AI agent continuing this work)
 
 1. **3B models hallucinate confidently** — they'll say "Gerua is from Dum Maaro Dum" when it's actually from Dilwale. Never trust a 3B model's movie/artist attributions. That's why enrichment is separated from classification.
