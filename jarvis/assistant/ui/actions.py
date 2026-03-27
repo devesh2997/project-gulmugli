@@ -164,10 +164,10 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
                 "devices": [],
                 "scanning": True,
             })
-        if audio and hasattr(audio, "bt_scan"):
+        if audio and hasattr(audio, "bluetooth_scan"):
             def _scan():
                 try:
-                    devices = audio.bt_scan()
+                    devices = audio.bluetooth_scan()
                     if face_ui:
                         face_ui._broadcast({
                             "type": "bt_scan_result",
@@ -197,10 +197,10 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
         mac = action_data.get("mac", "")
         face_ui = assistant.get("face_ui")
         audio = assistant.get("audio")
-        if audio and hasattr(audio, "bt_pair") and mac:
+        if audio and hasattr(audio, "bluetooth_pair") and mac:
             def _pair():
                 try:
-                    success = audio.bt_pair(mac)
+                    success = audio.bluetooth_pair(mac)
                     if face_ui:
                         face_ui._broadcast({
                             "type": "bt_pair_result",
@@ -222,9 +222,9 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
         # Disconnect a Bluetooth device
         mac = action_data.get("mac", "")
         audio = assistant.get("audio")
-        if audio and hasattr(audio, "bt_disconnect") and mac:
+        if audio and hasattr(audio, "bluetooth_disconnect") and mac:
             try:
-                audio.bt_disconnect(mac)
+                audio.bluetooth_disconnect(mac)
                 log.info("Bluetooth disconnected: %s", mac)
             except Exception as e:
                 log.warning("Bluetooth disconnect failed: %s", e)
