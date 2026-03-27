@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useLightMode } from '../../hooks/useLightMode'
 import type { AssistantState, AssistantMood } from '../../types/assistant'
 import {
   lightFaces,
@@ -47,8 +48,8 @@ function mergeFace(state: AssistantState, mood: AssistantMood): {
 }
 
 /** Render a single stroke feature as an SVG element with Framer Motion animation. */
-function StrokeElement({ name, feature }: { name: string; feature: StrokeFeature }) {
-  const accent = 'var(--personality-accent)'
+function StrokeElement({ name, feature, isLight }: { name: string; feature: StrokeFeature; isLight?: boolean }) {
+  const accent = isLight ? '#2a1a0a' : 'var(--personality-accent)'
   const common = {
     stroke: feature.fill ? 'none' : accent,
     fill: feature.fill ? accent : 'none',
@@ -136,8 +137,8 @@ function StrokeElement({ name, feature }: { name: string; feature: StrokeFeature
 }
 
 /** Render a glow halo as an animated radial circle. */
-function GlowElement({ name, glow }: { name: string; glow: GlowFeature }) {
-  const color = glow.color ?? 'var(--personality-accent)'
+function GlowElement({ name, glow, isLight }: { name: string; glow: GlowFeature; isLight?: boolean }) {
+  const color = isLight ? 'rgba(42,26,10,0.4)' : (glow.color ?? 'var(--personality-accent)')
 
   return (
     <motion.circle
@@ -162,6 +163,7 @@ function GlowElement({ name, glow }: { name: string; glow: GlowFeature }) {
 
 export function AvatarLight({ size, state, mood }: AvatarLightProps) {
   const isSleeping = state === 'sleeping'
+  const isLight = useLightMode()
 
   const { features, glows } = useMemo(
     () => mergeFace(state, mood),
@@ -175,13 +177,15 @@ export function AvatarLight({ size, state, mood }: AvatarLightProps) {
       className="relative flex items-center justify-center"
       style={{ width: size * 2, height: size * 2 }}
     >
-      {/* Background glow — more subtle than AvatarOrb */}
+      {/* Background glow — more subtle than AvatarOrb. Dark shadow on light bg. */}
       <motion.div
         className="absolute rounded-full"
         style={{
           width: size * 1.2,
           height: size * 1.2,
-          background: `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
+          background: isLight
+            ? `radial-gradient(circle, rgba(0,0,0,0.05) 0%, transparent 70%)`
+            : `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
           filter: `blur(${size * 0.3}px)`,
         }}
         animate={{
@@ -202,19 +206,19 @@ export function AvatarLight({ size, state, mood }: AvatarLightProps) {
       >
         {/* Glow halos (render behind strokes) */}
         {Object.entries(glows).map(([name, g]) => (
-          <GlowElement key={name} name={name} glow={g} />
+          <GlowElement key={name} name={name} glow={g} isLight={isLight} />
         ))}
 
         {/* Stroke features */}
         {Object.entries(features).map(([name, f]) => (
-          <StrokeElement key={name} name={name} feature={f} />
+          <StrokeElement key={name} name={name} feature={f} isLight={isLight} />
         ))}
 
         {/* Sleeping: slow breathing pulse on the mouth */}
         {isSleeping && (
           <motion.path
             d={features.mouth?.d ?? 'M46 80 Q60 86, 74 80'}
-            stroke="var(--personality-accent)"
+            stroke={isLight ? '#2a1a0a' : 'var(--personality-accent)'}
             fill="none"
             strokeWidth={1.1}
             strokeLinecap="round"

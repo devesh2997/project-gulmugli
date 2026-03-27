@@ -12,6 +12,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLightMode } from '../../hooks/useLightMode'
 import type { AssistantState, AssistantMood } from '../../types/assistant'
 import {
   pixelFaces,
@@ -108,6 +109,7 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
   const isSpeaking = state === 'speaking'
   const isThinking = state === 'thinking'
   const isListening = state === 'listening'
+  const isLight = useLightMode()
   const glowConfig = GLOW_CONFIGS[state] ?? GLOW_CONFIGS.idle
 
   // Speaking mouth animation: cycle through 4 mouth shapes with variable timing
@@ -170,7 +172,9 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
     )
   }, [state, mood, currentMouthFrame, isBlinking])
 
-  // Flatten all pixels with their keys and colors for rendering
+  // Flatten all pixels with their keys and colors for rendering.
+  // On light backgrounds, boost opacity by 1.5x (capped at 1.0) and use a
+  // darker colour so pixels remain clearly visible against cream/ivory.
   const allPixels = useMemo(() => {
     const result: {
       key: string
@@ -183,18 +187,19 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
     for (const { feature, pixels } of featureGroups) {
       for (let i = 0; i < pixels.length; i++) {
         const p = pixels[i]
+        const boostedOpacity = isLight ? Math.min(p.opacity * 1.5, 1.0) : p.opacity
         result.push({
           key: pixelKey(feature, i),
           x: p.x,
           y: p.y,
-          opacity: p.opacity,
-          color: isBlush(feature) ? BLUSH_COLOR : 'var(--personality-accent)',
+          opacity: boostedOpacity,
+          color: isBlush(feature) ? BLUSH_COLOR : (isLight ? '#2a1a0a' : 'var(--personality-accent)'),
         })
       }
     }
 
     return result
-  }, [featureGroups])
+  }, [featureGroups, isLight])
 
   // Animate pixels: thinking = fast shimmer, idle/listening = gentle breathing
   const needsBreathing = isIdle || isListening
@@ -213,13 +218,16 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
       className="relative flex items-center justify-center"
       style={{ width: size * 2, height: size * 2 }}
     >
-      {/* Background glow — state-dependent intensity and color */}
+      {/* Background glow — state-dependent intensity and color.
+          On light backgrounds, swap the outward glow for a subtle dark shadow. */}
       <motion.div
         className="absolute rounded-full"
         style={{
           width: size * 1.4,
           height: size * 1.4,
-          background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
+          background: isLight
+            ? `radial-gradient(circle, rgba(0,0,0,0.06) 0%, transparent 70%)`
+            : `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
           filter: `blur(${size * 0.25}px)`,
         }}
         animate={{
@@ -239,7 +247,11 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
         viewBox="0 0 32 32"
         width={size}
         height={size}
-        style={{ imageRendering: 'pixelated' }}
+        style={{
+          imageRendering: 'pixelated',
+          // On light backgrounds, add a subtle drop shadow for pixel contrast
+          filter: isLight ? `drop-shadow(0 0 0.8px rgba(0,0,0,0.3))` : 'none',
+        }}
         animate={isIdle ? { y: [0, -2, 0, 1, 0] } : { y: 0 }}
         transition={isIdle ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
       >

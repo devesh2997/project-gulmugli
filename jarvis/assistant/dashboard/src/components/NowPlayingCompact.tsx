@@ -15,6 +15,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useLightMode } from '../hooks/useLightMode'
 import type { NowPlaying } from '../types/assistant'
 
 interface NowPlayingCompactProps {
@@ -22,8 +23,8 @@ interface NowPlayingCompactProps {
   onExpand: () => void
 }
 
-/** Animated waveform bars using personality accent. */
-function Waveform({ paused }: { paused: boolean }) {
+/** Animated waveform bars using personality accent (or dark variant on light bg). */
+function Waveform({ paused, isLight }: { paused: boolean; isLight?: boolean }) {
   const barHeights = [
     [6, 14, 8, 12, 6],
     [10, 5, 13, 7, 10],
@@ -39,7 +40,7 @@ function Waveform({ paused }: { paused: boolean }) {
           style={{
             width: 2,
             borderRadius: 1,
-            background: 'var(--personality-accent)',
+            background: isLight ? '#4a3520' : 'var(--personality-accent)',
           }}
           animate={paused
             ? { height: 4, opacity: 0.4 }
@@ -103,6 +104,7 @@ function MarqueeText({ text, style }: { text: string; style?: React.CSSPropertie
 
 export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactProps) {
   const constraintsRef = useRef<HTMLDivElement>(null)
+  const isLight = useLightMode()
 
   return (
     <>
@@ -140,19 +142,22 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
           gap: 10,
           padding: '8px 16px 8px 12px',
           borderRadius: 16,
-          background: 'rgba(18, 18, 18, 0.65)',
+          background: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(18, 18, 18, 0.65)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), 0 0 16px rgba(var(--personality-accent-rgb), 0.08)',
+          border: isLight ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.06)',
+          boxShadow: isLight
+            ? '0 4px 24px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06)'
+            : '0 4px 24px rgba(0, 0, 0, 0.3), 0 0 16px rgba(var(--personality-accent-rgb), 0.08)',
           cursor: 'pointer',
           userSelect: 'none',
           maxWidth: 280,
           minWidth: 180,
+          transition: 'background 0.6s ease, border 0.6s ease, box-shadow 0.6s ease',
         }}
       >
         {/* Waveform */}
-        <Waveform paused={nowPlaying.paused} />
+        <Waveform paused={nowPlaying.paused} isLight={isLight} />
 
         {/* Song info */}
         <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -161,14 +166,14 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
             style={{
               fontSize: '0.75rem',
               fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.9)',
+              color: isLight ? 'rgba(30, 20, 10, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               maxWidth: 180,
             }}
           />
           {nowPlaying.artist && (
             <div style={{
               fontSize: '0.62rem',
-              color: 'var(--personality-accent)',
+              color: isLight ? '#4a3520' : 'var(--personality-accent)',
               opacity: 0.7,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
@@ -185,7 +190,9 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
           position: 'absolute',
           inset: 0,
           borderRadius: 16,
-          background: 'radial-gradient(ellipse at 20% 50%, rgba(var(--personality-accent-rgb), 0.06) 0%, transparent 70%)',
+          background: isLight
+            ? 'radial-gradient(ellipse at 20% 50%, rgba(0,0,0,0.03) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse at 20% 50%, rgba(var(--personality-accent-rgb), 0.06) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
       </motion.div>

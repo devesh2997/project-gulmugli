@@ -16,6 +16,7 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useLightMode } from '../../hooks/useLightMode'
 import type { AssistantState, AssistantMood } from '../../types/assistant'
 
 export interface AvatarOrbProps {
@@ -114,6 +115,7 @@ function getTimeBrightness(): number {
 }
 
 export function AvatarOrb({ size, state }: AvatarOrbProps) {
+  const isLight = useLightMode()
   const config = STATE_CONFIGS[state] ?? STATE_CONFIGS.idle
 
   // Read base duration once per render. TokenProvider updates the CSS var
@@ -130,6 +132,10 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
   const accentRgb = 'var(--personality-accent-rgb)'
   const a = (op: number) => `rgba(${accentRgb}, ${op})`
 
+  // On light backgrounds, use dark brown tones instead of accent for the orb
+  const darkRgb = '42, 26, 10'
+  const d = (op: number) => `rgba(${darkRgb}, ${op})`
+
   // Warm color for thinking state (orange-shifted)
   const warmRgb = '255, 160, 60'
   const w = (op: number) => `rgba(${warmRgb}, ${op})`
@@ -140,6 +146,12 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
     shift > 0
       ? `color-mix(in srgb, ${a(op)} ${Math.round((1 - shift) * 100)}%, ${w(op)})`
       : a(op)
+
+  // Light-mode colour helper: more solid, darker tones
+  const lc = (op: number) =>
+    shift > 0
+      ? `color-mix(in srgb, ${d(op)} ${Math.round((1 - shift) * 100)}%, ${w(op)})`
+      : d(op)
 
   const orbVariants = useMemo(() => ({
     animate: {
@@ -208,35 +220,40 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
   const activeOrbVariants = state === 'speaking' ? speakingVariants : orbVariants
   const activeGlowVariants = state === 'thinking' ? thinkingGlowVariants : glowVariants
 
-  // For thinking state, use warm-shifted gradient
-  const orbBg = shift > 0
-    ? `radial-gradient(circle at 35% 35%,
-        ${w(0.3)} 0%,
-        ${a(0.12)} 40%,
-        ${a(0.04)} 70%,
-        transparent 100%)`
-    : `radial-gradient(circle at 35% 35%,
-        ${a(0.25)} 0%,
-        ${a(0.12)} 40%,
-        ${a(0.04)} 70%,
-        transparent 100%)`
+  // For thinking state, use warm-shifted gradient.
+  // On light backgrounds, make the orb much more solid with darker fills.
+  const orbBg = isLight
+    ? (shift > 0
+        ? `radial-gradient(circle at 35% 35%, ${w(0.5)} 0%, ${d(0.3)} 40%, ${d(0.15)} 70%, transparent 100%)`
+        : `radial-gradient(circle at 35% 35%, ${d(0.5)} 0%, ${d(0.3)} 40%, ${d(0.12)} 70%, transparent 100%)`)
+    : (shift > 0
+        ? `radial-gradient(circle at 35% 35%, ${w(0.3)} 0%, ${a(0.12)} 40%, ${a(0.04)} 70%, transparent 100%)`
+        : `radial-gradient(circle at 35% 35%, ${a(0.25)} 0%, ${a(0.12)} 40%, ${a(0.04)} 70%, transparent 100%)`)
 
-  const borderColor = shift > 0 ? w(0.3) : a(0.18)
-  const shadowInner = shift > 0 ? w(0.15) : a(0.08)
-  const shadowOuter = shift > 0 ? w(0.2) : a(0.12)
+  const borderColor = isLight
+    ? (shift > 0 ? w(0.4) : d(0.3))
+    : (shift > 0 ? w(0.3) : a(0.18))
+  const shadowInner = isLight
+    ? (shift > 0 ? w(0.2) : d(0.15))
+    : (shift > 0 ? w(0.15) : a(0.08))
+  const shadowOuter = isLight
+    ? (shift > 0 ? w(0.25) : d(0.2))
+    : (shift > 0 ? w(0.2) : a(0.12))
 
   return (
     <div
       className="relative flex items-center justify-center"
       style={{ width: size * 2, height: size * 2 }}
     >
-      {/* Outer glow */}
+      {/* Outer glow — subtle dark shadow on light backgrounds */}
       <motion.div
         className="absolute rounded-full"
         style={{
           width: size * 1.8,
           height: size * 1.8,
-          background: `radial-gradient(circle, ${c(0.18)} 0%, transparent 70%)`,
+          background: isLight
+            ? `radial-gradient(circle, rgba(0,0,0,0.06) 0%, transparent 70%)`
+            : `radial-gradient(circle, ${c(0.18)} 0%, transparent 70%)`,
           filter: `blur(${size * 0.3}px)`,
         }}
         variants={activeGlowVariants}
@@ -249,7 +266,9 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         style={{
           width: size * 1.2,
           height: size * 1.2,
-          background: `radial-gradient(circle, ${c(0.12)} 0%, transparent 60%)`,
+          background: isLight
+            ? `radial-gradient(circle, rgba(0,0,0,0.04) 0%, transparent 60%)`
+            : `radial-gradient(circle, ${c(0.12)} 0%, transparent 60%)`,
           filter: `blur(${size * 0.15}px)`,
         }}
         animate={{
@@ -271,7 +290,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           style={{
             width: size,
             height: size,
-            border: `2px solid ${a(0.4)}`,
+            border: `2px solid ${isLight ? d(0.4) : a(0.4)}`,
           }}
           animate={{
             scale: [1, 2.2],
@@ -292,7 +311,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           style={{
             width: size,
             height: size,
-            border: `2px solid ${a(0.3)}`,
+            border: `2px solid ${isLight ? d(0.3) : a(0.3)}`,
           }}
           animate={{
             scale: [1, 2.2],
@@ -333,7 +352,9 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         style={{
           width: size * 0.4,
           height: size * 0.4,
-          background: `radial-gradient(circle, ${shift > 0 ? w(0.25) : a(0.2)} 0%, transparent 70%)`,
+          background: isLight
+            ? `radial-gradient(circle, ${shift > 0 ? w(0.35) : d(0.3)} 0%, transparent 70%)`
+            : `radial-gradient(circle, ${shift > 0 ? w(0.25) : a(0.2)} 0%, transparent 70%)`,
           filter: `blur(${size * 0.08}px)`,
         }}
         animate={state === 'thinking'

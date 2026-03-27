@@ -7,12 +7,15 @@
  */
 
 import { motion } from 'framer-motion'
+import { useLightMode } from '../hooks/useLightMode'
 
 interface StatusDotProps {
   connected: boolean
 }
 
 export function StatusDot({ connected }: StatusDotProps) {
+  const isLight = useLightMode()
+
   return (
     <motion.div
       title={connected ? 'Connected' : 'Disconnected'}
@@ -36,6 +39,11 @@ export function StatusDot({ connected }: StatusDotProps) {
         background: connected
           ? 'var(--ui-status_dot-connected)'
           : 'var(--ui-status_dot-disconnected)',
+        // On light backgrounds, add a subtle ring so the dot stays visible
+        boxShadow: isLight
+          ? '0 0 0 1.5px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.1)'
+          : 'none',
+        transition: 'box-shadow 0.6s ease',
       }}
     />
   )

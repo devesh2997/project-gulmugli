@@ -13,6 +13,7 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useLightMode } from '../../hooks/useLightMode'
 import type { AssistantState, AssistantMood } from '../../types/assistant'
 import type { StrokeFeature, GlowFeature } from './lightFaces'
 import {
@@ -47,8 +48,8 @@ function mergeFace(state: AssistantState, mood: AssistantMood): {
 }
 
 /** Render a single stroke feature as an SVG element with Framer Motion animation. */
-function StrokeElement({ name, feature }: { name: string; feature: StrokeFeature }) {
-  const accent = 'var(--personality-accent)'
+function StrokeElement({ name, feature, isLight }: { name: string; feature: StrokeFeature; isLight?: boolean }) {
+  const accent = isLight ? '#2a1a0a' : 'var(--personality-accent)'
   const common = {
     stroke: feature.fill ? 'none' : accent,
     fill: feature.fill ? accent : 'none',
@@ -136,8 +137,8 @@ function StrokeElement({ name, feature }: { name: string; feature: StrokeFeature
 }
 
 /** Render a glow halo as an animated radial circle. */
-function GlowElement({ name, glow }: { name: string; glow: GlowFeature }) {
-  const color = glow.color ?? 'var(--personality-accent)'
+function GlowElement({ name, glow, isLight }: { name: string; glow: GlowFeature; isLight?: boolean }) {
+  const color = isLight ? 'rgba(42,26,10,0.4)' : (glow.color ?? 'var(--personality-accent)')
 
   return (
     <motion.circle
@@ -162,6 +163,7 @@ function GlowElement({ name, glow }: { name: string; glow: GlowFeature }) {
 
 export function AvatarCaricature({ size, state, mood }: AvatarCaricatureProps) {
   const isSleeping = state === 'sleeping'
+  const isLight = useLightMode()
 
   const { features, glows } = useMemo(
     () => mergeFace(state, mood),
@@ -175,13 +177,16 @@ export function AvatarCaricature({ size, state, mood }: AvatarCaricatureProps) {
       className="relative flex items-center justify-center"
       style={{ width: size * 2, height: size * 2 }}
     >
-      {/* Background glow — warm orange, slightly more saturated than Girlfriend's */}
+      {/* Background glow — warm orange, slightly more saturated than Girlfriend's.
+          On light backgrounds, swap for a subtle dark shadow. */}
       <motion.div
         className="absolute rounded-full"
         style={{
           width: size * 1.3,
           height: size * 1.3,
-          background: `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
+          background: isLight
+            ? `radial-gradient(circle, rgba(0,0,0,0.06) 0%, transparent 70%)`
+            : `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
           filter: `blur(${size * 0.28}px)`,
         }}
         animate={{
@@ -202,19 +207,19 @@ export function AvatarCaricature({ size, state, mood }: AvatarCaricatureProps) {
       >
         {/* Glow halos (render behind strokes) */}
         {Object.entries(glows).map(([name, g]) => (
-          <GlowElement key={name} name={name} glow={g} />
+          <GlowElement key={name} name={name} glow={g} isLight={isLight} />
         ))}
 
         {/* Stroke features */}
         {Object.entries(features).map(([name, f]) => (
-          <StrokeElement key={name} name={name} feature={f} />
+          <StrokeElement key={name} name={name} feature={f} isLight={isLight} />
         ))}
 
         {/* Sleeping: slow breathing pulse on the mouth */}
         {isSleeping && (
           <motion.path
             d={features.mouth?.d ?? 'M44 80 Q60 82, 76 80'}
-            stroke="var(--personality-accent)"
+            stroke={isLight ? '#2a1a0a' : 'var(--personality-accent)'}
             fill="none"
             strokeWidth={1.2}
             strokeLinecap="round"
