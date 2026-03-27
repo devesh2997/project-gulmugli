@@ -70,19 +70,11 @@ function AppContent() {
   const [nowPlayingExpanded, setNowPlayingExpanded] = useState(false)
 
   // -- Video player mode (managed here so NowPlayingCompact can drive it) --
-  const [videoMode, setVideoMode] = useState<VideoMode>('full')
+  // Default to 'hidden' — video thumbnail shows in compact widget but player doesn't pop up
+  // User must explicitly tap the thumbnail to expand to full video
+  const [videoMode, setVideoMode] = useState<VideoMode>('hidden')
 
   const hasVideo = !!assistant.nowPlaying?.videoId
-
-  // When a new videoId arrives, auto-show in full mode
-  const prevVideoIdRef = useRef<string | null>(null)
-  useEffect(() => {
-    const currentVideoId = assistant.nowPlaying?.videoId ?? null
-    if (currentVideoId && currentVideoId !== prevVideoIdRef.current) {
-      setVideoMode('full')
-    }
-    prevVideoIdRef.current = currentVideoId
-  }, [assistant.nowPlaying?.videoId])
 
   // Handle NowPlayingCompact tap: expand audio sheet (video thumbnail has its own handler)
   const handleCompactExpand = useCallback(() => {
