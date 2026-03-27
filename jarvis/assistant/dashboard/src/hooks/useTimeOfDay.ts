@@ -223,19 +223,53 @@ export function useTimeOfDay(): void {
         .getPropertyValue('--ui-brightness-override').trim()
       const override = overrideStr ? parseFloat(overrideStr) : -1
 
+      // Light mode palette — genuinely bright: warm cream/ivory backgrounds
+      // Used when brightness override > 60
+      const LIGHT_PALETTE: TimePalette = {
+        canvas_gradient_start: '#e8e0d8', // warm cream
+        canvas_gradient_end:   '#f0ebe4', // soft ivory
+        accent_primary:        '#8a7060', // warm brown accent (for contrast on light bg)
+        accent_glow:           '#a08870', // warm glow
+        text_primary_opacity:  0.9,
+        orb_breathe_duration:  '4s',
+        brightness:            1.0,
+      }
+
       let final = interpolated
       if (override >= 0 && override <= 100) {
-        // Override brightness: 0 = darkest (night-like), 50 = current auto, 100 = brightest (afternoon-like)
-        // We lerp the canvas gradient colours between the extremes
-        const darkest = WARM_PALETTES.night
-        const brightest = WARM_PALETTES.afternoon
+        // 0-40: dark range (night → current auto darkness)
+        // 40-60: auto range (close to time-based)
+        // 60-100: light range (auto → genuinely bright cream/ivory)
         const factor = override / 100
-        final = {
-          ...interpolated,
-          canvas_gradient_start: lerpHex(darkest.canvas_gradient_start, brightest.canvas_gradient_start, factor),
-          canvas_gradient_end: lerpHex(darkest.canvas_gradient_end, brightest.canvas_gradient_end, factor),
-          text_primary_opacity: darkest.text_primary_opacity + (brightest.text_primary_opacity - darkest.text_primary_opacity) * factor,
-          brightness: darkest.brightness + (brightest.brightness - darkest.brightness) * factor,
+
+        if (factor <= 0.4) {
+          // Dark range: lerp from darkest night to current auto
+          const t = factor / 0.4
+          final = {
+            ...interpolated,
+            canvas_gradient_start: lerpHex(WARM_PALETTES.night.canvas_gradient_start, interpolated.canvas_gradient_start, t),
+            canvas_gradient_end: lerpHex(WARM_PALETTES.night.canvas_gradient_end, interpolated.canvas_gradient_end, t),
+            text_primary_opacity: WARM_PALETTES.night.text_primary_opacity + (interpolated.text_primary_opacity - WARM_PALETTES.night.text_primary_opacity) * t,
+            brightness: WARM_PALETTES.night.brightness + (interpolated.brightness - WARM_PALETTES.night.brightness) * t,
+          }
+          root.setProperty('--ui-is-light-mode', '0')
+        } else if (factor <= 0.6) {
+          // Auto range: use current time-based palette as-is
+          final = interpolated
+          root.setProperty('--ui-is-light-mode', '0')
+        } else {
+          // LIGHT range: lerp from current auto to genuinely bright cream/ivory
+          const t = (factor - 0.6) / 0.4
+          final = {
+            ...interpolated,
+            canvas_gradient_start: lerpHex(interpolated.canvas_gradient_start, LIGHT_PALETTE.canvas_gradient_start, t),
+            canvas_gradient_end: lerpHex(interpolated.canvas_gradient_end, LIGHT_PALETTE.canvas_gradient_end, t),
+            text_primary_opacity: interpolated.text_primary_opacity + (LIGHT_PALETTE.text_primary_opacity - interpolated.text_primary_opacity) * t,
+            brightness: interpolated.brightness + (LIGHT_PALETTE.brightness - interpolated.brightness) * t,
+          }
+          // On light backgrounds, we also need to flag that text should be dark
+          // Set a CSS var that components can use to flip text colour
+          root.setProperty('--ui-is-light-mode', t > 0.5 ? '1' : '0')
         }
       }
 

@@ -26,34 +26,50 @@ export interface ChandlerMoodOverlay {
 export const chandlerFaces: Record<string, ChandlerFaceState> = {
   idle: {
     features: {
-      // Hair — messy, side-parted (his left), 90s volume
-      hair_top:     { type: 'path', d: 'M35 18 Q50 8, 68 14 Q78 17, 85 20', strokeWidth: 1.8, opacity: 0.35 },
-      hair_part:    { type: 'path', d: 'M52 12 Q54 18, 53 24', strokeWidth: 1.2, opacity: 0.25 },
-      hair_left:    { type: 'path', d: 'M35 18 Q30 22, 28 30', strokeWidth: 1.5, opacity: 0.30 },
+      // Hair — distinctive messy spiky 90s style, swept right, volumous on top
+      // Based on reference: spiky peaks, side-parted, left side shorter
+      hair_outline: { type: 'path', d: 'M30 28 Q32 18, 40 12 Q46 7, 52 10 Q56 5, 62 8 Q68 4, 74 10 Q82 14, 86 22 Q90 28, 88 34', strokeWidth: 2.0, opacity: 0.45 },
+      hair_spike1:  { type: 'path', d: 'M44 12 Q47 4, 52 10', strokeWidth: 1.4, opacity: 0.30 },
+      hair_spike2:  { type: 'path', d: 'M56 8 Q60 2, 62 8', strokeWidth: 1.4, opacity: 0.32 },
+      hair_spike3:  { type: 'path', d: 'M66 6 Q72 3, 74 10', strokeWidth: 1.4, opacity: 0.28 },
+      hair_part:    { type: 'path', d: 'M50 10 Q52 18, 50 26', strokeWidth: 1.0, opacity: 0.18 },
+      hair_left:    { type: 'path', d: 'M30 28 Q26 32, 25 38', strokeWidth: 1.5, opacity: 0.25 },
+      hair_right:   { type: 'path', d: 'M88 34 Q90 38, 92 42', strokeWidth: 1.2, opacity: 0.20 },
 
-      // Eyebrows — strong, expressive, primary emotion tool
-      left_brow:    { type: 'path', d: 'M30 38 Q40 32, 50 36', strokeWidth: 1.8, opacity: 0.45 },
-      right_brow:   { type: 'path', d: 'M70 35 Q80 31, 90 37', strokeWidth: 1.8, opacity: 0.45 },
+      // Face outline — wider cheeks, defined chin (based on reference)
+      face_left:    { type: 'path', d: 'M25 38 Q22 52, 26 68 Q30 82, 40 90', strokeWidth: 1.3, opacity: 0.20 },
+      face_right:   { type: 'path', d: 'M92 42 Q96 52, 94 68 Q88 82, 78 90', strokeWidth: 1.3, opacity: 0.20 },
+      chin:         { type: 'path', d: 'M40 90 Q50 98, 60 98 Q70 98, 78 90', strokeWidth: 1.2, opacity: 0.18 },
 
-      // Eyes — slightly narrow, sardonic squint
-      left_eye:     { type: 'path', d: 'M34 48 Q40 44, 48 48', strokeWidth: 1.5, opacity: 0.40 },
-      right_eye:    { type: 'path', d: 'M72 47 Q80 43, 88 47', strokeWidth: 1.5, opacity: 0.40 },
+      // Eyebrows — strong, expressive, slightly asymmetric (signature Chandler)
+      left_brow:    { type: 'path', d: 'M30 38 Q38 32, 50 36', strokeWidth: 2.0, opacity: 0.50 },
+      right_brow:   { type: 'path', d: 'M68 35 Q78 31, 88 37', strokeWidth: 2.0, opacity: 0.50 },
 
-      // Nose — straight, two strokes (bridge + tip)
-      nose_bridge:  { type: 'line', x1: 60, y1: 54, x2: 59, y2: 65, strokeWidth: 1.0, opacity: 0.20 },
-      nose_tip:     { type: 'path', d: 'M56 65 Q59 68, 63 65', strokeWidth: 1.0, opacity: 0.22 },
+      // Eyes — almond shaped with slight sardonic narrowness
+      left_eye:     { type: 'path', d: 'M33 48 Q38 43, 44 44 Q48 45, 50 48', strokeWidth: 1.5, opacity: 0.42 },
+      right_eye:    { type: 'path', d: 'M68 47 Q74 42, 80 43 Q84 44, 86 47', strokeWidth: 1.5, opacity: 0.42 },
+      // Pupils — small dots for that "looking at you" quality
+      left_pupil:   { type: 'circle', cx: 41, cy: 46, r: 1.5, strokeWidth: 0, opacity: 0.35, fill: true },
+      right_pupil:  { type: 'circle', cx: 77, cy: 45, r: 1.5, strokeWidth: 0, opacity: 0.35, fill: true },
 
-      // Mouth — THE SMIRK: right corner curves up more than the left
-      mouth:        { type: 'path', d: 'M42 80 Q52 83, 60 82 Q70 80, 78 76', strokeWidth: 1.6, opacity: 0.40 },
+      // Nose — slightly wider, two strokes
+      nose_bridge:  { type: 'path', d: 'M59 52 Q58 58, 57 64', strokeWidth: 1.0, opacity: 0.18 },
+      nose_tip:     { type: 'path', d: 'M54 64 Q57 68, 62 64', strokeWidth: 1.2, opacity: 0.22 },
 
-      // Jawline — angular, defined
-      jaw_left:     { type: 'path', d: 'M26 42 Q24 60, 30 78 Q38 90, 50 94', strokeWidth: 1.2, opacity: 0.18 },
-      jaw_right:    { type: 'path', d: 'M94 42 Q96 60, 90 78 Q82 90, 70 94', strokeWidth: 1.2, opacity: 0.18 },
+      // Mouth — THE SMIRK: one corner up, slightly open
+      mouth:        { type: 'path', d: 'M40 80 Q50 84, 58 82 Q66 80, 74 76 Q78 74, 80 72', strokeWidth: 1.8, opacity: 0.45 },
+      // Lower lip hint
+      mouth_lower:  { type: 'path', d: 'M44 84 Q54 88, 64 85', strokeWidth: 1.0, opacity: 0.15 },
+
+      // Neck + collar hint (cardigan/V-neck from reference)
+      neck_left:    { type: 'line', x1: 48, y1: 98, x2: 42, y2: 115, strokeWidth: 1.2, opacity: 0.15 },
+      neck_right:   { type: 'line', x1: 72, y1: 98, x2: 78, y2: 115, strokeWidth: 1.2, opacity: 0.15 },
+      collar_v:     { type: 'path', d: 'M34 110 Q44 105, 60 115 Q76 105, 86 110', strokeWidth: 1.3, opacity: 0.18 },
     },
     glows: {
-      left_eye_glow:  { cx: 41, cy: 47, r: 7, opacity: 0.04 },
-      right_eye_glow: { cx: 80, cy: 46, r: 7, opacity: 0.04 },
-      face_glow:      { cx: 60, cy: 60, r: 32, opacity: 0.04 },
+      left_eye_glow:  { cx: 41, cy: 46, r: 8, opacity: 0.05 },
+      right_eye_glow: { cx: 77, cy: 45, r: 8, opacity: 0.05 },
+      face_glow:      { cx: 60, cy: 60, r: 35, opacity: 0.05 },
     },
   },
 
