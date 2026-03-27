@@ -116,20 +116,51 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
       setMouthOpen(true)
       return
     }
-    const interval = setInterval(() => {
-      setMouthOpen(prev => !prev)
-    }, 300)
+    const interval = setInterval(() => setMouthOpen(prev => !prev), 300)
     return () => clearInterval(interval)
   }, [isSpeaking])
+
+  // Idle blink: eyes close briefly every 3-5 seconds
+  const isIdle = state === 'idle'
+  const [isBlinking, setIsBlinking] = useState(false)
+  useEffect(() => {
+    if (!isIdle) { setIsBlinking(false); return }
+    const scheduleBlink = () => {
+      const delay = 3000 + Math.random() * 2000 // 3-5s random interval
+      return setTimeout(() => {
+        setIsBlinking(true)
+        setTimeout(() => setIsBlinking(false), 150) // blink lasts 150ms
+        timerId = scheduleBlink()
+      }, delay)
+    }
+    let timerId = scheduleBlink()
+    return () => clearTimeout(timerId)
+  }, [isIdle])
 
   const mouthFrame = isSpeaking
     ? (mouthOpen ? pixelFaces.speaking.mouth : speakingMouthClosed)
     : undefined
 
-  const featureGroups = useMemo(
-    () => mergePixels(state, mood, mouthFrame),
-    [state, mood, mouthFrame],
-  )
+  // Closed eyes for blink — single row, dimmer
+  const blinkEyes: PixelData = [
+    { x: 8, y: 13, opacity: 0.3 }, { x: 9, y: 13, opacity: 0.35 },
+    { x: 10, y: 13, opacity: 0.35 }, { x: 11, y: 13, opacity: 0.3 },
+  ]
+  const blinkEyesR: PixelData = [
+    { x: 20, y: 13, opacity: 0.3 }, { x: 21, y: 13, opacity: 0.35 },
+    { x: 22, y: 13, opacity: 0.35 }, { x: 23, y: 13, opacity: 0.3 },
+  ]
+
+  const featureGroups = useMemo(() => {
+    const base = mergePixels(state, mood, mouthFrame)
+    if (!isBlinking) return base
+    // Override eyes with closed variant during blink
+    return base.map(g =>
+      g.feature === 'left_eye' ? { ...g, pixels: blinkEyes }
+      : g.feature === 'right_eye' ? { ...g, pixels: blinkEyesR }
+      : g
+    )
+  }, [state, mood, mouthFrame, isBlinking])
 
   // Flatten all pixels with their keys and colors for rendering
   const allPixels = useMemo(() => {
@@ -158,7 +189,6 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
   }, [featureGroups])
 
   // Animate pixels: thinking = fast shimmer, idle/listening = gentle breathing
-  const isIdle = state === 'idle'
   const needsBreathing = isIdle || isListening
   const shimmerDelay = isThinking
 
@@ -196,11 +226,14 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
       />
 
       {/* Pixel grid SVG — facial expressions ARE the state indicator */}
-      <svg
+      {/* Gentle vertical float in idle — the face "breathes" spatially */}
+      <motion.svg
         viewBox="0 0 32 32"
         width={size}
         height={size}
         style={{ imageRendering: 'pixelated' }}
+        animate={isIdle ? { y: [0, -2, 0, 1, 0] } : { y: 0 }}
+        transition={isIdle ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
       >
         <AnimatePresence mode="popLayout">
           {allPixels.map((pixel, index) => (
@@ -275,7 +308,7 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
             ))}
           </>
         )}
-      </svg>
+      </motion.svg>
     </div>
   )
 }
