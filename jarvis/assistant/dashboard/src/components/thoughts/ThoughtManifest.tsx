@@ -52,8 +52,8 @@ export function ThoughtManifest({ intents, avatarCenter, avatarSize }: ThoughtMa
   const { getToken } = useTokens()
   const avatarType = (getToken('personality.avatarType') || 'orb') as AvatarType
 
-  // Orbit radius: 1.3x the avatar radius
-  const orbitRadius = avatarSize * 0.65 * 1.3
+  // Orbit radius: 1.6x the avatar radius (larger for 44px thoughts)
+  const orbitRadius = avatarSize * 0.65 * 1.6
 
   // Sync intents -> visible state, start dismiss timers
   useEffect(() => {

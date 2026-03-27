@@ -85,13 +85,13 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
   }, [badge.status]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute absolute x/y
-  const absX = useTransform(offsetX, v => center.x + v - 10) // center the ~20px thought
-  const absY = useTransform(offsetY, v => center.y + v - 10)
+  const absX = useTransform(offsetX, v => center.x + v - 22) // center the ~44px thought
+  const absY = useTransform(offsetY, v => center.y + v - 22)
 
   const isDone = badge.status === 'done'
   const isFailed = badge.status === 'failed'
   const isProcessing = badge.status === 'processing'
-  const thoughtSize = 20
+  const thoughtSize = 44
 
   return (
     <motion.div

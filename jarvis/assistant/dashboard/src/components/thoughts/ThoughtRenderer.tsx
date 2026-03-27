@@ -69,7 +69,7 @@ function OrbWisp({ icon, status, size }: VariantProps) {
         />
       ))}
       {/* Icon silhouette */}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.3, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
@@ -107,7 +107,7 @@ function PixelCloud({ icon, status, size }: VariantProps) {
           transition={{ type: 'spring', stiffness: 200, damping: 12, delay: i * 0.05 }}
         />
       ))}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.3, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
@@ -142,7 +142,7 @@ function LightWisp({ icon, status, size }: VariantProps) {
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
       </svg>
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.3, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
@@ -187,7 +187,7 @@ function ThoughtBubble({ icon, status, size }: VariantProps) {
           transition={{ type: 'spring', stiffness: 400, damping: 15, delay: t.delay }}
         />
       ))}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.3, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
