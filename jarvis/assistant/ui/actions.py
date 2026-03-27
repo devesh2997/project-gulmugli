@@ -16,7 +16,7 @@ import threading
 
 from core.interfaces import Intent
 from core.logger import get_logger
-from core.intent_handler import handle_intent
+from core.intent_handler import handle_intent, is_sleep_mode, trigger_wake
 from core.pipeline import process_input
 
 log = get_logger("ui.actions")
@@ -97,6 +97,25 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
             if face_ui and face_ui._now_playing:
                 face_ui._now_playing["position"] = position
                 face_ui.set_now_playing(face_ui._now_playing)
+        return
+
+    elif action == "wake":
+        # Tap-to-wake from dashboard — trigger the same wake flow as voice
+        if is_sleep_mode():
+            log.info("UI wake action received — waking from sleep mode.")
+            response = trigger_wake(assistant)
+            # Speak the wake response via TTS in a background thread
+            voice_router = assistant.get("voice_router")
+            if voice_router and response:
+                face_ui = assistant.get("face_ui")
+                if face_ui:
+                    face_ui.show_transcript(response, role="assistant")
+                def _speak_wake():
+                    try:
+                        voice_router.speak(response)
+                    except Exception as e:
+                        log.warning("Wake TTS failed: %s", e)
+                threading.Thread(target=_speak_wake, daemon=True).start()
         return
 
     elif action == "get_settings":

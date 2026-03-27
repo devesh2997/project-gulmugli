@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { TokenProvider, useTokens } from './context/TokenProvider'
 import { useAssistant } from './hooks/useAssistant'
 import { useGesture } from './hooks/useGesture'
@@ -109,67 +109,96 @@ function AppContent() {
     <div className="fixed inset-0 overflow-hidden">
       <Canvas />
 
-      {/* Center column: avatar → clock, stacked vertically */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ gap: 0 }}>
-        {/* Avatar — tap to activate (same as wake word) */}
-        <div
-          ref={avatarRef}
-          onClick={() => assistant.actions.sendText('__wake__')}
-          style={{
-            width: avatarSize, height: avatarSize,
-            position: 'relative', overflow: 'visible', flexShrink: 0,
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-            <TransitionDissolver personality={assistant.personality}>
-              <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
-            </TransitionDissolver>
+      {/* Sleep mode dim wrapper — dims all UI elements when sleep is active */}
+      <motion.div
+        animate={{ opacity: assistant.sleepMode ? 0.2 : 1 }}
+        transition={{
+          duration: assistant.sleepMode ? 1.5 : 1,
+          ease: assistant.sleepMode ? 'easeInOut' : 'easeOut',
+        }}
+        style={{ position: 'absolute', inset: 0 }}
+      >
+        {/* Center column: avatar → clock, stacked vertically */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ gap: 0 }}>
+          {/* Avatar — tap to activate (same as wake word) */}
+          <div
+            ref={avatarRef}
+            onClick={() => assistant.actions.sendText('__wake__')}
+            style={{
+              width: avatarSize, height: avatarSize,
+              position: 'relative', overflow: 'visible', flexShrink: 0,
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+              <TransitionDissolver personality={assistant.personality}>
+                <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
+              </TransitionDissolver>
+            </div>
+          </div>
+
+          {/* Clock — below avatar with dynamic spacing to clear the glow */}
+          <div style={{ paddingTop: Math.max(32, avatarSize * 0.35) }}>
+            <Clock />
           </div>
         </div>
 
-        {/* Clock — below avatar with dynamic spacing to clear the glow */}
-        <div style={{ paddingTop: Math.max(32, avatarSize * 0.35) }}>
-          <Clock />
-        </div>
-      </div>
+        {/* Thought manifestations — orbiting the avatar */}
+        <ThoughtManifest
+          intents={assistant.intents}
+          avatarCenter={avatarCenter}
+          avatarSize={avatarSize}
+        />
 
-      {/* Thought manifestations — orbiting the avatar */}
-      <ThoughtManifest
-        intents={assistant.intents}
-        avatarCenter={avatarCenter}
-        avatarSize={avatarSize}
-      />
+        <StatusDot connected={assistant.connected} />
 
-      <StatusDot connected={assistant.connected} />
+        {/* Now Playing */}
+        <AnimatePresence>
+          {assistant.nowPlaying && !nowPlayingExpanded && (
+            <NowPlayingCompact
+              nowPlaying={assistant.nowPlaying}
+              onExpand={() => setNowPlayingExpanded(true)}
+            />
+          )}
+          {assistant.nowPlaying && nowPlayingExpanded && (
+            <NowPlayingExpanded
+              nowPlaying={assistant.nowPlaying}
+              actions={assistant.actions}
+              onCollapse={() => setNowPlayingExpanded(false)}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Now Playing */}
+        {/* Slide Panels */}
+        <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => setOpenPanel(null)} direction="bottom">
+          <Transcript messages={assistant.transcript} onSendText={assistant.actions.sendText} />
+        </SlidePanel>
+        <SlidePanel isOpen={openPanel === 'settings'} onClose={() => setOpenPanel(null)} direction="left">
+          <SettingsPanel store={assistant} />
+        </SlidePanel>
+        <SlidePanel isOpen={openPanel === 'lights'} onClose={() => setOpenPanel(null)} direction="right">
+          <LightsPanel store={assistant} />
+        </SlidePanel>
+      </motion.div>
+
+      {/* Sleep mode tap-to-wake overlay — captures all taps when asleep */}
       <AnimatePresence>
-        {assistant.nowPlaying && !nowPlayingExpanded && (
-          <NowPlayingCompact
-            nowPlaying={assistant.nowPlaying}
-            onExpand={() => setNowPlayingExpanded(true)}
-          />
-        )}
-        {assistant.nowPlaying && nowPlayingExpanded && (
-          <NowPlayingExpanded
-            nowPlaying={assistant.nowPlaying}
-            actions={assistant.actions}
-            onCollapse={() => setNowPlayingExpanded(false)}
+        {assistant.sleepMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => assistant.actions.wake()}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 50,
+              cursor: 'pointer',
+            }}
           />
         )}
       </AnimatePresence>
-
-      {/* Slide Panels */}
-      <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => setOpenPanel(null)} direction="bottom">
-        <Transcript messages={assistant.transcript} onSendText={assistant.actions.sendText} />
-      </SlidePanel>
-      <SlidePanel isOpen={openPanel === 'settings'} onClose={() => setOpenPanel(null)} direction="left">
-        <SettingsPanel store={assistant} />
-      </SlidePanel>
-      <SlidePanel isOpen={openPanel === 'lights'} onClose={() => setOpenPanel(null)} direction="right">
-        <LightsPanel store={assistant} />
-      </SlidePanel>
     </div>
   )
 }

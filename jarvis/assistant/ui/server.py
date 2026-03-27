@@ -65,6 +65,7 @@ class FaceUI:
         self._volume: int = 50
         self._personalities: list[dict] = []
         self._settings: list[dict] = []
+        self._sleep_mode: bool = False
 
         # Callback for actions received from the browser UI.
         # Set this from main.py to route UI actions into the assistant's
@@ -232,6 +233,11 @@ class FaceUI:
         self._settings = settings
         self._broadcast({"type": "settings", "settings": settings})
 
+    def set_sleep_mode(self, active: bool) -> None:
+        """Broadcast sleep mode state to all connected clients."""
+        self._sleep_mode = active
+        self._broadcast({"type": "sleep_mode", "active": active})
+
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
         pass
@@ -299,6 +305,10 @@ class FaceUI:
             if self._settings:
                 await websocket.send(json.dumps({
                     "type": "settings", "settings": self._settings,
+                }))
+            if self._sleep_mode:
+                await websocket.send(json.dumps({
+                    "type": "sleep_mode", "active": True,
                 }))
         except Exception:
             pass

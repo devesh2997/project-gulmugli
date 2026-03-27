@@ -20,6 +20,7 @@ from core.personality import personality_manager
 from core.voice_router import VoiceRouter
 from core.interfaces import WakeWordDetection
 from core.pipeline import process_input
+from core.intent_handler import is_sleep_mode, trigger_wake
 from ui.server import FaceUI
 from ui.actions import handle_ui_action
 
@@ -442,6 +443,27 @@ def run_wake_word_mode(assistant: dict):
 
             if detection is None:
                 continue
+
+            # ── Sleep mode: wake word = auto-wake (no recording needed) ──
+            if is_sleep_mode():
+                log.info("Wake word during sleep mode — auto-waking.")
+                face_ui = assistant.get("face_ui")
+                try:
+                    response = trigger_wake(assistant)
+                    # Speak the wake response via TTS
+                    voice_router = assistant.get("voice_router")
+                    if voice_router and response:
+                        if face_ui:
+                            face_ui.set_state("speaking")
+                            face_ui.show_transcript(response, role="assistant")
+                        voice_router.speak(response)
+                        if face_ui:
+                            face_ui.set_state("idle")
+                    elif response:
+                        print(f"{name}: {response}")
+                except Exception as e:
+                    log.error("Auto-wake failed: %s", e)
+                continue  # Resume listening, don't record a command
 
             # Wake word activates listening — it does NOT switch personality.
             # All wake words share a single model ("hey_jarvis") regardless of

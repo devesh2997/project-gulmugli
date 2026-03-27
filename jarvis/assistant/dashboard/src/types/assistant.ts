@@ -156,6 +156,11 @@ export interface SettingResultMessage {
   restart_required?: string
 }
 
+export interface SleepModeMessage {
+  type: 'sleep_mode'
+  active: boolean
+}
+
 export type ServerMessage =
   | StateMessage
   | PersonalityMessage
@@ -172,6 +177,7 @@ export type ServerMessage =
   | TokenUpdateMessage
   | SettingsMessage
   | SettingResultMessage
+  | SleepModeMessage
 
 // ─── Messages TO the assistant (browser → server) ─────────────────
 export type GestureType =
@@ -235,6 +241,7 @@ export interface AssistantStore {
   intents: IntentBadge[]
   mood: AssistantMood
   settings: SettingSchema[]
+  sleepMode: boolean
   actions: AssistantActions
   sendAction: (action: UIAction) => void
 }
@@ -252,4 +259,5 @@ export interface AssistantActions {
   sendGesture: (gesture: string, target?: string) => void
   updateSetting: (path: string, value: any) => void
   requestSettings: () => void
+  wake: () => void
 }

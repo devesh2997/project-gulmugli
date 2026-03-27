@@ -33,6 +33,7 @@ interface InternalState {
   intents: IntentBadge[]
   mood: AssistantMood
   settings: SettingSchema[]
+  sleepMode: boolean
 }
 
 const DEFAULT_STATE: InternalState = {
@@ -47,6 +48,7 @@ const DEFAULT_STATE: InternalState = {
   intents: [],
   mood: 'neutral',
   settings: [],
+  sleepMode: false,
 }
 
 const MAX_TRANSCRIPT = 50
@@ -166,6 +168,10 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         // Could show toast notification here in the future
         break
 
+      case 'sleep_mode':
+        setState(prev => ({ ...prev, sleepMode: msg.active }))
+        break
+
       case 'token_update':
         onTokenUpdateRef.current?.(msg.path, msg.value)
         break
@@ -250,6 +256,11 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     },
     updateSetting: (path: string, value: any) => sendAction({ action: 'update_setting', params: { path, value } }),
     requestSettings: () => sendAction({ action: 'get_settings', params: {} }),
+    wake: () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'wake' }))
+      }
+    },
   }
 
   useEffect(() => {

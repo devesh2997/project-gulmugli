@@ -155,11 +155,39 @@ def _match_system(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_sleep(text: str) -> list[Intent] | None:
+    """Match unambiguous sleep/wake commands."""
+    t = text.strip().lower()
+
+    # Sleep
+    if re.fullmatch(
+        r"(good\s*night|sleep mode|go to sleep|sone? ja|so ja)",
+        t,
+    ):
+        return [Intent(name="sleep", params={"action": "sleep"},
+                       response="Good night, sleep well.",
+                       confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Wake
+    if re.fullmatch(
+        r"(good\s*morning|wake up|jag ja|uth ja)",
+        t,
+    ):
+        return [Intent(name="sleep", params={"action": "wake"},
+                       response="Good morning! Ready when you are.",
+                       confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
 # ─── Chain of matchers ─────────────────────────────────────────────
 # Tried in order. First match wins.
 # IMPORTANT: Only include patterns where we're 100% confident.
 # If there's any ambiguity, let the LLM handle it.
 PREFILTER_CHAIN = [
+    _match_sleep,
     _match_music_control,
     _match_volume,
     _match_lights_simple,

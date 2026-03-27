@@ -181,7 +181,13 @@ Respond with valid JSON only. No explanation. No markdown.
    "how much do you remember" → memory_stats
    "kitna yaad hai tujhe" → memory_stats
 
-10. "knowledge_search" — User asks about current events, real-time info, or facts that change over time
+10. "sleep" — User wants the assistant to go to sleep or wake up
+   Params: {{"action": "sleep|wake"}}
+   Sleep: "good night", "sleep mode", "sone ja", "so ja", "go to sleep"
+   Wake: "good morning", "wake up", "jag ja", "uth ja", "jaga do"
+   Your response should be a personality-appropriate good night or good morning message.
+
+11. "knowledge_search" — User asks about current events, real-time info, or facts that change over time
    Params: {{"query": "concise search query in English"}}
    Use this ONLY when the user asks about:
      - Current events, news, sports scores, election results
@@ -304,6 +310,24 @@ User: "who won the IPL match yesterday"
 
 User: "what's happening with the Mars rover"
 {{"intents": [{{"intent": "knowledge_search", "params": {{"query": "Mars rover latest news"}}}}], "response": "Looking it up..."}}
+
+User: "good night"
+{{"intents": [{{"intent": "sleep", "params": {{"action": "sleep"}}}}], "response": "Good night, sleep well."}}
+
+User: "sleep mode"
+{{"intents": [{{"intent": "sleep", "params": {{"action": "sleep"}}}}], "response": "Going to sleep now. Good night."}}
+
+User: "sone ja"
+{{"intents": [{{"intent": "sleep", "params": {{"action": "sleep"}}}}], "response": "Good night, sweet dreams."}}
+
+User: "good morning"
+{{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "Good morning! Ready when you are."}}
+
+User: "wake up"
+{{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "I'm up! What can I do for you?"}}
+
+User: "jag ja"
+{{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "Good morning! What do you need?"}}
 
 ### Chained commands
 User: "play Sajni and set the lights to red"

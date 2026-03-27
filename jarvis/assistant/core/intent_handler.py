@@ -22,6 +22,33 @@ from core.personality import personality_manager
 
 log = get_logger("intent_handler")
 
+# ── Sleep mode state ─────────────────────────────────────────────
+# Module-level flag so main.py can check it from the wake word loop.
+_sleep_mode: bool = False
+_pre_sleep_volume: int | None = None
+_pre_sleep_brightness: int | None = None
+
+
+def is_sleep_mode() -> bool:
+    """Check if the assistant is currently in sleep mode."""
+    return _sleep_mode
+
+
+def trigger_wake(assistant: dict) -> str:
+    """
+    Programmatic wake — called from main.py when wake word fires during sleep,
+    or from ui/actions.py when the user taps the screen.
+    Returns the spoken response string.
+    """
+    intent = type('Intent', (), {
+        'name': 'sleep',
+        'params': {'action': 'wake'},
+        'response': 'Good morning! Ready when you are.',
+        'confidence': 1.0,
+        'meta': {'source': 'auto_wake'},
+    })()
+    return handle_intent(assistant, intent)
+
 
 # ── Helpers ──────────────────────────────────────────────────────
 
@@ -230,6 +257,84 @@ def handle_intent(assistant: dict, intent) -> str:
         except KeyError as e:
             available = ", ".join(p.display_name for p in personality_manager.list())
             return f"I don't know that personality. Available: {available}."
+
+    elif intent.name == "sleep":
+        global _sleep_mode, _pre_sleep_volume, _pre_sleep_brightness
+        action = intent.params.get("action", "")
+        face_ui = assistant.get("face_ui")
+        music = assistant.get("music")
+        lights = assistant.get("lights")
+
+        if action == "sleep":
+            _sleep_mode = True
+
+            # Turn lights OFF completely
+            if lights:
+                try:
+                    lights.turn_off()
+                except Exception as e:
+                    log.warning("Could not turn off lights for sleep: %s", e)
+
+            # Save current music volume, then start soothing sleep music
+            if music:
+                try:
+                    _pre_sleep_volume = music._focus_get_volume()
+                except Exception:
+                    _pre_sleep_volume = 100
+
+                # Search for and play soothing sleep music at low volume
+                try:
+                    from core.interfaces import SongResult
+                    sleep_query = "soothing relaxing sleep music ambient"
+                    results = music.search(sleep_query, sleep_query)
+                    if results:
+                        music.play(results[0])
+                        log.info("Playing sleep music: %s", results[0].title)
+                    music.set_volume(10)
+                except Exception as e:
+                    log.warning("Could not start sleep music: %s", e)
+                    # At least duck existing music
+                    try:
+                        music.set_volume(10)
+                    except Exception:
+                        pass
+
+            # Update dashboard
+            if face_ui:
+                face_ui.set_state("sleeping")
+                face_ui.set_sleep_mode(True)
+
+            log.info("Sleep mode activated.")
+            return intent.response or "Good night, sleep well."
+
+        elif action == "wake":
+            _sleep_mode = False
+
+            # Restore music volume
+            if music and _pre_sleep_volume is not None:
+                try:
+                    music.set_volume(_pre_sleep_volume)
+                except Exception as e:
+                    log.warning("Could not restore music volume: %s", e)
+                _pre_sleep_volume = None
+
+            # Restore lights
+            if lights:
+                try:
+                    lights.turn_on()
+                    lights.set_brightness(50)
+                except Exception as e:
+                    log.warning("Could not restore lights: %s", e)
+
+            # Update dashboard
+            if face_ui:
+                face_ui.set_state("idle")
+                face_ui.set_sleep_mode(False)
+
+            log.info("Sleep mode deactivated — good morning.")
+            return intent.response or "Good morning! Ready when you are."
+
+        return intent.response or "I'm not sure what to do with that."
 
     elif intent.name == "chat":
         # For chat, use the ORIGINAL user input — not the classified "message" param.
