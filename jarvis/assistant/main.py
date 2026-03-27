@@ -10,20 +10,18 @@ Usage:
     python main.py --config /path/to/config.yaml  # Custom config
 """
 
-import sys
-import json
 import argparse
 import threading
-from datetime import datetime, timezone
 
 from core.config import config
 from core.logger import get_logger
 from core.registry import get_provider, list_providers
 from core.personality import personality_manager
 from core.voice_router import VoiceRouter
-from core.interfaces import Interaction, WakeWordDetection
-from core.prefilter import prefilter_intent
+from core.interfaces import WakeWordDetection
+from core.pipeline import process_input
 from ui.server import FaceUI
+from ui.actions import handle_ui_action
 
 # This import triggers provider auto-discovery via @register decorators
 import providers  # noqa: F401
@@ -133,6 +131,17 @@ def build_assistant() -> dict:
     face_ui.start()
     assistant["face_ui"] = face_ui
 
+    # Wire up browser → assistant action routing.
+    # Uses a closure to capture the assistant dict. The callback runs in the
+    # WebSocket thread, which is fine — handle_ui_action is thread-safe.
+    face_ui.on_action = lambda action_data: handle_ui_action(assistant, action_data)
+
+    # Send personality list to dashboard so it can show a switcher
+    face_ui.set_personalities([
+        {"id": p.id, "display_name": p.display_name, "description": p.description}
+        for p in personality_manager.list()
+    ])
+
     # Wake word — background listening for activation phrases
     ww_cfg = config.get("wake_word", {})
     try:
@@ -165,252 +174,7 @@ def build_assistant() -> dict:
     return assistant
 
 
-def handle_intent(assistant: dict, intent) -> str:
-    """
-    Execute an intent using the appropriate provider.
-    Returns a spoken response string.
-    """
-    name = config["assistant"]["name"]
-
-    if intent.name == "music_play" and assistant.get("music"):
-        raw_query = intent.params.get("query", "")
-        if not raw_query:
-            return "I didn't catch what you want to play."
-
-        # Step 2: Enrich the raw query (separate from classification)
-        enriched_query = assistant["brain"].enrich_query(raw_query)
-
-        log.debug('Raw query: "%s"', raw_query)
-        if enriched_query != raw_query:
-            log.debug('Enriched query: "%s"', enriched_query)
-
-        # Dual search: enriched for primary, raw for fallback
-        results = assistant["music"].search(enriched_query, limit=3, raw_input=raw_query)
-        if results:
-            song = results[0]
-            log.info('Playing: "%s" by %s', song.title, song.artist)
-            assistant["music"].play(song)
-            return f"Playing {song.title} by {song.artist}."
-        else:
-            return f"I couldn't find anything for '{raw_query}'."
-
-    elif intent.name == "music_control" and assistant.get("music"):
-        action = intent.params.get("action", "")
-        music = assistant["music"]
-
-        actions = {
-            "pause": music.pause,
-            "resume": music.resume,
-            "stop": music.stop,
-            "skip": music.skip,
-        }
-
-        if action in actions:
-            actions[action]()
-            return intent.response or f"{action.title()}."
-        else:
-            return f"I don't know how to {action}."
-
-    elif intent.name == "volume":
-        # System-level volume — applies to all audio output (music, TTS, etc.)
-        # Currently routes through the music provider's mpv instance since that's
-        # the only audio output. When AudioOutputProvider is implemented, this
-        # will route through that instead.
-        value = str(intent.params.get("level", ""))
-        output = intent.params.get("output", "default")
-        numeric = ''.join(c for c in value if c.isdigit())
-        level = min(100, max(0, int(numeric))) if numeric else 50
-
-        if assistant.get("audio"):
-            # Future: use AudioOutputProvider
-            assistant["audio"].set_volume(level, output=output)
-        elif assistant.get("music"):
-            # Fallback: route through mpv (current state)
-            assistant["music"].set_volume(level)
-        else:
-            return "No audio output available."
-
-        return intent.response or f"Volume set to {level}."
-
-    elif intent.name == "light_control" and assistant.get("lights"):
-        action = intent.params.get("action", "")
-        value = str(intent.params.get("value", ""))
-        lights = assistant["lights"]
-
-        try:
-            if action == "on":
-                lights.turn_on()
-            elif action == "off":
-                lights.turn_off()
-            elif action == "color":
-                lights.set_color(value)
-            elif action == "brightness":
-                # LLM might return "20%", "20", "20 percent", etc.
-                numeric = ''.join(c for c in value if c.isdigit())
-                lights.set_brightness(int(numeric) if numeric else 50)
-            elif action == "scene":
-                lights.set_scene(value)
-            return intent.response or "Done."
-        except Exception as e:
-            return f"Light control failed: {e}"
-
-    elif intent.name == "switch_personality":
-        target = intent.params.get("personality", "")
-        try:
-            p = personality_manager.switch(target)
-            return intent.response or f"Switched to {p.display_name}."
-        except KeyError as e:
-            available = ", ".join(p.display_name for p in personality_manager.list())
-            return f"I don't know that personality. Available: {available}."
-
-    elif intent.name == "chat":
-        # For chat, use the ORIGINAL user input — not the classified "message" param.
-        # The classifier sometimes generates a response as the message param
-        # (e.g., generating a story instead of just classifying "tell me a story"
-        # as a chat intent). Sending that generated text back to the LLM causes
-        # the LLM to respond to its own output instead of the user's request.
-        #
-        # Fall back to intent.params["message"] only if original_input isn't available
-        # (e.g., when called from a test without the full pipeline).
-        original_input = intent.meta.get("original_input", "")
-        message = original_input or intent.params.get("message", "")
-        p = personality_manager.active
-        system = f"You are {p.display_name}. {p.tone}\nRespond naturally and concisely."
-        resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.7)
-        return resp.text
-
-    elif intent.name == "memory_recall" and assistant.get("memory"):
-        query = intent.params.get("query", "")
-        memory = assistant["memory"]
-
-        if not query:
-            # No specific query — show recent interactions
-            memories = memory.get_recent(limit=5)
-        else:
-            memories = memory.recall(query, limit=5)
-
-        if not memories:
-            return "I don't have any memories matching that yet."
-
-        # Format memories into a natural response
-        # Feed the memories to the LLM so it can summarize them conversationally
-        memory_text = "\n".join(
-            f"- [{m.timestamp[:16]}] {m.raw.get('input_text', '')} → "
-            f"{', '.join(m.raw.get('responses', []))[:100]}"
-            for m in memories
-        )
-
-        p = personality_manager.active
-        system = (
-            f"You are {p.display_name}. {p.tone}\n"
-            f"The user is asking about past interactions. Here are the relevant memories:\n\n"
-            f"{memory_text}\n\n"
-            f"Summarize these memories naturally and concisely in response to: \"{query}\"\n"
-            f"If the user asked 'what did I play', focus on the songs. "
-            f"If they asked 'what did I ask', summarize the commands. Keep it short."
-        )
-        resp = assistant["brain"].generate(
-            prompt=query or "What have I been doing recently?",
-            system=system,
-            temperature=0.5,
-        )
-        return resp.text
-
-    elif intent.name == "memory_stats" and assistant.get("memory"):
-        stats = assistant["memory"].get_stats()
-        total = stats.get("total_interactions", 0)
-        if total == 0:
-            return "No interactions logged yet. I just started remembering!"
-        top = stats.get("top_intents", {})
-        top_str = ", ".join(f"{k} ({v})" for k, v in list(top.items())[:3])
-        return (
-            f"I've logged {total} interactions. "
-            f"Most common: {top_str}. "
-            f"First memory: {stats.get('first_interaction', 'unknown')[:10]}."
-        )
-
-    elif intent.name == "knowledge_search":
-        query = intent.params.get("query", "")
-        knowledge = assistant.get("knowledge")
-
-        if not knowledge:
-            # No knowledge provider — fall back to the LLM's own knowledge via chat
-            original_input = intent.meta.get("original_input", "")
-            message = original_input or query
-            p = personality_manager.active
-            system = (
-                f"You are {p.display_name}. {p.tone}\n"
-                f"The user asked a factual question. Answer as best you can from your "
-                f"own knowledge, but be honest if you're not sure or if the information "
-                f"might be outdated. Keep it concise — this is a voice assistant."
-            )
-            resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.5)
-            return resp.text
-
-        if not knowledge.is_available():
-            # Provider exists but internet is down — degrade gracefully
-            original_input = intent.meta.get("original_input", "")
-            message = original_input or query
-            p = personality_manager.active
-            system = (
-                f"You are {p.display_name}. {p.tone}\n"
-                f"The user asked about current events or real-time info, but internet "
-                f"is not available right now. Answer from your own knowledge if you can, "
-                f"but mention that you couldn't check online for the latest info."
-            )
-            resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.5)
-            return resp.text
-
-        # Search for information
-        results = knowledge.search(query)
-        if not results:
-            # Search returned nothing — fall back to LLM knowledge
-            original_input = intent.meta.get("original_input", "")
-            message = original_input or query
-            p = personality_manager.active
-            system = (
-                f"You are {p.display_name}. {p.tone}\n"
-                f"The user asked a question. I searched online but found nothing relevant. "
-                f"Answer from your own knowledge if possible, or say you couldn't find anything."
-            )
-            resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.5)
-            return resp.text
-
-        # Build context from search results — keep it SHORT for 3B models.
-        # Each snippet is ~1-2 sentences. 3 results ≈ 300-400 tokens.
-        context_lines = []
-        for i, r in enumerate(results, 1):
-            # Truncate snippets to ~150 chars to stay within context budget
-            snippet = r.snippet[:200].strip()
-            context_lines.append(f"{i}. {r.title}: {snippet}")
-        context = "\n".join(context_lines)
-
-        original_input = intent.meta.get("original_input", "")
-        message = original_input or query
-        p = personality_manager.active
-        system = (
-            f"You are {p.display_name}. {p.tone}\n"
-            f"The user asked a question. Here are relevant search results:\n\n"
-            f"{context}\n\n"
-            f"Using ONLY the information above, answer the user's question naturally "
-            f"and concisely. This is a voice assistant — keep it to 2-3 sentences max. "
-            f"If the search results don't fully answer the question, say what you found "
-            f"and mention you're not sure about the rest."
-        )
-        resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.5)
-        return resp.text
-
-    elif intent.name == "system":
-        action = intent.params.get("action", "")
-        if action == "time":
-            return f"It's {datetime.now().strftime('%I:%M %p')}."
-        elif action == "date":
-            return f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
-        return intent.response or "I can't do that yet."
-
-    else:
-        return intent.response or "I'm not sure what to do with that."
-
+# ── Run modes ────────────────────────────────────────────────────
 
 def run_text_mode(assistant: dict):
     """Interactive text mode — for Mac simulation and testing."""
@@ -440,103 +204,7 @@ def run_text_mode(assistant: dict):
             print(f"{name}: Goodbye!")
             break
 
-        _process_input(assistant, user_input)
-
-
-def _process_input(assistant: dict, user_input: str, interrupt_event=None):
-    """
-    Process a single user input: classify → execute → respond → log.
-
-    Shared between text mode and voice mode — the only difference is
-    how the input is obtained (typed vs spoken).
-
-    Args:
-        interrupt_event: Optional threading.Event. If set during TTS playback,
-            audio stops immediately (wake word barge-in). The caller is
-            responsible for handling the interrupted state.
-
-    Returns:
-        (response_text, was_interrupted) — the response string and whether
-        TTS was interrupted by a wake word.
-
-    Also pushes state transitions to the Face UI (if running):
-      thinking → speaking → idle
-    """
-    brain = assistant["brain"]
-    name = assistant["name"]
-    face_ui = assistant.get("face_ui")
-
-    # Show user's input on the face UI
-    if face_ui:
-        face_ui.show_transcript(user_input, role="user")
-        face_ui.set_state("thinking")
-
-    # Try keyword pre-filter first — resolves obvious commands in <1ms
-    intents = prefilter_intent(user_input)
-
-    # Fall through to LLM for ambiguous inputs
-    if intents is None:
-        intents = brain.classify_intent(user_input)
-
-    # Attach original user input to each intent's meta so handlers can
-    # use it instead of the classified params (important for chat — see handler)
-    for intent in intents:
-        intent.meta["original_input"] = user_input
-
-    # Intent debug output — only visible in DEBUG mode
-    latency = intents[0].meta.get("latency", 0) if intents else 0
-    tok_s = intents[0].meta.get("tok_per_sec", 0) if intents else 0
-    intent_names = " + ".join(i.name for i in intents)
-    log.debug("[%s] (%.2fs, %.0f tok/s)", intent_names, latency, tok_s)
-    for i in intents:
-        log.debug("  → %s: %s", i.name, json.dumps(i.params))
-
-    # Execute each intent in order
-    responses = []
-    for intent in intents:
-        response = handle_intent(assistant, intent)
-        responses.append(response)
-
-    # Use active personality's display name (may have changed mid-loop)
-    p = personality_manager.active
-    response_text = " ".join(responses)
-    print(f"{p.display_name}: {response_text}\n")
-
-    # Update face UI with personality (may have changed) and response
-    if face_ui:
-        face_ui.set_personality(p.id)
-        face_ui.show_transcript(response_text, role="assistant")
-        face_ui.set_state("speaking")
-
-    # Log this interaction to memory
-    memory = assistant.get("memory")
-    if memory:
-        try:
-            interaction = Interaction(
-                user_id="default",
-                input_text=user_input,
-                intents=intents,
-                responses=responses,
-                outcome="success",
-            )
-            memory.log_interaction(interaction)
-        except Exception as e:
-            log.warning("Failed to log interaction to memory: %s", e)
-
-    # Speak the response aloud via the voice router
-    was_interrupted = False
-    voice_router = assistant.get("voice_router")
-    if voice_router and voice_router.enabled and response_text.strip():
-        completed = voice_router.speak_to_device(
-            response_text, personality=p, interrupt_event=interrupt_event,
-        )
-        was_interrupted = not completed
-
-    # Back to idle after speaking
-    if face_ui:
-        face_ui.set_state("idle")
-
-    return response_text, was_interrupted
+        process_input(assistant, user_input)
 
 
 def run_voice_mode(assistant: dict):
@@ -594,7 +262,7 @@ def run_voice_mode(assistant: dict):
 
         # If they typed something instead of pressing Enter, use it as text input
         if prompt:
-            _process_input(assistant, prompt)
+            process_input(assistant, prompt)
             continue
 
         # Record from microphone
@@ -630,7 +298,7 @@ def run_voice_mode(assistant: dict):
         print(f"You: {user_input}  [{result.language}, {result.confidence:.0%}]\n")
 
         # Process the transcribed input
-        _process_input(assistant, user_input)
+        process_input(assistant, user_input)
 
 
 def run_wake_word_mode(assistant: dict):
@@ -817,10 +485,10 @@ def run_wake_word_mode(assistant: dict):
             # audio, and the cooldown timer prevents rapid re-triggers.
             wake_word_provider.resume_listening()
 
-            # Process the command — TTS playback happens inside _process_input.
+            # Process the command — TTS playback happens inside process_input.
             # If wake word fires during TTS, tts_interrupt is set, playback
             # stops, and was_interrupted is True.
-            response_text, was_interrupted = _process_input(
+            response_text, was_interrupted = process_input(
                 assistant, user_input, interrupt_event=tts_interrupt,
             )
 

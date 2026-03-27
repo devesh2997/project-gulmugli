@@ -177,27 +177,62 @@ class SQLiteMemoryProvider(MemoryProvider):
 
         return interaction_id
 
+    # Stop words — common English/Hinglish words that don't help with search.
+    # "What songs have you played for me today" → ["songs", "played", "today"]
+    _STOP_WORDS = frozenset({
+        "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "do", "does", "did", "will", "would", "could",
+        "should", "may", "might", "can", "shall", "must",
+        "i", "me", "my", "you", "your", "he", "she", "it", "we", "they",
+        "what", "which", "who", "whom", "that", "this", "these", "those",
+        "am", "if", "or", "and", "but", "not", "no", "so", "too", "very",
+        "of", "in", "on", "at", "to", "for", "with", "from", "by", "about",
+        "up", "out", "some", "any", "all", "just", "tell", "give", "show",
+        "please", "ok", "okay", "hey", "hi",
+        # Hinglish
+        "kya", "hai", "ka", "ki", "ke", "ko", "ne", "se", "mein", "par",
+        "yeh", "woh", "koi", "kuch", "bhi", "toh", "na", "ho", "tha",
+        "mujhe", "mere", "mera", "tera", "tumhara", "aur", "ya",
+    })
+
     def recall(self, query: str, user_id: str = "default",
                limit: int = 5) -> list[Memory]:
         """
         Search interactions by keyword (v1).
 
         Searches across input_text, intents_json, and responses_json.
-        This is a simple SQL LIKE search — good enough for "what did I play
-        yesterday?" but won't handle semantic queries like "that sad song."
+        Strips stop words and uses OR matching — any keyword match counts.
+        Results are ranked by how many keywords matched (most relevant first).
 
         v2 will add FTS5 full-text search.
         v3 will add embedding-based semantic search.
         """
-        # Split query into keywords for AND matching
-        keywords = [k.strip() for k in query.lower().split() if len(k.strip()) > 1]
+        # Strip stop words and punctuation, keep meaningful terms
+        keywords = [
+            k.strip("?!.,;:'\"")
+            for k in query.lower().split()
+            if len(k.strip("?!.,;:'\"")) > 1 and k.strip("?!.,;:'\"") not in self._STOP_WORDS
+        ]
 
         if not keywords:
             return self.get_recent(user_id=user_id, limit=limit)
 
-        # Build WHERE clause: each keyword must match somewhere
+        # Also detect intent-type hints in the query to search by intent name.
+        # "what songs did you play" → also search for music_play intent
+        intent_hints = []
+        query_lower = query.lower()
+        if any(w in query_lower for w in ("play", "played", "song", "songs", "music", "gaana", "gaane")):
+            intent_hints.append("music_play")
+        if any(w in query_lower for w in ("light", "lights", "bulb")):
+            intent_hints.append("light_control")
+        if any(w in query_lower for w in ("volume", "loud", "quiet")):
+            intent_hints.append("volume")
+
+        # Build WHERE clause: OR matching (any keyword hit counts)
+        # Plus intent-type hints for better recall
         conditions = []
-        params = []
+        params = [user_id]
+
         for kw in keywords:
             conditions.append(
                 "(LOWER(input_text) LIKE ? OR LOWER(intents_json) LIKE ? OR LOWER(responses_json) LIKE ?)"
@@ -205,18 +240,42 @@ class SQLiteMemoryProvider(MemoryProvider):
             like = f"%{kw}%"
             params.extend([like, like, like])
 
-        where = " AND ".join(conditions)
+        for intent_name in intent_hints:
+            conditions.append("LOWER(intents_json) LIKE ?")
+            params.append(f"%{intent_name}%")
+
+        where = " OR ".join(conditions)
+        params.append(limit)
+
+        # Use a relevance score: count how many conditions each row matches.
+        # This is a simple ranking — rows matching more keywords sort first.
+        # Build CASE expressions for scoring
+        score_parts = []
+        score_params = []
+        for kw in keywords:
+            like = f"%{kw}%"
+            score_parts.append(
+                "(CASE WHEN LOWER(input_text) LIKE ? OR LOWER(intents_json) LIKE ? "
+                "OR LOWER(responses_json) LIKE ? THEN 1 ELSE 0 END)"
+            )
+            score_params.extend([like, like, like])
+        for intent_name in intent_hints:
+            score_parts.append("(CASE WHEN LOWER(intents_json) LIKE ? THEN 2 ELSE 0 END)")
+            score_params.extend([f"%{intent_name}%"])
+
+        score_expr = " + ".join(score_parts) if score_parts else "1"
 
         with self._connect() as conn:
             rows = conn.execute(
                 f"""
-                SELECT id, timestamp, user_id, input_text, intents_json, responses_json, outcome
+                SELECT id, timestamp, user_id, input_text, intents_json, responses_json, outcome,
+                       ({score_expr}) as relevance
                 FROM interactions
-                WHERE user_id = ? AND {where}
-                ORDER BY timestamp DESC
+                WHERE user_id = ? AND ({where})
+                ORDER BY relevance DESC, timestamp DESC
                 LIMIT ?
                 """,
-                [user_id, *params, limit],
+                [*score_params, *params],
             ).fetchall()
 
         return [self._row_to_memory(row) for row in rows]

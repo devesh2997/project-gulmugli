@@ -43,6 +43,11 @@ class YouTubeMusicProvider(MusicProvider):
         # mpv IPC socket for controlling playback — platform-safe temp directory
         self.ipc_socket = os.path.join(tempfile.gettempdir(), "assistant-mpv-socket")
         self._mpv_process = None
+        self._last_song: SongResult | None = None
+        self._paused: bool = False
+
+        # Kill any orphaned mpv from previous sessions on startup
+        self.stop()
 
     def search(self, query: str, limit: int = None, raw_input: str = None) -> list[SongResult]:
         """
@@ -119,6 +124,8 @@ class YouTubeMusicProvider(MusicProvider):
         # Stop any existing playback
         self.stop()
 
+        self._last_song = song
+        self._paused = False
         url = f"https://www.youtube.com/watch?v={song.uri}"
 
         # mpv with:
@@ -166,26 +173,105 @@ class YouTubeMusicProvider(MusicProvider):
 
     def pause(self) -> None:
         self._send_mpv_command({"command": ["set_property", "pause", True]})
+        self._paused = True
 
     def resume(self) -> None:
-        self._send_mpv_command({"command": ["set_property", "pause", False]})
+        # If mpv is still alive and paused, just unpause
+        if self._mpv_process and self._mpv_process.poll() is None:
+            self._send_mpv_command({"command": ["set_property", "pause", False]})
+            self._paused = False
+            return
+
+        # mpv died (e.g. session restart) but we remember the last song — replay it
+        if self._last_song:
+            log.info('Resuming last song: "%s" by %s', self._last_song.title, self._last_song.artist)
+            self.play(self._last_song)
+            return
+
+        log.debug("Nothing to resume — no paused track or last song.")
 
     def stop(self) -> None:
+        # Kill the process we spawned this session
         if self._mpv_process:
             try:
                 self._mpv_process.terminate()
                 self._mpv_process.wait(timeout=3)
             except Exception:
-                self._mpv_process.kill()
+                try:
+                    self._mpv_process.kill()
+                except Exception:
+                    pass
             self._mpv_process = None
+
+        # Also kill any orphaned mpv processes using our IPC socket.
+        # These can accumulate from previous assistant sessions that crashed
+        # or were killed without proper cleanup. Without this, stop()/play()
+        # will fight with zombie processes over the socket.
+        try:
+            import signal
+            result = subprocess.run(
+                ["pgrep", "-f", f"mpv.*{os.path.basename(self.ipc_socket)}"],
+                capture_output=True, text=True,
+            )
+            for pid_str in result.stdout.strip().split("\n"):
+                if pid_str.strip():
+                    try:
+                        os.kill(int(pid_str.strip()), signal.SIGTERM)
+                    except (ProcessLookupError, ValueError):
+                        pass
+        except FileNotFoundError:
+            # pgrep not available on this platform — skip orphan cleanup
+            pass
 
         # Clean up socket
         if os.path.exists(self.ipc_socket):
-            os.remove(self.ipc_socket)
+            try:
+                os.remove(self.ipc_socket)
+            except OSError:
+                pass
 
     def skip(self) -> None:
         self._send_mpv_command({"command": ["playlist-next"]})
 
+    def seek(self, position: float) -> None:
+        """Seek to an absolute position in seconds."""
+        self._send_mpv_command({"command": ["set_property", "time-pos", position]})
+
     def set_volume(self, level: int) -> None:
         level = max(0, min(100, level))
         self._send_mpv_command({"command": ["set_property", "volume", level]})
+
+    def get_playback_position(self) -> dict | None:
+        """
+        Query mpv for current playback position and duration.
+
+        Returns dict with "position" and "duration" (seconds), or None if
+        nothing is playing or mpv isn't reachable.
+        """
+        position = self._query_mpv_property("time-pos")
+        duration = self._query_mpv_property("duration")
+        if position is not None and duration is not None:
+            return {"position": position, "duration": duration}
+        return None
+
+    def _query_mpv_property(self, prop: str):
+        """Query a single property from mpv via IPC. Returns the value or None."""
+        if not os.path.exists(self.ipc_socket):
+            return None
+        try:
+            import socket as sock_mod
+            s = sock_mod.socket(sock_mod.AF_UNIX, sock_mod.SOCK_STREAM)
+            s.settimeout(0.5)
+            try:
+                s.connect(self.ipc_socket)
+                cmd = json.dumps({"command": ["get_property", prop]}) + "\n"
+                s.send(cmd.encode())
+                data = s.recv(4096).decode()
+                resp = json.loads(data.split("\n")[0])
+                if resp.get("error") == "success":
+                    return resp.get("data")
+            finally:
+                s.close()
+        except Exception:
+            pass
+        return None

@@ -25,8 +25,7 @@ export function Canvas() {
         style={{
           position: 'absolute',
           inset: 0,
-          background: `radial-gradient(ellipse at 50% 50%, var(--personality-glow_color) 0%, transparent 70%)`,
-          opacity: 0.05,
+          background: `radial-gradient(ellipse at 50% 50%, rgba(var(--personality-accent-rgb), 0.08) 0%, transparent 70%)`,
         }}
       />
     </div>

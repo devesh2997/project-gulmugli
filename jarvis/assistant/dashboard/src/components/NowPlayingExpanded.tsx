@@ -26,9 +26,9 @@ function Btn({ onClick, label, active = false, size = 36, accent, children }: {
   return (
     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} onClick={onClick} aria-label={label} style={{
       width: size, height: size, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      background: active ? `${accent}22` : 'var(--bg-elevated)',
-      border: `1px solid ${active ? `${accent}40` : 'var(--border-subtle)'}`,
-      color: active ? accent : 'var(--text-secondary)',
+      background: active ? `rgba(var(--personality-accent-rgb), 0.13)` : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${active ? 'rgba(var(--personality-accent-rgb), 0.25)' : 'rgba(255,255,255,0.08)'}`,
+      color: active ? accent : 'rgba(255,255,255,0.5)',
     }}>
       {children}
     </motion.button>

@@ -129,8 +129,9 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
       }
     : {}
 
-  const accent = 'var(--personality-accent)'
-  const glow = 'var(--personality-glow_color)'
+  // Use rgb variant for rgba() — CSS vars can't have hex alpha appended
+  const accentRgb = 'var(--personality-accent-rgb)'
+  const a = (opacity: number) => `rgba(${accentRgb}, ${opacity})`
 
   return (
     <div
@@ -143,8 +144,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         style={{
           width: size * 1.8,
           height: size * 1.8,
-          background: `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
-          opacity: config.glowOpacity,
+          background: `radial-gradient(circle, ${a(0.12)} 0%, transparent 70%)`,
           filter: `blur(${size * 0.3}px)`,
         }}
         variants={glowVariants}
@@ -157,7 +157,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         style={{
           width: size * 1.2,
           height: size * 1.2,
-          background: `radial-gradient(circle, ${glow} 0%, transparent 60%)`,
+          background: `radial-gradient(circle, ${a(0.08)} 0%, transparent 60%)`,
           filter: `blur(${size * 0.15}px)`,
         }}
         animate={{
@@ -179,14 +179,14 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           width: size,
           height: size,
           background: `radial-gradient(circle at 35% 35%,
-            ${accent}40 0%,
-            ${accent}20 40%,
-            ${accent}08 70%,
+            ${a(0.25)} 0%,
+            ${a(0.12)} 40%,
+            ${a(0.04)} 70%,
             transparent 100%)`,
-          border: `1px solid ${accent}30`,
+          border: `1px solid ${a(0.18)}`,
           boxShadow: `
-            inset 0 0 ${size * 0.3}px ${accent}15,
-            0 0 ${size * 0.2}px ${accent}20
+            inset 0 0 ${size * 0.3}px ${a(0.08)},
+            0 0 ${size * 0.2}px ${a(0.12)}
           `,
         }}
         variants={orbVariants}
@@ -203,7 +203,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           height: size * 0.4,
           top: `calc(50% - ${size * 0.28}px)`,
           left: `calc(50% - ${size * 0.12}px)`,
-          background: `radial-gradient(circle, ${accent}25 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${a(0.15)} 0%, transparent 70%)`,
           filter: `blur(${size * 0.08}px)`,
         }}
         animate={{

@@ -136,9 +136,12 @@ Respond with valid JSON only. No explanation. No markdown.
 
 8. "memory_recall" — User asks about past interactions or what they/you did before
    Params: {{"query": "what the user wants to recall"}}
-   "what did I play yesterday" → query: "play yesterday"
+   Extract the KEY TOPIC words — strip filler like "what/did/you/have/for/me".
+   IMPORTANT: Keep time words (today, yesterday) EXACTLY as the user said them. Do NOT change "today" to "yesterday" or vice versa.
+   "what songs have you played for me today" → query: "songs played today"
+   "what did I play yesterday" → query: "played yesterday"
    "last time I asked about lights" → query: "lights"
-   "what was the song I played" → query: "music_play song"
+   "what was the song I played" → query: "song played"
    "kya bajaya tha maine" → query: "music play"
    "pichli baar kya pucha tha" → query: "recent interactions"
 
@@ -275,6 +278,9 @@ User: "play Sajni and set the lights to red"
 
 User: "play Sajni volume 30"
 {{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni"}}}}, {{"intent": "volume", "params": {{"level": "30", "output": "default"}}}}], "response": "Playing Sajni at volume 30."}}
+
+User: "what songs did you play today and resume the last one"
+{{"intents": [{{"intent": "memory_recall", "params": {{"query": "songs played today"}}}}, {{"intent": "music_control", "params": {{"action": "resume"}}}}], "response": "Let me check and resume."}}
 
 User: "Coldplay bajao aur light neeli kar do"
 {{"intents": [{{"intent": "music_play", "params": {{"query": "Coldplay"}}}}, {{"intent": "light_control", "params": {{"action": "color", "value": "blue"}}}}], "response": "Playing Coldplay with blue lights."}}

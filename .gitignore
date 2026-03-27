@@ -8,6 +8,11 @@ build/
 venv*/
 env/
 
+# Node.js (dashboard UI)
+node_modules/
+.pnpm-store/
+jarvis/assistant/dashboard/dist/
+
 # IDE
 .vscode/
 .idea/
@@ -44,3 +49,4 @@ jarvis/assistant/data/
 
 # Logs
 *.log
+.superpowers/

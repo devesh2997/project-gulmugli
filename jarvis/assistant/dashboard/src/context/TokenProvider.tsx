@@ -111,10 +111,30 @@ function flattenToCSSVars(
 /**
  * Apply all CSS custom properties to :root.
  */
+/**
+ * Parse a hex color to "r, g, b" string for use with rgba().
+ * Returns null for non-hex values.
+ */
+function hexToRgbString(hex: string): string | null {
+  if (typeof hex !== 'string' || !hex.startsWith('#')) return null
+  const clean = hex.replace('#', '').slice(0, 6) // strip alpha suffix if present
+  if (clean.length < 6) return null
+  const n = parseInt(clean, 16)
+  if (isNaN(n)) return null
+  return `${(n >> 16) & 0xff}, ${(n >> 8) & 0xff}, ${n & 0xff}`
+}
+
 function syncCSSVars(tokens: Record<string, any>): void {
   const vars = flattenToCSSVars(tokens)
+  const root = document.documentElement.style
   for (const [property, value] of vars) {
-    document.documentElement.style.setProperty(property, value)
+    root.setProperty(property, value)
+    // Auto-generate -rgb variant for hex colors so components can use rgba()
+    // e.g. --personality-accent: #c99568 → --personality-accent-rgb: 201, 149, 104
+    const rgb = hexToRgbString(value)
+    if (rgb) {
+      root.setProperty(`${property}-rgb`, rgb)
+    }
   }
 }
 

@@ -152,6 +152,21 @@ function computeBlend(fractionalHour: number): BlendResult {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Expose a global testing API: window.__setSimulatedHour(14.5) sets 2:30pm.
+ * Call window.__setSimulatedHour(null) to return to real time.
+ */
+let simulatedHour: number | null = null
+
+if (typeof window !== 'undefined') {
+  (window as any).__setSimulatedHour = (hour: number | null) => {
+    simulatedHour = hour
+    console.log(`[useTimeOfDay] Simulated hour: ${hour === null ? 'OFF (real time)' : hour}`)
+    // Trigger an immediate update
+    window.dispatchEvent(new CustomEvent('time-sim-change'))
+  }
+}
+
 export function useTimeOfDay(): void {
   const { getToken, updateToken } = useTokens()
 
@@ -163,7 +178,6 @@ export function useTimeOfDay(): void {
 
   useEffect(() => {
     function update() {
-      // Read all three palettes from the token store (they live at time.morning, etc.)
       const morning   = getTokenRef.current('time.morning')   as TimePalette | undefined
       const afternoon = getTokenRef.current('time.afternoon') as TimePalette | undefined
       const night     = getTokenRef.current('time.night')     as TimePalette | undefined
@@ -175,25 +189,42 @@ export function useTimeOfDay(): void {
 
       const palettes: Record<PaletteName, TimePalette> = { morning, afternoon, night }
 
-      const now = new Date()
-      const fractionalHour = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600
+      let fractionalHour: number
+      if (simulatedHour !== null) {
+        fractionalHour = simulatedHour
+      } else {
+        const now = new Date()
+        fractionalHour = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600
+      }
 
       const { fromName, toName, t } = computeBlend(fractionalHour)
       const interpolated = lerpPalettes(palettes[fromName], palettes[toName], t)
 
-      // Push interpolated values directly to CSS vars — bypass TokenProvider state
-      // to avoid triggering re-render cascades. The time-of-day palette is a derived
-      // value that changes every 60s; it doesn't need to live in React state.
       const root = document.documentElement.style
       for (const [key, value] of Object.entries(interpolated)) {
         root.setProperty(`--time-current-${key}`, String(value))
+        // Also generate rgb variant for hex colors
+        if (typeof value === 'string' && value.startsWith('#')) {
+          const clean = value.replace('#', '').slice(0, 6)
+          const n = parseInt(clean, 16)
+          if (!isNaN(n)) {
+            root.setProperty(`--time-current-${key}-rgb`, `${(n >> 16) & 0xff}, ${(n >> 8) & 0xff}, ${n & 0xff}`)
+          }
+        }
       }
     }
 
-    // Run immediately on mount — don't wait 60 seconds for the first frame.
     update()
 
     const intervalId = setInterval(update, 60_000)
-    return () => clearInterval(intervalId)
-  }, []) // Empty deps — runs once on mount, refs keep it current
+
+    // Listen for simulation changes
+    const onSimChange = () => update()
+    window.addEventListener('time-sim-change', onSimChange)
+
+    return () => {
+      clearInterval(intervalId)
+      window.removeEventListener('time-sim-change', onSimChange)
+    }
+  }, [])
 }
