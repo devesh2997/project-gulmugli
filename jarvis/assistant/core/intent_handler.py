@@ -93,6 +93,7 @@ def handle_intent(assistant: dict, intent) -> str:
 
     if intent.name == "music_play" and assistant.get("music"):
         raw_query = intent.params.get("query", "")
+        with_video = intent.params.get("with_video", False)
         music = assistant["music"]
 
         # If no query (or query is just "play"/"resume"), resume last song
@@ -107,16 +108,19 @@ def handle_intent(assistant: dict, intent) -> str:
             elif music._last_song:
                 # Not paused but we have a last song — replay it
                 song = music._last_song
-                music.play(song)
+                music.play(song, video=with_video)
                 face_ui = assistant.get("face_ui")
                 if face_ui:
-                    face_ui.set_now_playing({
+                    now_playing_data = {
                         "title": song.title,
                         "artist": song.artist,
                         "album": song.album or "",
                         "duration": _parse_duration(song.duration),
                         "position": 0,
-                    })
+                    }
+                    if with_video and song.uri:
+                        now_playing_data["video_id"] = song.uri
+                    face_ui.set_now_playing(now_playing_data)
                 return f"Playing {song.title} by {song.artist} again."
             elif not raw_query:
                 return "I don't have anything to play. Tell me what you'd like to hear."
@@ -132,21 +136,26 @@ def handle_intent(assistant: dict, intent) -> str:
         results = assistant["music"].search(enriched_query, limit=3, raw_input=raw_query)
         if results:
             song = results[0]
-            log.info('Playing: "%s" by %s', song.title, song.artist)
-            assistant["music"].play(song)
+            log.info('Playing: "%s" by %s%s', song.title, song.artist,
+                     " (video)" if with_video else "")
+            assistant["music"].play(song, video=with_video)
 
             # Notify dashboard
             face_ui = assistant.get("face_ui")
             if face_ui:
-                face_ui.set_now_playing({
+                now_playing_data = {
                     "title": song.title,
                     "artist": song.artist,
                     "album": song.album or "",
                     "duration": _parse_duration(song.duration),
                     "position": 0,
-                })
+                }
+                if with_video and song.uri:
+                    now_playing_data["video_id"] = song.uri
+                face_ui.set_now_playing(now_playing_data)
 
-            return f"Playing {song.title} by {song.artist}."
+            suffix = " with video" if with_video else ""
+            return f"Playing {song.title} by {song.artist}{suffix}."
         else:
             return f"I couldn't find anything for '{raw_query}'."
 

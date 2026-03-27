@@ -138,6 +138,62 @@ def _match_lights_simple(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_video_music(text: str) -> list[Intent] | None:
+    """
+    Detect "with video" / "video mein" / "video mode" / "video chalao" in music requests.
+
+    When detected, return a music_play intent with with_video: true and the
+    video-related phrase stripped from the query.
+    """
+    t = text.strip().lower()
+
+    # Patterns that signal video mode in a music request.
+    # Each tuple: (regex pattern to strip, whether the remainder is the query)
+    video_suffixes = [
+        r"\s+with\s+video$",
+        r"\s+video\s+mein$",
+        r"\s+video\s+mode$",
+        r"\s+ka\s+video\s+(lagao|chalao|dikha(o)?)$",
+        r"\s+ka\s+video$",
+    ]
+    video_prefixes = [
+        r"^video\s+chalao\s+",
+        r"^video\s+lagao\s+",
+        r"^video\s+baja(o)?\s+",
+    ]
+
+    # Check for "play X with video" style (suffix patterns)
+    # Must start with a play-like trigger or be a bare query + video suffix
+    play_prefixes = r"^(play\s+|baja(o)?\s+|laga(o)?\s+)?"
+    for pat in video_suffixes:
+        m = re.match(play_prefixes + r"(.+?)" + pat, t)
+        if m:
+            # The query is the captured group (everything between play-prefix and video-suffix)
+            query = m.group(m.lastindex).strip() if m.lastindex else ""
+            # Also strip leading play words from the query
+            query = re.sub(r"^(play\s+|baja(o)?\s+|laga(o)?\s+)", "", query).strip()
+            if query:
+                return [Intent(name="music_play",
+                               params={"query": query, "with_video": True},
+                               response=f"Playing {query} with video.",
+                               confidence=1.0,
+                               meta={"source": "prefilter"})]
+
+    # Check for "video chalao X" style (prefix patterns)
+    for pat in video_prefixes:
+        m = re.match(pat + r"(.+)$", t)
+        if m:
+            query = m.group(m.lastindex).strip()
+            if query:
+                return [Intent(name="music_play",
+                               params={"query": query, "with_video": True},
+                               response=f"Playing {query} with video.",
+                               confidence=1.0,
+                               meta={"source": "prefilter"})]
+
+    return None
+
+
 def _match_system(text: str) -> list[Intent] | None:
     """Match unambiguous system queries."""
     t = text.strip().lower()
@@ -188,6 +244,7 @@ def _match_sleep(text: str) -> list[Intent] | None:
 # If there's any ambiguity, let the LLM handle it.
 PREFILTER_CHAIN = [
     _match_sleep,
+    _match_video_music,
     _match_music_control,
     _match_volume,
     _match_lights_simple,

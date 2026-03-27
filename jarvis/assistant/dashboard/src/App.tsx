@@ -21,6 +21,7 @@ import Transcript from './components/Transcript'
 import { SettingsPanel } from './components/SettingsPanel'
 import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
+import { VideoPlayer } from './components/VideoPlayer'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -184,6 +185,11 @@ function AppContent() {
           <SettingsPanel store={assistant} />
         </SlidePanel>
       </motion.div>
+
+      {/* Floating video player — above everything (z-index 100) */}
+      {assistant.nowPlaying?.videoId && (
+        <VideoPlayer nowPlaying={assistant.nowPlaying} actions={assistant.actions} />
+      )}
 
       {/* Sleep mode tap-to-wake overlay — captures all taps when asleep */}
       <AnimatePresence>

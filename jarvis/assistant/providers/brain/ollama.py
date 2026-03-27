@@ -125,11 +125,16 @@ Respond with valid JSON only. No explanation. No markdown.
 ## Intents
 
 1. "music_play" — Play a song/artist/playlist/genre
-   Params: {{"query": "the song/artist/mood keywords EXACTLY as the user said them"}}
+   Params: {{"query": "the song/artist/mood keywords EXACTLY as the user said them", "with_video": true|false}}
    IMPORTANT: Do NOT add artist names, movie names, or any enrichment. Just extract what the user said.
-   "play Sajni" → query: "Sajni"
-   "kuch romantic sa bajao" → query: "romantic Hindi songs"
-   "Coldplay bajao" → query: "Coldplay"
+   "with_video" defaults to false. Set to true ONLY when the user explicitly asks for video playback.
+   Video triggers: "with video", "video mein", "video chalao", "ka video lagao", "video mode"
+   Strip the video phrase from the query — do NOT include "with video" in the query string.
+   "play Sajni" → query: "Sajni", with_video: false
+   "play Sajni with video" → query: "Sajni", with_video: true
+   "Sajni ka video lagao" → query: "Sajni", with_video: true
+   "kuch romantic sa bajao" → query: "romantic Hindi songs", with_video: false
+   "Coldplay bajao" → query: "Coldplay", with_video: false
    For mood/vague requests, translate Hindi to English search terms: "kuch sad sa" → "sad Hindi songs"
 
 2. "music_control" — Control current playback
@@ -235,6 +240,15 @@ User: "kuch romantic sa bajao"
 
 User: "woh gaana jisme ladka train pe naachta hai"
 {{"intents": [{{"intent": "music_play", "params": {{"query": "Chaiyya Chaiyya"}}}}], "response": "Playing Chaiyya Chaiyya."}}
+
+User: "play Sajni with video"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni", "with_video": true}}}}], "response": "Playing Sajni with video."}}
+
+User: "Sajni ka video lagao"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni", "with_video": true}}}}], "response": "Playing Sajni video."}}
+
+User: "Starboy video chalao"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Starboy", "with_video": true}}}}], "response": "Playing Starboy video."}}
 
 User: "pause"
 {{"intents": [{{"intent": "music_control", "params": {{"action": "pause"}}}}], "response": "Paused."}}

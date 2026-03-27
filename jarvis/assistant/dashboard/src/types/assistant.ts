@@ -115,6 +115,7 @@ export interface NowPlayingData {
   art_url?: string | null
   duration?: number
   position?: number
+  video_id?: string
 }
 
 export interface NowPlayingMessage {
@@ -260,6 +261,7 @@ export interface NowPlaying {
   duration: number
   position: number
   paused: boolean
+  videoId: string | null
 }
 
 export interface LightsState {
@@ -313,4 +315,5 @@ export interface AssistantActions {
   btScan: () => void
   btPair: (mac: string) => void
   btDisconnect: (mac: string) => void
+  closeVideo: () => void
 }

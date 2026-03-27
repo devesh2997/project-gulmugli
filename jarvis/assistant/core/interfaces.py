@@ -280,8 +280,17 @@ class MusicProvider(ABC):
         ...
 
     @abstractmethod
-    def play(self, song: SongResult) -> bool:
-        """Start playing a song. Returns True if playback started successfully."""
+    def play(self, song: SongResult, video: bool = False) -> bool:
+        """
+        Start playing a song. Returns True if playback started successfully.
+
+        Args:
+            song: The song to play.
+            video: If True, the dashboard will handle video playback via YouTube
+                   iframe embed. mpv is NOT started — the iframe handles both
+                   audio and video. The provider stores the video_id for the
+                   dashboard to pick up via current_video_id.
+        """
         ...
 
     @abstractmethod

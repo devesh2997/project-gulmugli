@@ -111,6 +111,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
             duration: msg.data.duration || 0,
             position: msg.data.position || 0,
             paused: msg.paused ?? false,
+            videoId: msg.data.video_id || null,
           } : null,
         }))
         break
@@ -322,6 +323,16 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     btDisconnect: (mac: string) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'bt_disconnect', mac }))
+      }
+    },
+    closeVideo: () => {
+      // Clear videoId locally and notify backend
+      setState(prev => ({
+        ...prev,
+        nowPlaying: prev.nowPlaying ? { ...prev.nowPlaying, videoId: null } : null,
+      }))
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'close_video' }))
       }
     },
   }

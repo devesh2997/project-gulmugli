@@ -46,6 +46,7 @@ class YouTubeMusicProvider(MusicProvider):
         self._mpv_process = None
         self._last_song: SongResult | None = None
         self._paused: bool = False
+        self._current_video_id: str | None = None
 
         # Kill any orphaned mpv from previous sessions on startup
         self.stop()
@@ -132,12 +133,27 @@ class YouTubeMusicProvider(MusicProvider):
             for r in results
         ]
 
-    def play(self, song: SongResult) -> bool:
+    @property
+    def current_video_id(self) -> str | None:
+        """The YouTube videoId when playing in video mode, None otherwise."""
+        return self._current_video_id
+
+    def play(self, song: SongResult, video: bool = False) -> bool:
         # Stop any existing playback
         self.stop()
 
         self._last_song = song
         self._paused = False
+
+        # Video mode: the dashboard iframe handles both audio and video.
+        # We do NOT start mpv — just store the video_id for the dashboard.
+        if video:
+            self._current_video_id = song.uri
+            log.info('Video mode — dashboard will play videoId=%s', song.uri)
+            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
+            return True
+
+        self._current_video_id = None
         url = f"https://www.youtube.com/watch?v={song.uri}"
 
         # mpv with:
