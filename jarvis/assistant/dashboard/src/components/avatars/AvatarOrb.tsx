@@ -85,6 +85,20 @@ function getBaseDuration(): number {
   return isNaN(parsed) ? 4 : parsed
 }
 
+/**
+ * Resolve the current time-of-day brightness multiplier from the CSS custom
+ * property written by useTimeOfDay. Ranges from 0.35 (deep night) to 1.0
+ * (full brightness, afternoon). Falls back to 1.0 if missing.
+ */
+function getTimeBrightness(): number {
+  if (typeof window === 'undefined') return 1
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue('--time-current-brightness')
+    .trim()
+  const parsed = parseFloat(raw)
+  return isNaN(parsed) ? 1 : parsed
+}
+
 export function AvatarOrb({ size, state }: AvatarOrbProps) {
   const config = STATE_CONFIGS[state] ?? STATE_CONFIGS.idle
 
@@ -93,29 +107,34 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
   const baseDuration = getBaseDuration()
   const breatheDuration = baseDuration * config.breatheMultiplier
 
+  // Time-of-day brightness: dims the orb at night (0.35) vs afternoon (1.0).
+  const brightness = getTimeBrightness()
+  const opacity = config.opacity * brightness
+  const glowOpacity = config.glowOpacity * brightness
+
   const orbVariants = useMemo(() => ({
     animate: {
       scale: [config.scale, config.scale * 1.04, config.scale],
-      opacity: [config.opacity, config.opacity * 0.9, config.opacity],
+      opacity: [opacity, opacity * 0.9, opacity],
       transition: {
         duration: breatheDuration,
         repeat: Infinity,
         ease: 'easeInOut' as const,
       },
     },
-  }), [config, breatheDuration])
+  }), [config, breatheDuration, opacity])
 
   const glowVariants = useMemo(() => ({
     animate: {
       scale: [config.glowScale, config.glowScale * 1.15, config.glowScale],
-      opacity: [config.glowOpacity, config.glowOpacity * 0.6, config.glowOpacity],
+      opacity: [glowOpacity, glowOpacity * 0.6, glowOpacity],
       transition: {
         duration: breatheDuration * 1.2,
         repeat: Infinity,
         ease: 'easeInOut' as const,
       },
     },
-  }), [config, breatheDuration])
+  }), [config, breatheDuration, glowOpacity])
 
   // Thinking state: slow rotation to convey processing
   const thinkingRotation = state === 'thinking'
@@ -162,7 +181,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         }}
         animate={{
           scale: [1, 1.08, 1],
-          opacity: [config.glowOpacity * 0.5, config.glowOpacity * 0.3, config.glowOpacity * 0.5],
+          opacity: [glowOpacity * 0.5, glowOpacity * 0.3, glowOpacity * 0.5],
           transition: {
             duration: breatheDuration * 0.8,
             repeat: Infinity,

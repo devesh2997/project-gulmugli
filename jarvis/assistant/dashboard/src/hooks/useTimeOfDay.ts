@@ -29,6 +29,7 @@ interface TimePalette {
   accent_glow: string
   text_primary_opacity: number
   orb_breathe_duration: string
+  brightness: number
 }
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ function lerpPalettes(from: TimePalette, to: TimePalette, t: number): TimePalett
     accent_glow: lerpHex(from.accent_glow, to.accent_glow, t),
     text_primary_opacity: lerpValue(from.text_primary_opacity, to.text_primary_opacity, t) as number,
     orb_breathe_duration: lerpDuration(from.orb_breathe_duration, to.orb_breathe_duration, t),
+    brightness: lerpValue(from.brightness, to.brightness, t) as number,
   }
 }
 
