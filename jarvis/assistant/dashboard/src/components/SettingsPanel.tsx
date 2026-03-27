@@ -50,7 +50,7 @@ function BackgroundModePicker() {
           <rect x="3" y="3" width="18" height="18" rx="3" />
           <path d="M3 9h18" />
         </svg>
-        <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
           Background Style
         </span>
       </div>
@@ -66,10 +66,10 @@ function BackgroundModePicker() {
               borderRadius: 12,
               border: `1px solid ${m.id === active
                 ? 'rgba(var(--personality-accent-rgb), 0.3)'
-                : 'rgba(255,255,255,0.06)'}`,
+                : 'var(--border-subtle)'}`,
               background: m.id === active
                 ? 'rgba(var(--personality-accent-rgb), 0.1)'
-                : 'rgba(255,255,255,0.02)',
+                : 'transparent',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column' as const,
@@ -79,13 +79,13 @@ function BackgroundModePicker() {
           >
             <span style={{
               fontSize: 11, fontWeight: 600,
-              color: m.id === active ? 'var(--personality-accent)' : 'rgba(255,255,255,0.5)',
+              color: m.id === active ? 'var(--personality-accent)' : 'var(--text-secondary)',
             }}>
               {m.label}
             </span>
             <span style={{
               fontSize: 9,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'var(--text-tertiary)',
             }}>
               {m.desc}
             </span>
@@ -195,7 +195,7 @@ function CategorySection({ cat, children }: { cat: string; children: React.React
           display: 'flex', alignItems: 'center', gap: 8,
           width: '100%', padding: '0 0 12px 0',
           background: 'none', border: 'none', cursor: 'pointer',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid var(--border-subtle)',
           marginBottom: open ? 16 : 0,
         }}
       >
@@ -282,7 +282,7 @@ export function SettingsPanel({ store }: Props) {
         <motion.div
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 1.5, repeat: Infinity }}
-          style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}
+          style={{ color: 'var(--text-secondary)', fontSize: 13 }}
         >
           Loading settings...
         </motion.div>

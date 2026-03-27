@@ -86,11 +86,11 @@ function ColorStrip({ currentColor, on, onColorChange }: {
       onPointerUp={handlePointerUp}
       style={{
         height: 28, borderRadius: 14,
-        background: on ? GRADIENT : `linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.1) 100%)`,
+        background: on ? GRADIENT : `linear-gradient(90deg, var(--surface-subtle) 0%, var(--border-subtle) 100%)`,
         cursor: 'pointer', position: 'relative',
         touchAction: 'none',
         boxShadow: on ? `inset 0 1px 3px rgba(0,0,0,0.2)` : 'none',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid var(--border-subtle)',
       }}
     >
       {/* Glowing indicator */}
@@ -102,7 +102,7 @@ function ColorStrip({ currentColor, on, onColorChange }: {
             position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)',
             width: 22, height: 22, borderRadius: 11,
             background: currentColor,
-            border: '2.5px solid rgba(255,255,255,0.8)',
+            border: '2.5px solid var(--text-primary)',
             boxShadow: `0 0 12px ${currentColor}88, 0 2px 6px rgba(0,0,0,0.3)`,
           }}
         />
@@ -146,7 +146,7 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       {/* Dim sun icon */}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round">
+        stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round">
         <circle cx="12" cy="12" r="4" />
         <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
       </svg>
@@ -158,9 +158,9 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
         onPointerUp={handlePointerUp}
         style={{
           flex: 1, height: 12, borderRadius: 6,
-          background: 'rgba(255,255,255,0.06)', cursor: 'pointer',
+          background: 'var(--surface-subtle)', cursor: 'pointer',
           position: 'relative', touchAction: 'none',
-          border: '1px solid rgba(255,255,255,0.04)',
+          border: '1px solid var(--border-subtle)',
         }}
       >
         {/* Filled portion */}
@@ -170,8 +170,8 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
           style={{
             height: '100%', borderRadius: 6,
             background: on
-              ? `linear-gradient(90deg, rgba(255,255,255,0.08), ${color})`
-              : 'rgba(255,255,255,0.1)',
+              ? `linear-gradient(90deg, var(--surface-subtle), ${color})`
+              : 'var(--border-subtle)',
           }}
         />
         {/* Thumb */}
@@ -182,7 +182,7 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
             position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)',
             width: 22, height: 22, borderRadius: 11,
             background: '#1a1820',
-            border: `2.5px solid ${on ? color : 'rgba(255,255,255,0.25)'}`,
+            border: `2.5px solid ${on ? color : 'var(--text-tertiary)'}`,
             boxShadow: on ? `0 0 10px ${color}44, 0 2px 6px rgba(0,0,0,0.4)` : '0 2px 6px rgba(0,0,0,0.3)',
           }}
         />
@@ -190,14 +190,14 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
 
       {/* Bright sun icon */}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round">
+        stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round">
         <circle cx="12" cy="12" r="5" />
         <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
       </svg>
 
       {/* Value */}
       <span style={{
-        fontSize: 12, color: 'rgba(255,255,255,0.5)',
+        fontSize: 12, color: 'var(--text-secondary)',
         fontFamily: 'monospace', minWidth: 32, textAlign: 'right',
       }}>
         {brightness}%
@@ -242,7 +242,7 @@ function SceneCard({ name, isActive, on, color, onSelect }: {
       animate={{
         borderColor: isActive && on
           ? `${color}88`
-          : 'rgba(255,255,255,0.06)',
+          : 'var(--border-subtle)',
         boxShadow: isActive && on
           ? `0 0 16px ${color}30`
           : '0 2px 8px rgba(0,0,0,0.2)',
@@ -255,8 +255,8 @@ function SceneCard({ name, isActive, on, color, onSelect }: {
         alignItems: 'center', gap: 8,
         padding: '12px 8px 10px',
         borderRadius: 14,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1.5px solid rgba(255,255,255,0.06)',
+        background: 'transparent',
+        border: '1.5px solid var(--border-subtle)',
         cursor: 'pointer',
       }}
     >
@@ -269,7 +269,7 @@ function SceneCard({ name, isActive, on, color, onSelect }: {
         transition: 'opacity 0.25s ease',
       }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          stroke="var(--text-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d={visual.icon} />
         </svg>
       </div>
@@ -278,7 +278,7 @@ function SceneCard({ name, isActive, on, color, onSelect }: {
       <span style={{
         fontSize: 10, fontWeight: 600,
         letterSpacing: 0.3,
-        color: isActive && on ? color : 'rgba(255,255,255,0.4)',
+        color: isActive && on ? color : 'var(--text-secondary)',
         transition: 'color 0.25s ease',
       }}>
         {displayName}
@@ -333,7 +333,7 @@ export function LightsPanel({ store }: Props) {
       {/* Status text */}
       <div style={{
         textAlign: 'center', fontSize: 12,
-        color: on ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)',
+        color: on ? 'var(--text-secondary)' : 'var(--text-tertiary)',
         marginTop: -12,
       }}>
         {on ? `On \u2014 ${brightness}%` : 'Off'}
@@ -344,7 +344,7 @@ export function LightsPanel({ store }: Props) {
         <div style={{
           fontSize: 10, fontWeight: 600, letterSpacing: 2,
           textTransform: 'uppercase' as const,
-          color: 'rgba(255,255,255,0.3)', marginBottom: 12,
+          color: 'var(--text-tertiary)', marginBottom: 12,
         }}>
           Colour
         </div>
@@ -360,7 +360,7 @@ export function LightsPanel({ store }: Props) {
         <div style={{
           fontSize: 10, fontWeight: 600, letterSpacing: 2,
           textTransform: 'uppercase' as const,
-          color: 'rgba(255,255,255,0.3)', marginBottom: 12,
+          color: 'var(--text-tertiary)', marginBottom: 12,
         }}>
           Brightness
         </div>
@@ -377,7 +377,7 @@ export function LightsPanel({ store }: Props) {
         <div style={{
           fontSize: 10, fontWeight: 600, letterSpacing: 2,
           textTransform: 'uppercase' as const,
-          color: 'rgba(255,255,255,0.3)', marginBottom: 12,
+          color: 'var(--text-tertiary)', marginBottom: 12,
         }}>
           Scenes
         </div>

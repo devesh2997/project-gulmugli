@@ -150,7 +150,7 @@ export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
               whileTap={{ scale: 0.97 }}
               animate={{
                 y: isActive ? -2 : 0,
-                borderColor: isActive ? color : 'rgba(255,255,255,0.06)',
+                borderColor: isActive ? color : 'var(--border-subtle)',
                 boxShadow: isActive
                   ? `0 0 20px ${color}40, 0 4px 12px rgba(0,0,0,0.3)`
                   : '0 2px 8px rgba(0,0,0,0.2)',
@@ -163,9 +163,9 @@ export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
                 minWidth: 72, padding: '12px 10px 10px',
                 borderRadius: 14,
                 background: isActive
-                  ? `rgba(255,255,255,0.06)`
-                  : 'rgba(255,255,255,0.02)',
-                border: '1.5px solid rgba(255,255,255,0.06)',
+                  ? 'var(--surface-subtle)'
+                  : 'transparent',
+                border: '1.5px solid var(--border-subtle)',
                 cursor: 'pointer',
                 flexShrink: 0,
               }}
@@ -181,7 +181,7 @@ export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
               {/* Name */}
               <motion.span
                 animate={{
-                  color: isActive ? color : 'rgba(255,255,255,0.4)',
+                  color: isActive ? color : 'var(--text-secondary)',
                 }}
                 transition={{ duration: 0.25 }}
                 style={{

@@ -59,9 +59,9 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.path
             d="M45 56 L50 28 L90 28 L95 56 Z"
             animate={{
-              fill: on ? color : 'rgba(255,255,255,0.03)',
+              fill: on ? color : 'var(--surface-subtle)',
               fillOpacity: on ? fillOpacity : 1,
-              stroke: on ? color : 'rgba(255,255,255,0.12)',
+              stroke: on ? color : 'var(--border-subtle)',
             }}
             transition={{ type: 'spring', stiffness: 200, damping: 25 }}
             strokeWidth="1.5"
@@ -72,7 +72,7 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.line
             x1="43" y1="57" x2="97" y2="57"
             animate={{
-              stroke: on ? color : 'rgba(255,255,255,0.15)',
+              stroke: on ? color : 'var(--text-tertiary)',
             }}
             transition={{ duration: 0.3 }}
             strokeWidth="2"
@@ -83,7 +83,7 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.rect
             x="66" y="57" width="8" height="22" rx="2"
             animate={{
-              fill: on ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
+              fill: on ? 'var(--text-tertiary)' : 'var(--surface-subtle)',
             }}
             transition={{ duration: 0.3 }}
           />
@@ -92,8 +92,8 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.ellipse
             cx="70" cy="82" rx="18" ry="4"
             animate={{
-              fill: on ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
-              stroke: on ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)',
+              fill: on ? 'var(--border-subtle)' : 'var(--surface-subtle)',
+              stroke: on ? 'var(--text-tertiary)' : 'var(--surface-subtle)',
             }}
             transition={{ duration: 0.3 }}
             strokeWidth="1"
@@ -103,7 +103,7 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.line
             x1="25" y1="120" x2="115" y2="120"
             animate={{
-              stroke: on ? `${color}33` : 'rgba(255,255,255,0.06)',
+              stroke: on ? `${color}33` : 'var(--surface-subtle)',
             }}
             transition={{ duration: 0.3 }}
             strokeWidth="1"
@@ -115,8 +115,8 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.rect
             x="100" y="114" width="10" height="5" rx="1"
             animate={{
-              fill: on ? `${color}22` : 'rgba(255,255,255,0.03)',
-              stroke: on ? `${color}33` : 'rgba(255,255,255,0.06)',
+              fill: on ? `${color}22` : 'var(--surface-subtle)',
+              stroke: on ? `${color}33` : 'var(--surface-subtle)',
             }}
             transition={{ duration: 0.3 }}
             strokeWidth="0.5"
@@ -126,8 +126,8 @@ export function LightOrb({ on, color, brightness, onToggle }: Props) {
           <motion.path
             d="M32 113 L32 119 L38 119 L38 113 Z"
             animate={{
-              fill: on ? `${color}18` : 'rgba(255,255,255,0.02)',
-              stroke: on ? `${color}28` : 'rgba(255,255,255,0.05)',
+              fill: on ? `${color}18` : 'transparent',
+              stroke: on ? `${color}28` : 'var(--surface-subtle)',
             }}
             transition={{ duration: 0.3 }}
             strokeWidth="0.5"

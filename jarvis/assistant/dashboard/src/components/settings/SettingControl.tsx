@@ -27,7 +27,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       animate={{
         background: checked
           ? 'var(--personality-accent)'
-          : 'rgba(255,255,255,0.08)',
+          : 'var(--surface-subtle)',
         boxShadow: checked
           ? 'inset 0 0 12px rgba(var(--personality-accent-rgb), 0.3)'
           : 'inset 0 1px 3px rgba(0,0,0,0.3)',
@@ -45,7 +45,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         style={{
           width: 22, height: 22, borderRadius: 11,
-          background: checked ? '#fff' : 'rgba(255,255,255,0.35)',
+          background: checked ? '#fff' : 'var(--text-secondary)',
           boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
         }}
       />
@@ -95,7 +95,7 @@ function Slider({ value, min, max, step, color, onChange }: {
         onPointerUp={handlePointerUp}
         style={{
           flex: 1, height: 12, borderRadius: 6,
-          background: 'rgba(255,255,255,0.06)', cursor: 'pointer',
+          background: 'var(--surface-subtle)', cursor: 'pointer',
           position: 'relative', touchAction: 'none',
         }}
       >
@@ -125,7 +125,7 @@ function Slider({ value, min, max, step, color, onChange }: {
         </motion.div>
       </div>
       <span style={{
-        fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace',
+        fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'monospace',
         minWidth: 40, textAlign: 'right',
       }}>
         {step >= 1 ? value : value.toFixed(2)}
@@ -160,8 +160,8 @@ function SegmentedControl({ value, choices, onChange }: {
       ref={containerRef}
       style={{
         display: 'flex', gap: 0, padding: 3, borderRadius: 10,
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--surface-subtle)',
+        border: '1px solid var(--border-subtle)',
         position: 'relative',
       }}
     >
@@ -187,7 +187,7 @@ function SegmentedControl({ value, choices, onChange }: {
             flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none',
             cursor: 'pointer', fontSize: 11, fontWeight: 500,
             background: 'transparent',
-            color: c === value ? 'var(--personality-accent)' : 'rgba(255,255,255,0.35)',
+            color: c === value ? 'var(--personality-accent)' : 'var(--text-tertiary)',
             position: 'relative', zIndex: 1,
             transition: 'color 0.2s ease',
           }}
@@ -215,8 +215,8 @@ function TextInput({ value, onChange }: { value: string; onChange: (v: string) =
         onKeyDown={e => { if (e.key === 'Enter') onChange(local) }}
         style={{
           background: 'transparent', border: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.12)',
-          color: 'rgba(255,255,255,0.8)', fontSize: 13, padding: '6px 0',
+          borderBottom: '1px solid var(--border-subtle)',
+          color: 'var(--text-primary)', fontSize: 13, padding: '6px 0',
           outline: 'none', width: '100%', fontFamily: 'inherit',
         }}
       />
@@ -287,11 +287,11 @@ export function SettingControl({ setting, onUpdate }: Props) {
       gap: isInline ? 12 : 6,
     }}>
       <div style={{ flex: isInline ? 1 : undefined }}>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
           {label}
         </div>
         {description && (
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
             {description}
           </div>
         )}

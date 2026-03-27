@@ -83,7 +83,7 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
           </svg>
           <span style={{
             fontSize: 13, fontWeight: 500,
-            color: 'rgba(255,255,255,0.8)',
+            color: 'var(--text-primary)',
           }}>
             Ambient Brightness
           </span>
@@ -96,12 +96,12 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
           style={{
             fontSize: 10, fontWeight: 700,
             letterSpacing: '0.05em',
-            color: isAuto ? 'rgba(255,255,255,0.3)' : 'var(--personality-accent)',
+            color: isAuto ? 'var(--text-tertiary)' : 'var(--personality-accent)',
             background: isAuto
-              ? 'rgba(255,255,255,0.05)'
+              ? 'var(--surface-subtle)'
               : 'rgba(var(--personality-accent-rgb), 0.12)',
             border: `1px solid ${isAuto
-              ? 'rgba(255,255,255,0.06)'
+              ? 'var(--border-subtle)'
               : 'rgba(var(--personality-accent-rgb), 0.2)'}`,
             borderRadius: 10,
             padding: '3px 8px',
@@ -116,7 +116,7 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Moon/dark icon */}
         <svg width="12" height="12" viewBox="0 0 24 24"
-          fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2" strokeLinecap="round"
+          fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round"
           style={{ flexShrink: 0 }}
         >
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
@@ -128,7 +128,7 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
           onPointerDown={handlePointerDown}
           style={{
             flex: 1, height: 8, borderRadius: 4,
-            background: 'rgba(255,255,255,0.06)',
+            background: 'var(--surface-subtle)',
             cursor: 'pointer',
             position: 'relative',
             touchAction: 'none',
@@ -160,7 +160,7 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
 
         {/* Sun/bright icon */}
         <svg width="14" height="14" viewBox="0 0 24 24"
-          fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="2" strokeLinecap="round"
+          fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round"
           style={{ flexShrink: 0 }}
         >
           <circle cx="12" cy="12" r="5" />
@@ -177,7 +177,7 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
 
       {/* Description */}
       <div style={{
-        fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 8,
+        fontSize: 11, color: 'var(--text-tertiary)', marginTop: 8,
       }}>
         {isAuto
           ? 'Follows time of day automatically'

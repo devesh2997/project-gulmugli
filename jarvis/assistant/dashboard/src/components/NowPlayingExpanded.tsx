@@ -105,13 +105,13 @@ function ControlBtn({ onClick, label, primary = false, size = 40, children }: {
         flexShrink: 0,
         background: primary
           ? 'rgba(var(--personality-accent-rgb), 0.15)'
-          : 'rgba(255, 255, 255, 0.04)',
+          : 'var(--surface-subtle)',
         border: primary
           ? '1px solid rgba(var(--personality-accent-rgb), 0.3)'
-          : '1px solid rgba(255, 255, 255, 0.06)',
+          : '1px solid var(--border-subtle)',
         color: primary
           ? 'var(--personality-accent)'
-          : 'rgba(255, 255, 255, 0.55)',
+          : 'var(--text-secondary)',
       }}
     >
       {children}
@@ -204,7 +204,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
           background: 'rgba(14, 14, 14, 0.88)',
           backdropFilter: 'blur(32px)',
           WebkitBackdropFilter: 'blur(32px)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          border: '1px solid var(--border-subtle)',
           borderBottom: 'none',
           boxShadow: '0 -4px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(var(--personality-accent-rgb), 0.05)',
           display: 'flex',
@@ -221,7 +221,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
             width: 36,
             height: 4,
             borderRadius: 2,
-            background: 'rgba(255, 255, 255, 0.15)',
+            background: 'var(--text-tertiary)',
           }} />
         </div>
 
@@ -262,7 +262,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
             <div style={{
               fontSize: '1.05rem',
               fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.92)',
+              color: 'var(--text-primary)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -283,7 +283,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
             {nowPlaying.album && (
               <div style={{
                 fontSize: '0.7rem',
-                color: 'rgba(255, 255, 255, 0.3)',
+                color: 'var(--text-tertiary)',
                 marginTop: 2,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -309,7 +309,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
                 width: '100%',
                 height: 12,  /* larger hit target for touch */
                 borderRadius: 9999,
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'var(--surface-subtle)',
                 cursor: 'pointer',
                 position: 'relative',
                 display: 'flex',
@@ -348,7 +348,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
               justifyContent: 'space-between',
               marginTop: 6,
               fontSize: '0.62rem',
-              color: 'rgba(255, 255, 255, 0.3)',
+              color: 'var(--text-tertiary)',
               fontFamily: 'ui-monospace, "SF Mono", "Cascadia Mono", monospace',
             }}>
               <span>{fmt(nowPlaying.position)}</span>
@@ -389,7 +389,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
 
         {/* Volume */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: 'rgba(255, 255, 255, 0.3)', flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>
             <path d="M2 5h2.5L8 2v10L4.5 9H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
             <path d="M10 5.5a2.5 2.5 0 0 1 0 3" stroke="currentColor" strokeWidth={1.2} fill="none" strokeLinecap="round" />
           </svg>
@@ -407,7 +407,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
               height: 4,
             }}
           />
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: 'rgba(255, 255, 255, 0.3)', flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>
             <path d="M2 5h2.5L8 2v10L4.5 9H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
             <path d="M10 4.5a3.5 3.5 0 0 1 0 5M12 3a5.5 5.5 0 0 1 0 8" stroke="currentColor" strokeWidth={1.2} fill="none" strokeLinecap="round" />
           </svg>

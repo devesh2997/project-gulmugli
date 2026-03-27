@@ -98,12 +98,12 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
         <span style={{
           fontSize: 12, fontWeight: 600,
           letterSpacing: '0.08em',
-          color: 'rgba(255,255,255,0.5)',
+          color: 'var(--text-secondary)',
         }}>
           Conversation
         </span>
         <span style={{
-          fontSize: 10, color: 'rgba(255,255,255,0.2)', marginLeft: 'auto',
+          fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto',
         }}>
           {messages.length > 0 ? `${messages.length} messages` : ''}
         </span>
@@ -141,7 +141,7 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
               <line x1="8" y1="21" x2="16" y2="21" />
             </svg>
             <p style={{
-              fontSize: 13, color: 'rgba(255,255,255,0.35)',
+              fontSize: 13, color: 'var(--text-tertiary)',
               textAlign: 'center', lineHeight: 1.5, margin: 0,
             }}>
               Say something or type below
@@ -166,7 +166,7 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
                         textAlign: 'center',
                         padding: '8px 0 4px',
                         fontSize: 10,
-                        color: 'rgba(255,255,255,0.2)',
+                        color: 'var(--text-tertiary)',
                         letterSpacing: '0.05em',
                       }}
                     >
@@ -191,10 +191,10 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
                       borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                       background: isUser
                         ? 'rgba(var(--personality-accent-rgb), 0.15)'
-                        : 'rgba(255, 255, 255, 0.05)',
+                        : 'var(--surface-subtle)',
                       border: `1px solid ${isUser
                         ? 'rgba(var(--personality-accent-rgb), 0.2)'
-                        : 'rgba(255, 255, 255, 0.06)'}`,
+                        : 'var(--border-subtle)'}`,
                       backdropFilter: 'blur(8px)',
                     }}>
                       <p style={{
@@ -203,7 +203,7 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
                         lineHeight: 1.5,
                         color: isUser
                           ? 'var(--personality-accent)'
-                          : 'rgba(255, 255, 255, 0.75)',
+                          : 'var(--text-primary)',
                         wordBreak: 'break-word',
                       }}>
                         {msg.text}
@@ -246,11 +246,11 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
                 borderRadius: 20,
                 border: `1px solid ${inputFocused
                   ? 'rgba(var(--personality-accent-rgb), 0.3)'
-                  : 'rgba(255,255,255,0.08)'}`,
+                  : 'var(--border-subtle)'}`,
                 background: inputFocused
                   ? 'rgba(var(--personality-accent-rgb), 0.06)'
-                  : 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.85)',
+                  : 'var(--surface-subtle)',
+                color: 'var(--text-primary)',
                 fontSize: 13,
                 outline: 'none',
                 fontFamily: 'inherit',
@@ -272,7 +272,7 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
               width: 36, height: 36, borderRadius: 18,
               background: inputValue.trim()
                 ? 'var(--personality-accent)'
-                : 'rgba(255,255,255,0.06)',
+                : 'var(--surface-subtle)',
               border: 'none',
               cursor: inputValue.trim() ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -285,7 +285,7 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
           >
             {/* Arrow up icon */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke={inputValue.trim() ? '#fff' : 'rgba(255,255,255,0.2)'}
+              stroke={inputValue.trim() ? '#fff' : 'var(--text-tertiary)'}
               strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             >
               <line x1="12" y1="19" x2="12" y2="5" />
