@@ -5,7 +5,7 @@
  * Auto-reconnects with exponential backoff on disconnection.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type {
   AssistantState,
   AssistantStore,
@@ -230,7 +230,8 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
   }, [])
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return
+    if (wsRef.current?.readyState === WebSocket.OPEN ||
+        wsRef.current?.readyState === WebSocket.CONNECTING) return
 
     try {
       const ws = new WebSocket(url)
@@ -277,7 +278,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     }
   }, [])
 
-  const actions: AssistantActions = {
+  const actions: AssistantActions = useMemo(() => ({
     pause: () => sendAction({ action: 'music_control', params: { action: 'pause' } }),
     resume: () => sendAction({ action: 'music_control', params: { action: 'resume' } }),
     skip: () => sendAction({ action: 'music_control', params: { action: 'skip' } }),
@@ -335,7 +336,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'close_video' }))
       }
     },
-  }
+  }), [sendAction])
 
   useEffect(() => {
     connect()

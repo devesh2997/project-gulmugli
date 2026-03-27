@@ -14,9 +14,11 @@ Why a module of functions, not a class?
   - Easy to extend: add a new elif branch + handler function.
 """
 
+import threading
 from datetime import datetime
 
 from core.config import config
+from core.interfaces import Intent
 from core.logger import get_logger
 from core.personality import personality_manager
 
@@ -24,14 +26,16 @@ log = get_logger("intent_handler")
 
 # ── Sleep mode state ─────────────────────────────────────────────
 # Module-level flag so main.py can check it from the wake word loop.
-_sleep_mode: bool = False
+# Protected by _sleep_lock for thread safety — accessed from the wake word
+# thread, the pipeline thread pool, and the UI action handler.
+_sleep_mode = threading.Event()
+_sleep_lock = threading.Lock()
 _pre_sleep_volume: int | None = None
-_pre_sleep_brightness: int | None = None
 
 
 def is_sleep_mode() -> bool:
     """Check if the assistant is currently in sleep mode."""
-    return _sleep_mode
+    return _sleep_mode.is_set()
 
 
 def trigger_wake(assistant: dict) -> str:
@@ -40,17 +44,31 @@ def trigger_wake(assistant: dict) -> str:
     or from ui/actions.py when the user taps the screen.
     Returns the spoken response string.
     """
-    intent = type('Intent', (), {
-        'name': 'sleep',
-        'params': {'action': 'wake'},
-        'response': 'Good morning! Ready when you are.',
-        'confidence': 1.0,
-        'meta': {'source': 'auto_wake'},
-    })()
+    intent = Intent(
+        name='sleep',
+        params={'action': 'wake'},
+        response='Good morning! Ready when you are.',
+        confidence=1.0,
+        meta={'source': 'auto_wake'},
+    )
     return handle_intent(assistant, intent)
 
 
 # ── Helpers ──────────────────────────────────────────────────────
+
+def _build_now_playing_data(song, with_video: bool = False) -> dict:
+    """Build a now-playing payload dict for the dashboard from a SongResult."""
+    data = {
+        "title": song.title,
+        "artist": song.artist,
+        "album": song.album or "",
+        "duration": _parse_duration(song.duration),
+        "position": 0,
+    }
+    if with_video and song.uri:
+        data["video_id"] = song.uri
+    return data
+
 
 def _parse_duration(duration_str: str) -> int:
     """Parse YouTube Music duration string ("3:45") to seconds."""
@@ -111,16 +129,7 @@ def handle_intent(assistant: dict, intent) -> str:
                 music.play(song, video=with_video)
                 face_ui = assistant.get("face_ui")
                 if face_ui:
-                    now_playing_data = {
-                        "title": song.title,
-                        "artist": song.artist,
-                        "album": song.album or "",
-                        "duration": _parse_duration(song.duration),
-                        "position": 0,
-                    }
-                    if with_video and song.uri:
-                        now_playing_data["video_id"] = song.uri
-                    face_ui.set_now_playing(now_playing_data)
+                    face_ui.set_now_playing(_build_now_playing_data(song, with_video))
                 return f"Playing {song.title} by {song.artist} again."
             elif not raw_query:
                 return "I don't have anything to play. Tell me what you'd like to hear."
@@ -143,16 +152,7 @@ def handle_intent(assistant: dict, intent) -> str:
             # Notify dashboard
             face_ui = assistant.get("face_ui")
             if face_ui:
-                now_playing_data = {
-                    "title": song.title,
-                    "artist": song.artist,
-                    "album": song.album or "",
-                    "duration": _parse_duration(song.duration),
-                    "position": 0,
-                }
-                if with_video and song.uri:
-                    now_playing_data["video_id"] = song.uri
-                face_ui.set_now_playing(now_playing_data)
+                face_ui.set_now_playing(_build_now_playing_data(song, with_video))
 
             suffix = " with video" if with_video else ""
             return f"Playing {song.title} by {song.artist}{suffix}."
@@ -184,15 +184,7 @@ def handle_intent(assistant: dict, intent) -> str:
                     face_ui.set_music_paused(False)
                     # If resume replayed the last song, update now-playing
                     if music._last_song and not music._paused:
-                        face_ui.set_now_playing({
-                            "title": music._last_song.title,
-                            "artist": music._last_song.artist,
-                            "album": music._last_song.album or "",
-                            "duration": _parse_duration(music._last_song.duration),
-                            "position": 0,
-                        })
-                elif action == "resume":
-                    face_ui.set_music_paused(False)
+                        face_ui.set_now_playing(_build_now_playing_data(music._last_song))
 
             return intent.response or f"{action.title()}."
         else:
@@ -266,7 +258,7 @@ def handle_intent(assistant: dict, intent) -> str:
             return f"I don't know that personality. Available: {available}."
 
     elif intent.name == "sleep":
-        global _sleep_mode, _pre_sleep_volume, _pre_sleep_brightness
+        global _pre_sleep_volume
         action = intent.params.get("action", "")
         face_ui = assistant.get("face_ui")
         music = assistant.get("music")
@@ -274,53 +266,53 @@ def handle_intent(assistant: dict, intent) -> str:
         sleep_cfg = config.get("sleep_mode", {})
 
         if action == "sleep":
-            _sleep_mode = True
+            with _sleep_lock:
+                _sleep_mode.set()
 
-            # Turn lights OFF completely (if configured)
-            if lights and sleep_cfg.get("turn_off_lights", True):
-                try:
-                    lights.turn_off()
-                except Exception as e:
-                    log.warning("Could not turn off lights for sleep: %s", e)
-
-            # Save current music volume, then start soothing sleep music
-            if music:
-                try:
-                    _pre_sleep_volume = music._focus_get_volume()
-                except Exception:
-                    _pre_sleep_volume = 100
-
-                sleep_volume = sleep_cfg.get("sleep_music_volume", 10)
-
-                if sleep_cfg.get("play_sleep_music", True):
-                    # Search for and play soothing sleep music at low volume
+                # Turn lights OFF completely (if configured)
+                if lights and sleep_cfg.get("turn_off_lights", True):
                     try:
-                        from core.interfaces import SongResult
-                        sleep_query = sleep_cfg.get("sleep_music_query", "soothing relaxing sleep music ambient")
-                        results = music.search(sleep_query, raw_input=sleep_query)
-                        if results:
-                            music.play(results[0])
-                            log.info("Playing sleep music: %s", results[0].title)
-                        music.set_volume(sleep_volume)
+                        lights.turn_off()
                     except Exception as e:
-                        log.warning("Could not start sleep music: %s", e)
-                        # At least duck existing music
+                        log.warning("Could not turn off lights for sleep: %s", e)
+
+                # Save current music volume, then start soothing sleep music
+                if music:
+                    try:
+                        _pre_sleep_volume = music._focus_get_volume()
+                    except Exception:
+                        _pre_sleep_volume = 100
+
+                    sleep_volume = sleep_cfg.get("sleep_music_volume", 10)
+
+                    if sleep_cfg.get("play_sleep_music", True):
+                        # Search for and play soothing sleep music at low volume
+                        try:
+                            sleep_query = sleep_cfg.get("sleep_music_query", "soothing relaxing sleep music ambient")
+                            results = music.search(sleep_query, raw_input=sleep_query)
+                            if results:
+                                music.play(results[0])
+                                log.info("Playing sleep music: %s", results[0].title)
+                            music.set_volume(sleep_volume)
+                        except Exception as e:
+                            log.warning("Could not start sleep music: %s", e)
+                            # At least duck existing music
+                            try:
+                                music.set_volume(sleep_volume)
+                            except Exception:
+                                pass
+                    elif sleep_cfg.get("duck_existing_music", True):
+                        # No sleep music requested, but duck existing music
                         try:
                             music.set_volume(sleep_volume)
                         except Exception:
                             pass
-                elif sleep_cfg.get("duck_existing_music", True):
-                    # No sleep music requested, but duck existing music
-                    try:
-                        music.set_volume(sleep_volume)
-                    except Exception:
-                        pass
-                else:
-                    # No ducking — stop existing music entirely
-                    try:
-                        music.stop()
-                    except Exception:
-                        pass
+                    else:
+                        # No ducking — stop existing music entirely
+                        try:
+                            music.stop()
+                        except Exception:
+                            pass
 
             # Update dashboard
             if face_ui:
@@ -331,23 +323,24 @@ def handle_intent(assistant: dict, intent) -> str:
             return intent.response or "Good night, sleep well."
 
         elif action == "wake":
-            _sleep_mode = False
+            with _sleep_lock:
+                _sleep_mode.clear()
 
-            # Restore music volume (if configured)
-            if music and _pre_sleep_volume is not None and sleep_cfg.get("restore_volume_on_wake", True):
-                try:
-                    music.set_volume(_pre_sleep_volume)
-                except Exception as e:
-                    log.warning("Could not restore music volume: %s", e)
-            _pre_sleep_volume = None
+                # Restore music volume (if configured)
+                if music and _pre_sleep_volume is not None and sleep_cfg.get("restore_volume_on_wake", True):
+                    try:
+                        music.set_volume(_pre_sleep_volume)
+                    except Exception as e:
+                        log.warning("Could not restore music volume: %s", e)
+                _pre_sleep_volume = None
 
-            # Restore lights (if configured)
-            if lights and sleep_cfg.get("restore_lights_on_wake", True):
-                try:
-                    lights.turn_on()
-                    lights.set_brightness(sleep_cfg.get("wake_lights_brightness", 50))
-                except Exception as e:
-                    log.warning("Could not restore lights: %s", e)
+                # Restore lights (if configured)
+                if lights and sleep_cfg.get("restore_lights_on_wake", True):
+                    try:
+                        lights.turn_on()
+                        lights.set_brightness(sleep_cfg.get("wake_lights_brightness", 50))
+                    except Exception as e:
+                        log.warning("Could not restore lights: %s", e)
 
             # Update dashboard
             if face_ui:

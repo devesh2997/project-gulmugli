@@ -19,6 +19,8 @@ import type { NowPlaying } from '../types/assistant'
 interface NowPlayingCompactProps {
   nowPlaying: NowPlaying
   onExpand: () => void
+  /** When true, a video badge is shown and tap expands the video player instead of audio */
+  hasVideo?: boolean
 }
 
 /** Organic waveform with more bars and sine-wave motion */
@@ -110,7 +112,7 @@ function MarqueeText({ text, style }: { text: string; style?: React.CSSPropertie
   )
 }
 
-export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactProps) {
+export function NowPlayingCompact({ nowPlaying, onExpand, hasVideo }: NowPlayingCompactProps) {
   const constraintsRef = useRef<HTMLDivElement>(null)
   const isLight = useLightMode()
 
@@ -164,8 +166,29 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
           transition: 'background 0.6s ease, box-shadow 0.6s ease',
         }}
       >
-        {/* Waveform */}
-        <Waveform paused={nowPlaying.paused} isLight={isLight} />
+        {/* Waveform + video badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <Waveform paused={nowPlaying.paused} isLight={isLight} />
+          {hasVideo && (
+            <div style={{
+              width: 18,
+              height: 14,
+              borderRadius: 3,
+              background: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(var(--personality-accent-rgb), 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                <path d="M1 1.5A.5.5 0 011.5 1h4a.5.5 0 01.5.5v5a.5.5 0 01-.5.5h-4a.5.5 0 01-.5-.5v-5z"
+                  fill={isLight ? '#4a3520' : 'var(--personality-accent)'} opacity={0.9} />
+                <path d="M7 2.5l2-1v5l-2-1v-3z"
+                  fill={isLight ? '#4a3520' : 'var(--personality-accent)'} opacity={0.9} />
+              </svg>
+            </div>
+          )}
+        </div>
 
         {/* Song info */}
         <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>

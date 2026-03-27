@@ -207,28 +207,42 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None,
         future = _intent_executor.submit(_execute_one, intent)
         futures[future] = intent
 
-    # Collect results in original order, respecting per-intent timeouts
+    # Collect results in original order.
+    # Use as_completed(timeout=) to bound total wall-clock wait —
+    # individual future.result() timeouts are meaningless since the future
+    # is already done when yielded by as_completed.
     responses = [""] * len(intents)
     intent_order = {id(intent): idx for idx, intent in enumerate(intents)}
 
-    for future in as_completed(futures):
-        intent = futures[future]
-        idx = intent_order[id(intent)]
-        timeout = INTENT_TIMEOUTS.get(intent.name, 10.0)
-        try:
-            responses[idx] = future.result(timeout=timeout)
-        except TimeoutError:
-            iid = intent.meta.get("dashboard_id")
-            log.warning("Intent %s timed out after %.1fs", intent.name, timeout)
-            responses[idx] = f"{intent.name.replace('_', ' ').title()} timed out."
-            if face_ui and iid:
-                face_ui.update_intent(iid, "failed", f"Timed out after {timeout:.0f}s")
-        except Exception as exc:
-            iid = intent.meta.get("dashboard_id")
-            log.error("Intent %s unexpected error: %s", intent.name, exc)
-            responses[idx] = f"Something went wrong with {intent.name}."
-            if face_ui and iid:
-                face_ui.update_intent(iid, "failed", str(exc)[:120])
+    # Overall timeout = max of all per-intent timeouts (they run in parallel)
+    overall_timeout = max(
+        (INTENT_TIMEOUTS.get(i.name, 10.0) for i in intents),
+        default=10.0,
+    )
+
+    try:
+        for future in as_completed(futures, timeout=overall_timeout):
+            intent = futures[future]
+            idx = intent_order[id(intent)]
+            try:
+                responses[idx] = future.result()
+            except Exception as exc:
+                iid = intent.meta.get("dashboard_id")
+                log.error("Intent %s unexpected error: %s", intent.name, exc)
+                responses[idx] = f"Something went wrong with {intent.name}."
+                if face_ui and iid:
+                    face_ui.update_intent(iid, "failed", str(exc)[:120])
+    except TimeoutError:
+        # Some futures didn't finish in time — log and continue with partial results
+        for future, intent in futures.items():
+            if not future.done():
+                idx = intent_order[id(intent)]
+                iid = intent.meta.get("dashboard_id")
+                timeout = INTENT_TIMEOUTS.get(intent.name, 10.0)
+                log.warning("Intent %s timed out after %.1fs", intent.name, overall_timeout)
+                responses[idx] = f"{intent.name.replace('_', ' ').title()} timed out."
+                if face_ui and iid:
+                    face_ui.update_intent(iid, "failed", f"Timed out after {timeout:.0f}s")
 
     # ── Checkpoint: after execution, before speaking ────────────
     if _cancelled():

@@ -1,5 +1,5 @@
 /**
- * JARVIS Dashboard — layered full-screen composition.
+ * JARVIS Dashboard -- layered full-screen composition.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -22,6 +22,7 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
 import { VideoPlayer } from './components/VideoPlayer'
+import type { VideoMode } from './components/VideoPlayer'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -37,7 +38,7 @@ function AppContent() {
 
   const assistant = useAssistant('ws://localhost:8765', stableUpdateToken)
 
-  // Sync personality from backend → TokenProvider on connect/change
+  // Sync personality from backend -> TokenProvider on connect/change
   useEffect(() => {
     if (assistant.personality && assistant.personality !== currentPersonality) {
       setPersonality(assistant.personality)
@@ -46,7 +47,7 @@ function AppContent() {
 
   useTimeOfDay()
 
-  // ── Panel state ──
+  // -- Panel state --
   const [openPanel, setOpenPanel] = useState<PanelId>(null)
 
   // Stable gesture callback
@@ -64,10 +65,39 @@ function AppContent() {
 
   useGesture(handleGesture)
 
-  // ── Now-playing expanded/collapsed ──
+  // -- Now-playing expanded/collapsed --
   const [nowPlayingExpanded, setNowPlayingExpanded] = useState(false)
 
-  // ── Fullscreen toggle (F11 / Cmd+F) ──
+  // -- Video player mode (managed here so NowPlayingCompact can drive it) --
+  const [videoMode, setVideoMode] = useState<VideoMode>('full')
+
+  const hasVideo = !!assistant.nowPlaying?.videoId
+
+  // When a new videoId arrives, auto-show in full mode
+  const prevVideoIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    const currentVideoId = assistant.nowPlaying?.videoId ?? null
+    if (currentVideoId && currentVideoId !== prevVideoIdRef.current) {
+      setVideoMode('full')
+    }
+    prevVideoIdRef.current = currentVideoId
+  }, [assistant.nowPlaying?.videoId])
+
+  // Handle NowPlayingCompact tap: if video is active, expand video; otherwise expand audio
+  const handleCompactExpand = useCallback(() => {
+    if (hasVideo) {
+      setVideoMode('full')
+    } else {
+      setNowPlayingExpanded(true)
+    }
+  }, [hasVideo])
+
+  // Handle video mode changes from VideoPlayer
+  const handleVideoModeChange = useCallback((mode: VideoMode) => {
+    setVideoMode(mode)
+  }, [])
+
+  // -- Fullscreen toggle (F11 / Cmd+F) --
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'F11' || (e.key === 'f' && e.metaKey)) {
@@ -83,15 +113,13 @@ function AppContent() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // ── Avatar size: responsive to viewport, generous for 5.5" screens ──
-  // On 960x540 (5.5" landscape): ~162px. On 1920x1080: ~260px.
-  // The avatar is the centerpiece — it should feel substantial.
+  // -- Avatar size: responsive to viewport, generous for 5.5" screens --
   const vh = typeof window !== 'undefined' ? window.innerHeight : 540
   const vw = typeof window !== 'undefined' ? window.innerWidth : 960
   const smallerDim = Math.min(vh, vw)
   const avatarSize = Math.max(120, Math.min(smallerDim * 0.3, 280))
 
-  // ── Track avatar center for thought orbit positions ──
+  // -- Track avatar center for thought orbit positions --
   const avatarRef = useRef<HTMLDivElement>(null)
   const [avatarCenter, setAvatarCenter] = useState({ x: 0, y: 0 })
 
@@ -107,11 +135,17 @@ function AppContent() {
     return () => window.removeEventListener('resize', measure)
   }, [avatarSize])
 
+  // Determine whether to show NowPlayingCompact: show when music is playing AND
+  // video is not in full mode (mini/hidden video still shows compact widget)
+  const showCompact = !!assistant.nowPlaying && !nowPlayingExpanded && videoMode !== 'full'
+  // NowPlayingExpanded (audio sheet): only when no video is active
+  const showExpanded = !!assistant.nowPlaying && nowPlayingExpanded && !hasVideo
+
   return (
     <div className="fixed inset-0 overflow-hidden">
       <Canvas />
 
-      {/* Sleep mode dim wrapper — dims all UI elements when sleep is active */}
+      {/* Sleep mode dim wrapper */}
       <motion.div
         animate={{ opacity: assistant.sleepMode ? 0.2 : 1 }}
         transition={{
@@ -120,9 +154,8 @@ function AppContent() {
         }}
         style={{ position: 'absolute', inset: 0 }}
       >
-        {/* Center column: avatar → clock, stacked vertically */}
+        {/* Center column: avatar -> clock */}
         <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ gap: 0 }}>
-          {/* Avatar — tap to activate (same as wake word) */}
           <div
             ref={avatarRef}
             onClick={() => assistant.actions.sendText('__wake__')}
@@ -139,13 +172,12 @@ function AppContent() {
             </div>
           </div>
 
-          {/* Clock — below avatar with dynamic spacing to clear the glow */}
           <div style={{ paddingTop: Math.max(32, avatarSize * 0.35) }}>
             <Clock />
           </div>
         </div>
 
-        {/* Thought manifestations — orbiting the avatar */}
+        {/* Thought manifestations */}
         <ThoughtManifest
           intents={assistant.intents}
           avatarCenter={avatarCenter}
@@ -154,20 +186,20 @@ function AppContent() {
 
         <StatusDot connected={assistant.connected} />
 
-        {/* Edge hints — subtle swipe affordances, hidden when a panel is open */}
         <EdgeHints visible={openPanel === null} />
 
-        {/* Now Playing */}
+        {/* Now Playing: compact widget + audio expanded sheet */}
         <AnimatePresence>
-          {assistant.nowPlaying && !nowPlayingExpanded && (
+          {showCompact && (
             <NowPlayingCompact
-              nowPlaying={assistant.nowPlaying}
-              onExpand={() => setNowPlayingExpanded(true)}
+              nowPlaying={assistant.nowPlaying!}
+              onExpand={handleCompactExpand}
+              hasVideo={hasVideo}
             />
           )}
-          {assistant.nowPlaying && nowPlayingExpanded && (
+          {showExpanded && (
             <NowPlayingExpanded
-              nowPlaying={assistant.nowPlaying}
+              nowPlaying={assistant.nowPlaying!}
               actions={assistant.actions}
               onCollapse={() => setNowPlayingExpanded(false)}
             />
@@ -186,12 +218,17 @@ function AppContent() {
         </SlidePanel>
       </motion.div>
 
-      {/* Floating video player — above everything (z-index 100) */}
-      {assistant.nowPlaying?.videoId && (
-        <VideoPlayer nowPlaying={assistant.nowPlaying} actions={assistant.actions} />
+      {/* Floating video player -- always mounted when videoId exists, mode controls visibility */}
+      {hasVideo && assistant.nowPlaying && (
+        <VideoPlayer
+          nowPlaying={assistant.nowPlaying}
+          actions={assistant.actions}
+          mode={videoMode}
+          onModeChange={handleVideoModeChange}
+        />
       )}
 
-      {/* Sleep mode tap-to-wake overlay — captures all taps when asleep */}
+      {/* Sleep mode tap-to-wake overlay */}
       <AnimatePresence>
         {assistant.sleepMode && (
           <motion.div
