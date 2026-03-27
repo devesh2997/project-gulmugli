@@ -45,6 +45,21 @@ export interface IntentBadge {
   status: IntentStatus
 }
 
+// ─── Settings Schema ─────────────────────────────────────────────
+export interface SettingSchema {
+  path: string
+  type: 'string' | 'int' | 'float' | 'bool' | 'choice'
+  label: string
+  description: string
+  category: string
+  value: any
+  choices?: string[]
+  min?: number
+  max?: number
+  restart: 'none' | 'provider' | 'full'
+  editable?: boolean
+}
+
 // ─── Messages FROM the assistant (server → browser) ───────────────
 export interface StateMessage {
   type: 'state'
@@ -127,6 +142,19 @@ export interface TokenUpdateMessage {
   value: string
 }
 
+export interface SettingsMessage {
+  type: 'settings'
+  settings: SettingSchema[]
+}
+
+export interface SettingResultMessage {
+  type: 'setting_result'
+  path: string
+  ok: boolean
+  message: string
+  restart_required?: string
+}
+
 export type ServerMessage =
   | StateMessage
   | PersonalityMessage
@@ -141,6 +169,8 @@ export type ServerMessage =
   | IntentUpdateMessage
   | MoodMessage
   | TokenUpdateMessage
+  | SettingsMessage
+  | SettingResultMessage
 
 // ─── Messages TO the assistant (browser → server) ─────────────────
 export type GestureType =
@@ -203,6 +233,7 @@ export interface AssistantStore {
   volume: number
   intents: IntentBadge[]
   mood: AssistantMood
+  settings: SettingSchema[]
   actions: AssistantActions
   sendAction: (action: UIAction) => void
 }
@@ -218,4 +249,6 @@ export interface AssistantActions {
   switchPersonality: (id: string) => void
   sendText: (text: string) => void
   sendGesture: (gesture: string, target?: string) => void
+  updateSetting: (path: string, value: any) => void
+  requestSettings: () => void
 }

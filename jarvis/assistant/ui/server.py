@@ -64,6 +64,7 @@ class FaceUI:
         self._lights: Optional[dict] = None
         self._volume: int = 50
         self._personalities: list[dict] = []
+        self._settings: list[dict] = []
 
         # Callback for actions received from the browser UI.
         # Set this from main.py to route UI actions into the assistant's
@@ -226,6 +227,11 @@ class FaceUI:
         self._token_overrides[path] = value
         self._broadcast({"type": "token_update", "path": path, "value": value})
 
+    def send_settings(self, settings: list[dict]) -> None:
+        """Send settings schema + current values to the dashboard."""
+        self._settings = settings
+        self._broadcast({"type": "settings", "settings": settings})
+
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
         pass
@@ -289,6 +295,10 @@ class FaceUI:
             for path, value in self._token_overrides.items():
                 await websocket.send(json.dumps({
                     "type": "token_update", "path": path, "value": value,
+                }))
+            if self._settings:
+                await websocket.send(json.dumps({
+                    "type": "settings", "settings": self._settings,
                 }))
         except Exception:
             pass

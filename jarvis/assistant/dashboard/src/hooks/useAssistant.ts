@@ -12,6 +12,7 @@ import type {
   AssistantActions,
   AssistantMood,
   IntentBadge,
+  SettingSchema,
   TranscriptEntry,
   NowPlaying,
   LightsState,
@@ -31,6 +32,7 @@ interface InternalState {
   volume: number
   intents: IntentBadge[]
   mood: AssistantMood
+  settings: SettingSchema[]
 }
 
 const DEFAULT_STATE: InternalState = {
@@ -44,6 +46,7 @@ const DEFAULT_STATE: InternalState = {
   volume: 50,
   intents: [],
   mood: 'neutral',
+  settings: [],
 }
 
 const MAX_TRANSCRIPT = 50
@@ -155,6 +158,14 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         setState(prev => ({ ...prev, mood: msg.mood }))
         break
 
+      case 'settings':
+        setState(prev => ({ ...prev, settings: msg.settings }))
+        break
+
+      case 'setting_result':
+        // Could show toast notification here in the future
+        break
+
       case 'token_update':
         onTokenUpdateRef.current?.(msg.path, msg.value)
         break
@@ -237,6 +248,8 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         wsRef.current.send(JSON.stringify({ type: 'gesture', gesture, target: target ?? null }))
       }
     },
+    updateSetting: (path: string, value: any) => sendAction({ action: 'update_setting', params: { path, value } }),
+    requestSettings: () => sendAction({ action: 'get_settings', params: {} }),
   }
 
   useEffect(() => {

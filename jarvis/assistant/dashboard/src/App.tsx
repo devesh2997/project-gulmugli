@@ -146,10 +146,10 @@ function AppContent() {
         <Transcript messages={assistant.transcript} />
       </SlidePanel>
       <SlidePanel isOpen={openPanel === 'settings'} onClose={() => setOpenPanel(null)} direction="left">
-        <SettingsPanel />
+        <SettingsPanel store={assistant} />
       </SlidePanel>
       <SlidePanel isOpen={openPanel === 'lights'} onClose={() => setOpenPanel(null)} direction="right">
-        <LightsPanel />
+        <LightsPanel store={assistant} />
       </SlidePanel>
     </div>
   )
