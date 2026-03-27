@@ -19,9 +19,10 @@ import { TransitionDissolver } from './components/TransitionDissolver'
 import SlidePanel from './components/SlidePanel'
 import Transcript from './components/Transcript'
 import { SettingsPanel } from './components/SettingsPanel'
-import { LightsPanel } from './components/LightsPanel'
+import { ControlsPanel } from './components/ControlsPanel'
+import { EdgeHints } from './components/EdgeHints'
 
-type PanelId = 'transcript' | 'settings' | 'lights' | null
+type PanelId = 'transcript' | 'settings' | 'controls' | null
 
 function AppContent() {
   const { updateToken, setPersonality, currentPersonality } = useTokens()
@@ -55,8 +56,8 @@ function AppContent() {
       if (direction === 'down') setOpenPanel(null)
     } else {
       if (direction === 'up') setOpenPanel('transcript')
-      if (direction === 'left') setOpenPanel('settings')
-      if (direction === 'right') setOpenPanel('lights')
+      if (direction === 'left') setOpenPanel('controls')
+      if (direction === 'right') setOpenPanel('settings')
     }
   }, [])
 
@@ -152,6 +153,9 @@ function AppContent() {
 
         <StatusDot connected={assistant.connected} />
 
+        {/* Edge hints — subtle swipe affordances, hidden when a panel is open */}
+        <EdgeHints visible={openPanel === null} />
+
         {/* Now Playing */}
         <AnimatePresence>
           {assistant.nowPlaying && !nowPlayingExpanded && (
@@ -173,11 +177,11 @@ function AppContent() {
         <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => setOpenPanel(null)} direction="bottom">
           <Transcript messages={assistant.transcript} onSendText={assistant.actions.sendText} />
         </SlidePanel>
-        <SlidePanel isOpen={openPanel === 'settings'} onClose={() => setOpenPanel(null)} direction="left">
-          <SettingsPanel store={assistant} />
+        <SlidePanel isOpen={openPanel === 'controls'} onClose={() => setOpenPanel(null)} direction="left">
+          <ControlsPanel store={assistant} />
         </SlidePanel>
-        <SlidePanel isOpen={openPanel === 'lights'} onClose={() => setOpenPanel(null)} direction="right">
-          <LightsPanel store={assistant} />
+        <SlidePanel isOpen={openPanel === 'settings'} onClose={() => setOpenPanel(null)} direction="right">
+          <SettingsPanel store={assistant} />
         </SlidePanel>
       </motion.div>
 

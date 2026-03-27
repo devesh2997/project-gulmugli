@@ -118,6 +118,118 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
                 threading.Thread(target=_speak_wake, daemon=True).start()
         return
 
+    # ── Audio controls ──
+    elif action == "audio_volume":
+        # Set system volume
+        level = action_data.get("value", action_data.get("params", {}).get("level", 50))
+        intent = Intent(
+            name="volume",
+            params={"level": str(level)},
+            response="",
+        )
+
+    elif action == "audio_list_outputs":
+        # List available audio output devices
+        face_ui = assistant.get("face_ui")
+        audio = assistant.get("audio")
+        if face_ui:
+            outputs = []
+            if audio and hasattr(audio, "list_outputs"):
+                try:
+                    outputs = audio.list_outputs()
+                except Exception as e:
+                    log.warning("Failed to list audio outputs: %s", e)
+            face_ui._broadcast({"type": "audio_outputs", "outputs": outputs})
+        return
+
+    elif action == "audio_set_output":
+        # Switch audio output device
+        device = action_data.get("device", "")
+        audio = assistant.get("audio")
+        if audio and hasattr(audio, "set_output"):
+            try:
+                audio.set_output(device)
+                log.info("Audio output switched to: %s", device)
+            except Exception as e:
+                log.warning("Failed to switch audio output: %s", e)
+        return
+
+    elif action == "bt_scan":
+        # Start Bluetooth scan — results come back asynchronously
+        face_ui = assistant.get("face_ui")
+        audio = assistant.get("audio")
+        if face_ui:
+            face_ui._broadcast({
+                "type": "bt_scan_result",
+                "devices": [],
+                "scanning": True,
+            })
+        if audio and hasattr(audio, "bt_scan"):
+            def _scan():
+                try:
+                    devices = audio.bt_scan()
+                    if face_ui:
+                        face_ui._broadcast({
+                            "type": "bt_scan_result",
+                            "devices": devices,
+                            "scanning": False,
+                        })
+                except Exception as e:
+                    log.warning("Bluetooth scan failed: %s", e)
+                    if face_ui:
+                        face_ui._broadcast({
+                            "type": "bt_scan_result",
+                            "devices": [],
+                            "scanning": False,
+                        })
+            threading.Thread(target=_scan, daemon=True).start()
+        else:
+            if face_ui:
+                face_ui._broadcast({
+                    "type": "bt_scan_result",
+                    "devices": [],
+                    "scanning": False,
+                })
+        return
+
+    elif action == "bt_pair":
+        # Pair with a Bluetooth device
+        mac = action_data.get("mac", "")
+        face_ui = assistant.get("face_ui")
+        audio = assistant.get("audio")
+        if audio and hasattr(audio, "bt_pair") and mac:
+            def _pair():
+                try:
+                    success = audio.bt_pair(mac)
+                    if face_ui:
+                        face_ui._broadcast({
+                            "type": "bt_pair_result",
+                            "mac": mac,
+                            "success": bool(success),
+                        })
+                except Exception as e:
+                    log.warning("Bluetooth pair failed: %s", e)
+                    if face_ui:
+                        face_ui._broadcast({
+                            "type": "bt_pair_result",
+                            "mac": mac,
+                            "success": False,
+                        })
+            threading.Thread(target=_pair, daemon=True).start()
+        return
+
+    elif action == "bt_disconnect":
+        # Disconnect a Bluetooth device
+        mac = action_data.get("mac", "")
+        audio = assistant.get("audio")
+        if audio and hasattr(audio, "bt_disconnect") and mac:
+            try:
+                audio.bt_disconnect(mac)
+                log.info("Bluetooth disconnected: %s", mac)
+            except Exception as e:
+                log.warning("Bluetooth disconnect failed: %s", e)
+        return
+
     elif action == "get_settings":
         # Dashboard requesting the flat settings list with current values
         from core.config_manager import config_manager

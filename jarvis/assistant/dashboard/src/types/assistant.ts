@@ -9,6 +9,31 @@
 // ─── Assistant States ─────────────────────────────────────────────
 export type AssistantState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'sleeping'
 
+// ─── Audio Types ─────────────────────────────────────────────────
+export type AudioOutputType = 'speaker' | 'headphones' | 'bluetooth' | 'hdmi' | 'usb' | 'airplay' | 'unknown'
+
+export interface AudioDevice {
+  name: string
+  type: AudioOutputType
+  active: boolean
+}
+
+export interface BluetoothDevice {
+  name: string
+  mac: string
+  paired: boolean
+  connected: boolean
+  /** Signal strength percentage (0-100), null if unknown */
+  rssi?: number | null
+}
+
+export interface AudioState {
+  volume: number
+  outputs: AudioDevice[]
+  bluetoothScanning: boolean
+  bluetoothDevices: BluetoothDevice[]
+}
+
 // ─── Assistant Mood ───────────────────────────────────────────────
 export type AssistantMood =
   | 'neutral'
@@ -161,6 +186,24 @@ export interface SleepModeMessage {
   active: boolean
 }
 
+export interface AudioOutputsMessage {
+  type: 'audio_outputs'
+  outputs: AudioDevice[]
+}
+
+export interface BluetoothScanMessage {
+  type: 'bt_scan_result'
+  devices: BluetoothDevice[]
+  scanning: boolean
+}
+
+export interface BluetoothPairMessage {
+  type: 'bt_pair_result'
+  mac: string
+  success: boolean
+  name?: string
+}
+
 export type ServerMessage =
   | StateMessage
   | PersonalityMessage
@@ -178,6 +221,9 @@ export type ServerMessage =
   | SettingsMessage
   | SettingResultMessage
   | SleepModeMessage
+  | AudioOutputsMessage
+  | BluetoothScanMessage
+  | BluetoothPairMessage
 
 // ─── Messages TO the assistant (browser → server) ─────────────────
 export type GestureType =
@@ -238,6 +284,7 @@ export interface AssistantStore {
   nowPlaying: NowPlaying | null
   lights: LightsState | null
   volume: number
+  audio: AudioState
   intents: IntentBadge[]
   mood: AssistantMood
   settings: SettingSchema[]
@@ -260,4 +307,10 @@ export interface AssistantActions {
   updateSetting: (path: string, value: any) => void
   requestSettings: () => void
   wake: () => void
+  // Audio controls
+  listOutputs: () => void
+  setOutput: (device: string) => void
+  btScan: () => void
+  btPair: (mac: string) => void
+  btDisconnect: (mac: string) => void
 }

@@ -11,6 +11,7 @@ import type {
   AssistantStore,
   AssistantActions,
   AssistantMood,
+  AudioState,
   IntentBadge,
   SettingSchema,
   TranscriptEntry,
@@ -30,6 +31,7 @@ interface InternalState {
   nowPlaying: NowPlaying | null
   lights: LightsState | null
   volume: number
+  audio: AudioState
   intents: IntentBadge[]
   mood: AssistantMood
   settings: SettingSchema[]
@@ -45,6 +47,7 @@ const DEFAULT_STATE: InternalState = {
   nowPlaying: null,
   lights: null,
   volume: 50,
+  audio: { volume: 50, outputs: [], bluetoothScanning: false, bluetoothDevices: [] },
   intents: [],
   mood: 'neutral',
   settings: [],
@@ -138,7 +141,41 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         break
 
       case 'volume':
-        setState(prev => ({ ...prev, volume: msg.level ?? prev.volume }))
+        setState(prev => ({
+          ...prev,
+          volume: msg.level ?? prev.volume,
+          audio: { ...prev.audio, volume: msg.level ?? prev.audio.volume },
+        }))
+        break
+
+      case 'audio_outputs':
+        setState(prev => ({ ...prev, audio: { ...prev.audio, outputs: msg.outputs } }))
+        break
+
+      case 'bt_scan_result':
+        setState(prev => ({
+          ...prev,
+          audio: {
+            ...prev.audio,
+            bluetoothScanning: msg.scanning,
+            bluetoothDevices: msg.devices,
+          },
+        }))
+        break
+
+      case 'bt_pair_result':
+        // Mark the device as connected in our local state
+        if (msg.success) {
+          setState(prev => ({
+            ...prev,
+            audio: {
+              ...prev.audio,
+              bluetoothDevices: prev.audio.bluetoothDevices.map(d =>
+                d.mac === msg.mac ? { ...d, paired: true, connected: true } : d
+              ),
+            },
+          }))
+        }
         break
 
       case 'intents':
@@ -259,6 +296,32 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     wake: () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'wake' }))
+      }
+    },
+    // Audio controls — use ui_action type for backend routing
+    listOutputs: () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'audio_list_outputs' }))
+      }
+    },
+    setOutput: (device: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'audio_set_output', device }))
+      }
+    },
+    btScan: () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'bt_scan' }))
+      }
+    },
+    btPair: (mac: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'bt_pair', mac }))
+      }
+    },
+    btDisconnect: (mac: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'bt_disconnect', mac }))
       }
     },
   }
