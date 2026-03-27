@@ -29,12 +29,15 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
     window.dispatchEvent(new CustomEvent('time-sim-change'))
   }, [])
 
+
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!trackRef.current) return
     e.stopPropagation()
     const target = e.currentTarget
     target.setPointerCapture(e.pointerId)
     onAdjusting?.(true)
+    // Make the slide panel semi-transparent while adjusting
+    document.documentElement.style.setProperty('--panel-adjusting-opacity', '0.3')
 
     const seek = (clientX: number) => {
       const r = trackRef.current!.getBoundingClientRect()
@@ -49,6 +52,7 @@ export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) 
       target.removeEventListener('pointermove', onMove)
       target.removeEventListener('pointerup', onUp)
       onAdjusting?.(false)
+      document.documentElement.style.setProperty('--panel-adjusting-opacity', '1')
     }
     target.addEventListener('pointermove', onMove)
     target.addEventListener('pointerup', onUp)

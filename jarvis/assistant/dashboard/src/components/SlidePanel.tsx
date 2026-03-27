@@ -6,6 +6,7 @@
  * Click outside to dismiss.
  */
 
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
 
@@ -52,6 +53,18 @@ function DragHandle({ direction }: { direction: 'left' | 'right' | 'bottom' }) {
 export default function SlidePanel({ isOpen, onClose, direction, children }: SlidePanelProps) {
   const isBottom = direction === 'bottom'
 
+  // Listen for brightness adjustment — panel becomes semi-transparent
+  const [panelOpacity, setPanelOpacity] = useState(1)
+  useEffect(() => {
+    const check = () => {
+      const val = getComputedStyle(document.documentElement)
+        .getPropertyValue('--panel-adjusting-opacity').trim()
+      setPanelOpacity(val ? parseFloat(val) : 1)
+    }
+    const id = setInterval(check, 100)
+    return () => clearInterval(id)
+  }, [])
+
   const panelStyle: React.CSSProperties = {
     position: 'fixed',
     zIndex: 200,
@@ -75,11 +88,11 @@ export default function SlidePanel({ isOpen, onClose, direction, children }: Sli
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — fades during brightness adjustment */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: panelOpacity < 1 ? panelOpacity * 0.3 : 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
@@ -90,12 +103,12 @@ export default function SlidePanel({ isOpen, onClose, direction, children }: Sli
             }}
           />
 
-          {/* Panel */}
+          {/* Panel — becomes semi-transparent during brightness adjustment */}
           <motion.div
             key="panel"
             data-panel="true"
             initial={variants[direction].hidden}
-            animate={variants[direction].visible}
+            animate={{ ...variants[direction].visible, opacity: panelOpacity }}
             exit={variants[direction].hidden}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
             style={panelStyle}

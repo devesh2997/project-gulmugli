@@ -18,6 +18,84 @@ interface Props {
   store: AssistantStore
 }
 
+/** Background mode switcher — gradient / texture / glass */
+function BackgroundModePicker() {
+  const modes = [
+    { id: 'gradient', label: 'Gradient', desc: 'Clean smooth blend' },
+    { id: 'texture', label: 'Texture', desc: 'Fabric-like grain' },
+    { id: 'glass', label: 'Glass', desc: 'Frosted backlight' },
+  ]
+  const [active, setActive] = useState('gradient')
+
+  useEffect(() => {
+    const val = getComputedStyle(document.documentElement)
+      .getPropertyValue('--ui-backgroundMode').trim()
+    if (val) setActive(val)
+  }, [])
+
+  const handleSwitch = (mode: string) => {
+    setActive(mode)
+    document.documentElement.style.setProperty('--ui-backgroundMode', mode)
+  }
+
+  return (
+    <div data-gesture-ignore="true">
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24"
+          fill="none" stroke="var(--personality-accent)" strokeWidth="2" strokeLinecap="round"
+          style={{ opacity: 0.6 }}
+        >
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M3 9h18" />
+        </svg>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>
+          Background Style
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {modes.map(m => (
+          <motion.button
+            key={m.id}
+            onClick={() => handleSwitch(m.id)}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              flex: 1,
+              padding: '10px 8px',
+              borderRadius: 12,
+              border: `1px solid ${m.id === active
+                ? 'rgba(var(--personality-accent-rgb), 0.3)'
+                : 'rgba(255,255,255,0.06)'}`,
+              background: m.id === active
+                ? 'rgba(var(--personality-accent-rgb), 0.1)'
+                : 'rgba(255,255,255,0.02)',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column' as const,
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span style={{
+              fontSize: 11, fontWeight: 600,
+              color: m.id === active ? 'var(--personality-accent)' : 'rgba(255,255,255,0.5)',
+            }}>
+              {m.label}
+            </span>
+            <span style={{
+              fontSize: 9,
+              color: 'rgba(255,255,255,0.25)',
+            }}>
+              {m.desc}
+            </span>
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   brain: 'Brain',
   voice: 'Voice',
@@ -236,6 +314,9 @@ export function SettingsPanel({ store }: Props) {
 
       {/* Ambient Brightness — always visible */}
       <BrightnessControl onAdjusting={handleBrightnessAdjusting} />
+
+      {/* Background Mode — always visible */}
+      <BackgroundModePicker />
 
       {/* Setting Categories — fades during brightness adjustment */}
       <motion.div
