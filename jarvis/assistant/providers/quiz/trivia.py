@@ -106,6 +106,7 @@ class TriviaQuizProvider(QuizProvider):
             f"You are hosting a {self._category} trivia quiz. "
             f"Personality: {self._personality_tone}\n"
             f"Generate question #{self._question_number} at {self._difficulty} difficulty.\n"
+            f"IMPORTANT: Write the question and all options in ENGLISH only. No Hindi, no Hinglish.\n"
             f"Return ONLY valid JSON: "
             f'{{"question": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], '
             f'"correct": "B", "explanation": "..."}}\n'

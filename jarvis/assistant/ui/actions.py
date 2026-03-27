@@ -256,7 +256,8 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
 
     elif action == "quiz_answer":
         # User tapped an answer option on the quiz card
-        answer = params.get("answer", "")
+        # Frontend sends answer at top level OR inside params
+        answer = params.get("answer", "") or action_data.get("answer", "")
         if answer:
             intent = Intent(
                 name="quiz",
