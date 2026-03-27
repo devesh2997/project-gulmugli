@@ -11,7 +11,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
-export function BrightnessControl() {
+interface BrightnessControlProps {
+  /** Called when the user starts/stops adjusting. Parent can use this to fade other UI. */
+  onAdjusting?: (isAdjusting: boolean) => void
+}
+
+export function BrightnessControl({ onAdjusting }: BrightnessControlProps = {}) {
   const [value, setValue] = useState(-1) // -1 = auto
   const trackRef = useRef<HTMLDivElement>(null)
 
@@ -29,6 +34,7 @@ export function BrightnessControl() {
     e.stopPropagation()
     const target = e.currentTarget
     target.setPointerCapture(e.pointerId)
+    onAdjusting?.(true)
 
     const seek = (clientX: number) => {
       const r = trackRef.current!.getBoundingClientRect()
@@ -42,10 +48,11 @@ export function BrightnessControl() {
     const onUp = () => {
       target.removeEventListener('pointermove', onMove)
       target.removeEventListener('pointerup', onUp)
+      onAdjusting?.(false)
     }
     target.addEventListener('pointermove', onMove)
     target.addEventListener('pointerup', onUp)
-  }, [applyValue])
+  }, [applyValue, onAdjusting])
 
   return (
     <div data-gesture-ignore="true">

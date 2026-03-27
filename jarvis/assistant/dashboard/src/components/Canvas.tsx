@@ -24,9 +24,36 @@
  * No props -- reads everything from CSS vars set by TokenProvider + useTimeOfDay.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 type BackgroundMode = 'gradient' | 'texture' | 'glass'
+
+/**
+ * Read the current gradient colours directly from CSS vars.
+ * This forces React to re-render when the vars change, which CSS var()
+ * in inline styles doesn't trigger automatically.
+ */
+function useCanvasColours() {
+  const [colours, setColours] = useState({ start: '#0e0e11', end: '#141218' })
+
+  const read = useCallback(() => {
+    const cs = getComputedStyle(document.documentElement)
+    const start = cs.getPropertyValue('--time-current-canvas_gradient_start').trim() || '#0e0e11'
+    const end = cs.getPropertyValue('--time-current-canvas_gradient_end').trim() || '#141218'
+    setColours(prev => prev.start !== start || prev.end !== end ? { start, end } : prev)
+  }, [])
+
+  useEffect(() => {
+    read()
+    // Poll + listen for time-sim-change events (brightness slider dispatches these)
+    const id = setInterval(read, 1000)
+    const onSim = () => { setTimeout(read, 50) } // slight delay for CSS var to settle
+    window.addEventListener('time-sim-change', onSim)
+    return () => { clearInterval(id); window.removeEventListener('time-sim-change', onSim) }
+  }, [read])
+
+  return colours
+}
 
 /** Read the current background mode from the CSS variable on :root. */
 function readMode(): BackgroundMode {
@@ -77,13 +104,12 @@ function NoiseFilter() {
 // ---- Gradient mode ---------------------------------------------------------
 
 function GradientBackground() {
+  const { start, end } = useCanvasColours()
   return (
     <div
       style={{
         ...baseStyle,
-        background: [
-          'linear-gradient(160deg, var(--time-current-canvas_gradient_start), var(--time-current-canvas_gradient_end))',
-        ].join(', '),
+        background: `linear-gradient(160deg, ${start}, ${end})`,
       }}
     >
       {/* Personality ambient tint -- centred warm radial, generous glow */}
@@ -120,14 +146,12 @@ function GradientBackground() {
 // ---- Texture mode ----------------------------------------------------------
 
 function TextureBackground() {
+  const { start, end } = useCanvasColours()
   return (
     <div
       style={{
         ...baseStyle,
-        background: [
-          // Layer 1: base warm gradient (time-shifted)
-          'linear-gradient(160deg, var(--time-current-canvas_gradient_start), var(--time-current-canvas_gradient_end))',
-        ].join(', '),
+        background: `linear-gradient(160deg, ${start}, ${end})`,
       }}
     >
       <NoiseFilter />
@@ -194,13 +218,12 @@ function TextureBackground() {
 // ---- Glass mode ------------------------------------------------------------
 
 function GlassBackground() {
+  const { start, end } = useCanvasColours()
   return (
     <div
       style={{
         ...baseStyle,
-        background: [
-          'linear-gradient(160deg, var(--time-current-canvas_gradient_start), var(--time-current-canvas_gradient_end))',
-        ].join(', '),
+        background: `linear-gradient(160deg, ${start}, ${end})`,
       }}
     >
       {/* Backlight layer -- personality colour as a large ambient glow behind glass */}

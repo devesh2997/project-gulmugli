@@ -7,7 +7,7 @@
  * top as a special section.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { AssistantStore } from '../types/assistant'
 import { SettingControl } from './settings/SettingControl'
@@ -212,24 +212,37 @@ export function SettingsPanel({ store }: Props) {
     )
   }
 
+  // When brightness is being adjusted, fade everything else so user sees the main UI
+  const [adjustingBrightness, setAdjustingBrightness] = useState(false)
+  const handleBrightnessAdjusting = useCallback((isAdjusting: boolean) => {
+    setAdjustingBrightness(isAdjusting)
+  }, [])
+
   return (
     <div style={{
       padding: '24px 20px', maxWidth: 400, margin: '0 auto',
       display: 'flex', flexDirection: 'column', gap: 24,
     }}>
-      {/* Personality Picker */}
-      {personalities.length > 0 && (
-        <PersonalityPicker
-          personalities={personalities}
-          active={personality}
-          onSwitch={actions.switchPersonality}
-        />
-      )}
+      {/* Personality Picker — fades during brightness adjustment */}
+      <motion.div animate={{ opacity: adjustingBrightness ? 0.15 : 1 }} transition={{ duration: 0.3 }}>
+        {personalities.length > 0 && (
+          <PersonalityPicker
+            personalities={personalities}
+            active={personality}
+            onSwitch={actions.switchPersonality}
+          />
+        )}
+      </motion.div>
 
-      {/* Ambient Brightness */}
-      <BrightnessControl />
+      {/* Ambient Brightness — always visible */}
+      <BrightnessControl onAdjusting={handleBrightnessAdjusting} />
 
-      {/* Setting Categories */}
+      {/* Setting Categories — fades during brightness adjustment */}
+      <motion.div
+        animate={{ opacity: adjustingBrightness ? 0.08 : 1 }}
+        transition={{ duration: 0.3 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+      >
       {orderedCategories.map(cat => (
         <CategorySection key={cat} cat={cat}>
           {grouped[cat].map(s => (
@@ -241,6 +254,7 @@ export function SettingsPanel({ store }: Props) {
           ))}
         </CategorySection>
       ))}
+      </motion.div>
     </div>
   )
 }
