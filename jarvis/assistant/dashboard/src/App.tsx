@@ -154,7 +154,7 @@ function AppContent() {
 
       {/* Slide Panels */}
       <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => setOpenPanel(null)} direction="bottom">
-        <Transcript messages={assistant.transcript} />
+        <Transcript messages={assistant.transcript} onSendText={assistant.actions.sendText} />
       </SlidePanel>
       <SlidePanel isOpen={openPanel === 'settings'} onClose={() => setOpenPanel(null)} direction="left">
         <SettingsPanel store={assistant} />

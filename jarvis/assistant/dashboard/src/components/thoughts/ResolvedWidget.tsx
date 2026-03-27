@@ -57,14 +57,89 @@ export function ResolvedWidget({ badge, size }: ResolvedWidgetProps) {
   }
 }
 
+/**
+ * SuccessBorder — animated green border that traces around the widget perimeter,
+ * then collapses into a small checkmark badge outside the corner.
+ * Inspired by Apple's completion animations.
+ */
+function SuccessBorder({ size, borderRadius }: { size: number; borderRadius: number }) {
+  // SVG rounded rect perimeter for the border trace animation
+  const inset = 1
+  const w = size - inset * 2
+  const h = size - inset * 2
+  const r = Math.min(borderRadius, w / 2, h / 2)
+
+  // Build a rounded rect path
+  const path = [
+    `M ${inset + r} ${inset}`,
+    `L ${inset + w - r} ${inset}`,
+    `Q ${inset + w} ${inset} ${inset + w} ${inset + r}`,
+    `L ${inset + w} ${inset + h - r}`,
+    `Q ${inset + w} ${inset + h} ${inset + w - r} ${inset + h}`,
+    `L ${inset + r} ${inset + h}`,
+    `Q ${inset} ${inset + h} ${inset} ${inset + h - r}`,
+    `L ${inset} ${inset + r}`,
+    `Q ${inset} ${inset} ${inset + r} ${inset}`,
+  ].join(' ')
+
+  return (
+    <>
+      {/* Green border traces the perimeter */}
+      <svg
+        width={size} height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }}
+      >
+        <motion.path
+          d={path}
+          fill="none"
+          stroke="#4ade80"
+          strokeWidth={2}
+          strokeLinecap="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: [0, 1, 1], opacity: [0, 1, 0] }}
+          transition={{ duration: 1.2, times: [0, 0.6, 1], ease: 'easeInOut' }}
+          style={{ filter: 'drop-shadow(0 0 4px rgba(74, 222, 128, 0.5))' }}
+        />
+      </svg>
+
+      {/* Checkmark badge that pops in at top-right after border completes */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          top: -6, right: -6, zIndex: 11,
+          width: 18, height: 18, borderRadius: 9,
+          background: 'linear-gradient(135deg, #4ade80, #22c55e)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(74, 222, 128, 0.4)',
+        }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.7, type: 'spring', stiffness: 500, damping: 15 }}
+      >
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+          <motion.path
+            d="M3 8.5L6.5 12L13 4"
+            stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.25, delay: 0.85 }}
+          />
+        </svg>
+      </motion.div>
+    </>
+  )
+}
+
 /* ── Music: vinyl record with spinning animation + song info ────────── */
 function MusicWidget({ size, detail }: { size: number; detail?: string }) {
+  const br = size * 0.28
   return (
     <motion.div {...enterAnim} style={glassBase(size, 0.18)}>
       {/* Ambient glow pulse behind widget */}
       <motion.div
         style={{
-          position: 'absolute', inset: -4, borderRadius: size * 0.32,
+          position: 'absolute', inset: -4, borderRadius: br + 4,
           background: 'radial-gradient(circle, rgba(var(--personality-accent-rgb), 0.3) 0%, transparent 70%)',
         }}
         animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.05, 0.95] }}
@@ -91,23 +166,8 @@ function MusicWidget({ size, detail }: { size: number; detail?: string }) {
         }} />
       </motion.div>
 
-      {/* Animated checkmark overlay */}
-      <motion.div
-        style={{ position: 'absolute', bottom: size * 0.08, right: size * 0.08 }}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: 'spring', stiffness: 500, damping: 15 }}
-      >
-        <svg width={size * 0.22} height={size * 0.22} viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="9" fill="#4ade80" opacity={0.9} />
-          <motion.path
-            d="M6 10.5L8.5 13L14 7"
-            stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none"
-            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-            transition={{ duration: 0.3, delay: 0.45 }}
-          />
-        </svg>
-      </motion.div>
+      {/* Green border trace → checkmark animation */}
+      <SuccessBorder size={size} borderRadius={br} />
 
       {/* Song title */}
       {detail && (
@@ -133,6 +193,7 @@ function MusicWidget({ size, detail }: { size: number; detail?: string }) {
 function LightWidget({ size, detail }: { size: number; detail?: string }) {
   return (
     <motion.div {...enterAnim} style={{ ...glassBase(size, 0.12), borderRadius: '50%' }}>
+      <SuccessBorder size={size} borderRadius={size / 2} />
       {/* Radiating light rays */}
       {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
         <motion.div
@@ -184,6 +245,7 @@ function LightWidget({ size, detail }: { size: number; detail?: string }) {
 
 /* ── Volume: circular gauge with level indicator ────────────────────── */
 function VolumeWidget({ size, detail }: { size: number; detail?: string }) {
+  const br = size * 0.28
   const levelMatch = detail?.match(/(\d+)/)
   const level = levelMatch ? Math.min(100, Math.max(0, parseInt(levelMatch[1], 10))) : 50
   const fraction = level / 100
@@ -203,6 +265,7 @@ function VolumeWidget({ size, detail }: { size: number; detail?: string }) {
 
   return (
     <motion.div {...enterAnim} style={glassBase(size, 0.12)}>
+      <SuccessBorder size={size} borderRadius={br} />
       {/* Ambient glow that intensifies with volume */}
       <div style={{
         position: 'absolute', inset: 0, borderRadius: size * 0.28,
@@ -253,6 +316,7 @@ function VolumeWidget({ size, detail }: { size: number; detail?: string }) {
 function SuccessWidget({ size, detail }: { size: number; detail?: string }) {
   return (
     <motion.div {...enterAnim} style={glassBase(size, 0.12)}>
+      <SuccessBorder size={size} borderRadius={size * 0.28} />
       {/* Success ripple */}
       <motion.div
         style={{
