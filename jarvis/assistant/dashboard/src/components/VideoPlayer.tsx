@@ -90,10 +90,11 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
     if (isBrowseMode) {
       onCloseBrowse?.()
     } else {
+      // Just hide — do NOT clear videoId. The video reference persists
+      // so the user can reopen it from the compact widget thumbnail.
       onModeChange('hidden')
-      actions.closeVideo()
     }
-  }, [actions, onModeChange, isBrowseMode, onCloseBrowse])
+  }, [onModeChange, isBrowseMode, onCloseBrowse])
 
   const handleMinimize = useCallback(() => {
     onModeChange('mini')
@@ -161,19 +162,24 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
 
   if (!videoId && !isBrowseMode) return null
 
-  // Determine iframe src
-  let iframeSrc: string | undefined
-  if (isBrowseMode) {
-    // Browse mode: load the browse URL directly
-    iframeSrc = browseUrl ?? undefined
-  } else if (videoId && loadedVideoIdRef.current !== videoId) {
-    iframeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
-  }
+  // Determine iframe src — always compute it, never set to undefined
+  // The ref tracking prevents unnecessary reloads when videoId hasn't changed
+  const iframeSrc = isBrowseMode
+    ? (browseUrl ?? '')
+    : videoId
+      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
+      : ''
 
-  // Update tracking ref (only for video mode)
-  if (!isBrowseMode && videoId && loadedVideoIdRef.current !== videoId) {
-    loadedVideoIdRef.current = videoId
-  }
+  // Update tracking ref to manage iframe src changes via useEffect
+  useEffect(() => {
+    if (!isBrowseMode && videoId && iframeRef.current) {
+      if (loadedVideoIdRef.current !== videoId) {
+        // New video — set the src (this is the only place src changes)
+        iframeRef.current.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
+        loadedVideoIdRef.current = videoId
+      }
+    }
+  }, [videoId, isBrowseMode])
 
   return (
     <>
@@ -277,7 +283,7 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
         {/* THE single YouTube iframe — never unmounted while videoId exists */}
         <iframe
           ref={iframeRef}
-          src={iframeSrc}
+          src={isBrowseMode ? iframeSrc : undefined}
           allow="autoplay; encrypted-media"
           sandbox={isBrowseMode ? 'allow-scripts allow-same-origin allow-forms allow-popups' : undefined}
           style={{
