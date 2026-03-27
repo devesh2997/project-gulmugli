@@ -554,14 +554,17 @@ def handle_intent(assistant: dict, intent) -> str:
             if "error" in question:
                 return question["error"]
 
-            # Broadcast to dashboard
+            # Broadcast to dashboard — flatten question fields for frontend
             if face_ui:
                 face_ui.show_quiz({
                     "category": category,
                     "difficulty": difficulty,
-                    "total": num_questions,
-                    "question": question,
-                    "score": 0,
+                    "total_questions": num_questions,
+                    "question_number": 1,
+                    "question": question.get("text", ""),
+                    "options": question.get("options", []),
+                    "time_limit": config.get("quiz", {}).get("time_limit_seconds", 30),
+                    "score": {"correct": 0, "total": 0},
                 })
 
             # Speak the question
@@ -577,30 +580,34 @@ def handle_intent(assistant: dict, intent) -> str:
             if "error" in result:
                 return result["error"]
 
-            # Broadcast result to dashboard
+            # Broadcast result to dashboard — match frontend QuizUpdateMessage shape
+            stats = quiz.get_session_stats()
             if face_ui:
                 face_ui.update_quiz({
-                    "result": result,
-                    "score": result.get("score", 0),
-                    "question_number": result.get("question_number", 0),
-                    "total": result.get("total", 0),
+                    "correct": result.get("correct", False),
+                    "correct_answer": result.get("correct_answer", ""),
+                    "explanation": result.get("explanation", ""),
+                    "reaction": result.get("reaction", ""),
+                    "score": {"correct": stats.get("correct", 0), "total": stats.get("total", 0)},
                 })
 
             reaction = result.get("reaction", "")
             explanation = result.get("explanation", "")
 
             # Auto-generate next question if session isn't complete
-            if quiz.is_active() and result.get("question_number", 0) < result.get("total", 0):
-                # Generate next question after a brief pause
+            if quiz.is_active() and stats.get("total", 0) < quiz._num_questions:
                 next_q = quiz.generate_question()
                 if "error" not in next_q:
                     if face_ui:
                         face_ui.show_quiz({
                             "category": quiz._category,
                             "difficulty": quiz._difficulty,
-                            "total": quiz._num_questions,
-                            "question": next_q,
-                            "score": result.get("score", 0),
+                            "total_questions": quiz._num_questions,
+                            "question_number": stats.get("total", 0) + 1,
+                            "question": next_q.get("text", ""),
+                            "options": next_q.get("options", []),
+                            "time_limit": config.get("quiz", {}).get("time_limit_seconds", 30),
+                            "score": {"correct": stats.get("correct", 0), "total": stats.get("total", 0)},
                         })
                     options_text = ", ".join(next_q.get("options", []))
                     return f"{reaction} {explanation} Next question: {next_q.get('text', '')} Options: {options_text}"
