@@ -87,6 +87,9 @@ class TuyaLightProvider(LightProvider):
                 local_key=dev_config["local_key"],
             )
             device.set_version(dev_config.get("version", 3.5))
+            # Short socket timeout — don't hang for 15+ seconds on unreachable devices.
+            # 3 seconds is generous for a LAN device. If it's not reachable, fail fast.
+            device.set_socketTimeout(3.0)
             self._devices[device_name] = device
 
         return self._devices[device_name]
