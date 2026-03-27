@@ -33,7 +33,7 @@ const ICON_TINTS: Record<string, string> = {
 }
 
 /* Resolve the animate value based on status */
-function getPillAnimate(status?: IntentStatus): Record<string, unknown> {
+function getPillAnimate(status?: IntentStatus): any {
   if (status === 'processing') {
     return { scale: [1, 1.02, 1], opacity: 1 }
   }

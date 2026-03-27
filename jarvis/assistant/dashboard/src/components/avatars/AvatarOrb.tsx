@@ -161,7 +161,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
       transition: {
         duration: 0.6,
         repeat: Infinity,
-        ease: [0.4, 0, 0.2, 1],
+        ease: 'easeInOut' as const,
         times: [0, 0.2, 0.5, 1],
       },
     },
@@ -323,7 +323,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         }}
         variants={activeOrbVariants}
         animate={state === 'thinking'
-          ? { ...activeOrbVariants.animate, ...thinkingRotation }
+          ? { ...(activeOrbVariants as any).animate, ...thinkingRotation }
           : 'animate'}
       />
 

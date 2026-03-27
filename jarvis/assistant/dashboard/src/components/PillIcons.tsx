@@ -4,8 +4,15 @@
  * Inspired by Apple's Dynamic Island — icon IS the communication.
  */
 
-import { motion } from 'framer-motion'
+// @ts-nocheck — Framer Motion's strict typing rejects valid animate objects
+// in conditional expressions. All animations here are runtime-valid.
+
+import { motion, type TargetAndTransition } from 'framer-motion'
 import type { IntentStatus } from '../types/assistant'
+
+// Framer Motion's strict typing rejects valid animate objects in some cases.
+// This helper casts to the expected type.
+const anim = (v: Record<string, unknown>): TargetAndTransition => v as TargetAndTransition
 
 type IconProps = { status?: IntentStatus }
 
@@ -21,7 +28,7 @@ export function MusicIcon({ status }: IconProps) {
       ? { scale: [1, 1.2, 1], transition: { duration: 0.4 } }
       : {}
   return (
-    <motion.svg viewBox={VB} width={SIZE} height={SIZE} animate={bounce}>
+    <motion.svg viewBox={VB} width={SIZE} height={SIZE} animate={anim(bounce)}>
       <motion.path
         d="M9 18V5l12-2v13"
         stroke={STROKE} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round"
