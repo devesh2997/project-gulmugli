@@ -486,31 +486,53 @@ def run_wake_word_mode(assistant: dict):
 
             print(f"You: {user_input}  [{result.language}, {result.confidence:.0%}]\n")
 
-            # Resume wake word detection BEFORE speaking. This enables barge-in:
-            # the user can say "Hey Jarvis" to interrupt mid-speech.
-            # The wake word listener will set tts_interrupt, causing playback
-            # to stop immediately.
+            # Resume wake word detection IMMEDIATELY after transcription.
+            # The entire pipeline (classify → execute → speak) runs in a
+            # background thread. The main loop is free to handle the next
+            # wake word detection at any time.
             #
-            # Why resume here instead of after TTS?
-            # Real smart speakers (Alexa, Google Home) keep listening at all
-            # times. They use Acoustic Echo Cancellation (AEC) to subtract
-            # their own speaker output from the mic. We don't have AEC, but
-            # OpenWakeWord's neural model has natural resistance to non-speech
-            # audio, and the cooldown timer prevents rapid re-triggers.
+            # This means the user is NEVER blocked — they can say "Hey Jarvis"
+            # to interrupt or give a new command even while the assistant is
+            # thinking, executing actions, or speaking.
             wake_word_provider.resume_listening()
 
-            # Process the command — TTS playback happens inside process_input.
-            # If wake word fires during TTS, tts_interrupt is set, playback
-            # stops, and was_interrupted is True.
-            response_text, was_interrupted = process_input(
-                assistant, user_input, interrupt_event=tts_interrupt,
-            )
+            # Cancel any in-progress pipeline from a previous command
+            if hasattr(run_wake_word_mode, '_cancel_event') and run_wake_word_mode._cancel_event:
+                run_wake_word_mode._cancel_event.set()
 
-            if was_interrupted:
-                log.info("Response interrupted by wake word. Processing new command...")
-                # Don't resume listening — it's already running.
-                # The detection_event is already set by on_wake_word,
-                # so the next iteration will pick up the new command immediately.
+            # Create a cancellation event for this pipeline run
+            cancel_event = threading.Event()
+            run_wake_word_mode._cancel_event = cancel_event
+
+            def _run_pipeline(text, cancel_evt, interrupt_evt):
+                """Run the full pipeline in a background thread."""
+                if cancel_evt.is_set():
+                    log.info("Pipeline cancelled before start.")
+                    return
+                try:
+                    process_input(
+                        assistant, text,
+                        interrupt_event=interrupt_evt,
+                    )
+                except Exception as e:
+                    log.error("Pipeline error: %s", e)
+                finally:
+                    # Back to idle if this pipeline wasn't cancelled
+                    if not cancel_evt.is_set():
+                        face_ui = assistant.get("face_ui")
+                        if face_ui:
+                            face_ui.set_state("idle")
+
+            # Fire the pipeline in a background thread
+            import concurrent.futures
+            _intent_executor = getattr(run_wake_word_mode, '_executor', None)
+            if _intent_executor is None:
+                _intent_executor = concurrent.futures.ThreadPoolExecutor(
+                    max_workers=2, thread_name_prefix="pipeline"
+                )
+                run_wake_word_mode._executor = _intent_executor
+
+            _intent_executor.submit(_run_pipeline, user_input, cancel_event, tts_interrupt)
 
     except (KeyboardInterrupt, EOFError):
         print(f"\n{name}: Goodbye!")

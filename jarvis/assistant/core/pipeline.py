@@ -41,26 +41,6 @@ INTENT_TIMEOUTS = {
     "memory_stats": 5.0,
 }
 
-# Intents that can fire-and-forget: the LLM already generated the response
-# during classification, so we don't need to wait for the action to complete
-# before speaking. The action runs in the background while TTS plays.
-FIRE_AND_FORGET_INTENTS = {
-    "light_control",    # "Lights on!" — don't wait for Tuya
-    "music_control",    # "Paused." — mpv is instant anyway
-    "volume",           # "Volume set to 50." — instant
-    "switch_personality",  # "Switched to Chandler." — instant
-    "system",           # "It's 1:30 PM." — computed, no I/O
-}
-
-# Intents where we MUST wait for the result because the response depends on it
-# (e.g., music_play needs the search result to say "Playing X by Y")
-WAIT_FOR_RESULT_INTENTS = {
-    "music_play",
-    "chat",
-    "knowledge_search",
-    "memory_recall",
-    "memory_stats",
-}
 
 
 # Maps intent type names to icon identifiers shown by the dashboard.
@@ -160,14 +140,12 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
     if face_ui and intent_payloads:
         face_ui.send_intents(intent_payloads)
 
-    # ── Split intents: fire-and-forget vs wait-for-result ──
-    #
-    # Fire-and-forget: the LLM already generated a response during classification
-    # (e.g., "Lights on!"), so we use that immediately. The actual action (Tuya call)
-    # runs in the background. The user doesn't wait for the light to physically turn on.
-    #
-    # Wait-for-result: the response DEPENDS on the action (e.g., music_play needs to
-    # search YouTube to say "Playing X by Y"). We must wait for these.
+    # Execute intents in parallel with per-type timeouts.
+    # The entire pipeline runs in a background thread (see main.py), so
+    # blocking here is fine — the user can still interact via wake word.
+    # We wait for ALL results so we can speak accurate responses
+    # (e.g., "Playing Sajni" only after search completes, "Lights on" only
+    # after the light actually turns on).
 
     def _execute_one(intent):
         """Run a single intent in a worker thread."""
@@ -186,23 +164,19 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
                 face_ui.update_intent(iid, "failed", str(exc)[:120])
             return f"Something went wrong with {intent.name}."
 
+    # Submit all intents to the thread pool
+    futures = {}
+    for intent in intents:
+        future = _intent_executor.submit(_execute_one, intent)
+        futures[future] = intent
+
+    # Collect results in original order, respecting per-intent timeouts
     responses = [""] * len(intents)
-    wait_futures = {}  # futures we must wait for
+    intent_order = {id(intent): idx for idx, intent in enumerate(intents)}
 
-    for idx, intent in enumerate(intents):
-        if intent.name in FIRE_AND_FORGET_INTENTS:
-            # Use the LLM's pre-generated response, fire action in background
-            responses[idx] = intent.response or "Done."
-            _intent_executor.submit(_execute_one, intent)  # fire and forget
-            log.debug("Fire-and-forget: %s → '%s'", intent.name, responses[idx])
-        else:
-            # Must wait for the result
-            future = _intent_executor.submit(_execute_one, intent)
-            wait_futures[future] = (intent, idx)
-
-    # Only wait for intents that need results
-    for future in as_completed(wait_futures):
-        intent, idx = wait_futures[future]
+    for future in as_completed(futures):
+        intent = futures[future]
+        idx = intent_order[id(intent)]
         timeout = INTENT_TIMEOUTS.get(intent.name, 10.0)
         try:
             responses[idx] = future.result(timeout=timeout)
