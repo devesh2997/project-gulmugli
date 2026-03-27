@@ -333,10 +333,11 @@ def run_wake_word_mode(assistant: dict):
       5. Audio → STT → intent → action → TTS response
       6. Resume listening for next wake word
 
-    Per-personality wake words:
-      - "Hey Jarvis" → activates with Jarvis personality
-      - "Hey Devesh" → switches to Devesh personality, then listens
-      - "Hey Chandler" → switches to Chandler personality, then listens
+    Wake word behavior:
+      - "Hey Jarvis" activates listening with whatever personality is currently active
+      - The wake word does NOT switch personality — all personalities share one
+        wake word model ("hey_jarvis")
+      - Personality switching happens via explicit voice command ("switch to Chandler")
 
     Interruption ("barge-in"):
       Wake word detection resumes BEFORE TTS starts speaking. If the user
@@ -433,18 +434,11 @@ def run_wake_word_mode(assistant: dict):
             if detection is None:
                 continue
 
-            # Switch personality if the wake word maps to one
+            # Wake word activates listening — it does NOT switch personality.
+            # All wake words share a single model ("hey_jarvis") regardless of
+            # active personality. Personality only changes via explicit voice
+            # command ("switch to Chandler").
             face_ui = assistant.get("face_ui")
-            if detection.personality_id:
-                try:
-                    personality_manager.switch(detection.personality_id)
-                    p = personality_manager.active
-                    log.info('Wake word switched personality to "%s"', p.display_name)
-                    if face_ui:
-                        face_ui.set_personality(p.id)
-                except KeyError:
-                    log.warning('Unknown personality "%s" for wake word', detection.personality_id)
-
             p = personality_manager.active
             print(f"🔴 {p.display_name} is listening...")
 
@@ -461,7 +455,7 @@ def run_wake_word_mode(assistant: dict):
                 # Uses fixed energy threshold (configurable via ears.vad_threshold).
                 # Stops after 2s of genuine silence. Max 30s safety cap.
                 audio_bytes = record_smart(
-                    silence_timeout=2.0,    # 2s of silence = done talking
+                    silence_timeout=0.8,    # 0.8s of silence = done talking (was 2.0 — too slow for commands)
                     max_duration=30.0,      # safety cap (stories, long commands)
                     pre_speech_timeout=5.0,  # give up if no speech after 5s
                 )
