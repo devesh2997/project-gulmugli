@@ -109,8 +109,8 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Clock — below avatar with spacing */}
-        <div style={{ paddingTop: 16 }}>
+        {/* Clock — below avatar with dynamic spacing to clear the glow */}
+        <div style={{ paddingTop: Math.max(32, avatarSize * 0.35) }}>
           <Clock />
         </div>
       </div>
