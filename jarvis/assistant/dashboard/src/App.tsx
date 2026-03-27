@@ -74,26 +74,34 @@ function AppContent() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // ── Avatar size: responsive clamp ──
-  const avatarSize = Math.max(120, Math.min(window.innerWidth * 0.2, 260))
+  // ── Avatar size: responsive, capped so it doesn't overwhelm small screens ──
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 540
+  const avatarSize = Math.max(80, Math.min(vh * 0.22, 200))
 
   return (
     <div className="fixed inset-0 overflow-hidden">
       <Canvas />
 
-      {/* Center column: avatar + pills + clock */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        {/* Pills emerge above the avatar */}
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ position: 'absolute', bottom: '100%', marginBottom: 8 }}>
-            <PillCluster intents={assistant.intents} />
-          </div>
-          <TransitionDissolver personality={assistant.personality}>
-            <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
-          </TransitionDissolver>
+      {/* Center column: pills → avatar → clock, stacked vertically */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ gap: 0 }}>
+        {/* Intent pills — above the avatar */}
+        <div style={{ minHeight: 44, display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
+          <PillCluster intents={assistant.intents} />
         </div>
 
-        <Clock />
+        {/* Avatar — overflow: visible so glow extends but doesn't push layout */}
+        <div style={{ width: avatarSize, height: avatarSize, position: 'relative', overflow: 'visible', flexShrink: 0 }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+            <TransitionDissolver personality={assistant.personality}>
+              <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
+            </TransitionDissolver>
+          </div>
+        </div>
+
+        {/* Clock — below avatar with spacing */}
+        <div style={{ paddingTop: 16 }}>
+          <Clock />
+        </div>
       </div>
 
       <StatusDot connected={assistant.connected} />
