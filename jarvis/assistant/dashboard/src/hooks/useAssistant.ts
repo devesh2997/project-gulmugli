@@ -20,6 +20,7 @@ import type {
   PersonalityInfo,
   ServerMessage,
   UIAction,
+  QuizState,
 } from '../types/assistant'
 
 interface InternalState {
@@ -36,6 +37,7 @@ interface InternalState {
   mood: AssistantMood
   settings: SettingSchema[]
   sleepMode: boolean
+  quiz: QuizState
 }
 
 const DEFAULT_STATE: InternalState = {
@@ -52,6 +54,7 @@ const DEFAULT_STATE: InternalState = {
   mood: 'neutral',
   settings: [],
   sleepMode: false,
+  quiz: { active: false, question: null, lastResult: null, score: { correct: 0, total: 0 }, outcomes: [], showStats: false },
 }
 
 const MAX_TRANSCRIPT = 50
@@ -214,6 +217,56 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         onTokenUpdateRef.current?.(msg.path, msg.value)
         break
 
+      case 'quiz_show':
+        setState(prev => ({
+          ...prev,
+          quiz: {
+            ...prev.quiz,
+            active: true,
+            showStats: false,
+            lastResult: null,
+            question: {
+              question: msg.data.question,
+              category: msg.data.category,
+              difficulty: msg.data.difficulty,
+              questionNumber: msg.data.question_number,
+              totalQuestions: msg.data.total_questions,
+              timeLimit: msg.data.time_limit,
+              options: msg.data.options,
+            },
+          },
+        }))
+        break
+
+      case 'quiz_update':
+        setState(prev => ({
+          ...prev,
+          quiz: {
+            ...prev.quiz,
+            lastResult: {
+              correct: msg.state.correct,
+              correctAnswer: msg.state.correct_answer,
+              explanation: msg.state.explanation,
+              reaction: msg.state.reaction,
+            },
+            score: msg.state.score,
+            outcomes: [
+              ...prev.quiz.outcomes,
+              msg.state.correct ? 'correct' : 'wrong',
+            ],
+            // If we've answered all questions, show stats
+            showStats: msg.state.score.total >= (prev.quiz.question?.totalQuestions ?? Infinity),
+          },
+        }))
+        break
+
+      case 'quiz_close':
+        setState(prev => ({
+          ...prev,
+          quiz: { active: false, question: null, lastResult: null, score: { correct: 0, total: 0 }, outcomes: [], showStats: false },
+        }))
+        break
+
       default:
         console.debug('[WS] Unknown message type:', msg)
     }
@@ -334,6 +387,22 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       }))
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'close_video' }))
+      }
+    },
+    // Quiz controls
+    quizAnswer: (answer: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'quiz_answer', answer }))
+      }
+    },
+    quizHint: () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'quiz_hint' }))
+      }
+    },
+    quizQuit: () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'quiz_quit' }))
       }
     },
   }), [sendAction])

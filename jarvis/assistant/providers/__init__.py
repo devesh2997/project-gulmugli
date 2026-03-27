@@ -81,6 +81,9 @@ try:
 except Exception:
     pass  # amixer not available
 
+# Quiz providers
+from providers.quiz.trivia import TriviaQuizProvider
+
 # As you add more providers, import them here:
 # from providers.music.spotify import SpotifyMusicProvider
 # from providers.brain.llamacpp import LlamaCppBrainProvider

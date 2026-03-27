@@ -595,6 +595,103 @@ class KnowledgeProvider(ABC):
         return ["search"]
 
 
+class QuizProvider(ABC):
+    """
+    Interface for interactive quiz/trivia games.
+
+    The quiz provider uses the LLM (brain) to generate questions, evaluate
+    answers (with fuzzy matching), and produce personality-flavored reactions.
+    No hardcoded question bank — infinite variety via LLM generation.
+
+    Session flow:
+      1. start_session(category, difficulty, num_questions, personality_tone)
+      2. generate_question() → {text, options, correct_answer, explanation}
+      3. User answers → check_answer(user_answer) → {correct, reaction, ...}
+      4. Repeat 2-3 until num_questions reached
+      5. get_session_stats() → {correct, total, accuracy}
+      6. end_session()
+
+    Current implementations: Trivia (LLM-generated questions via brain provider)
+    Possible future implementations: API-based trivia (Open Trivia DB), themed packs
+    """
+
+    @abstractmethod
+    def start_session(self, category: str, difficulty: str,
+                      num_questions: int, personality_tone: str) -> dict:
+        """
+        Start a new quiz session.
+
+        Args:
+            category: Topic area (general, bollywood, music, geography, tech, movies, food, cricket)
+            difficulty: easy, medium, or hard
+            num_questions: How many questions in this session
+            personality_tone: The active personality's tone string for flavoring questions
+
+        Returns: {"session_started": True, "category": ..., "total": ...}
+        """
+        ...
+
+    @abstractmethod
+    def generate_question(self) -> dict:
+        """
+        Generate the next question for the active session.
+
+        Returns: {
+            "question_number": int,
+            "total": int,
+            "text": "What is the capital of France?",
+            "options": ["A) London", "B) Paris", "C) Berlin", "D) Madrid"],
+            "correct_answer": "B",
+            "explanation": "Paris has been the capital of France since..."
+        }
+
+        The correct_answer and explanation are stored internally — NOT sent to
+        the user until after they answer.
+        """
+        ...
+
+    @abstractmethod
+    def check_answer(self, user_answer: str) -> dict:
+        """
+        Check the user's answer against the current question.
+
+        Uses LLM for fuzzy matching: "SRK" = "Shah Rukh Khan", "B" = option B,
+        partial answers, abbreviations, etc.
+
+        Returns: {
+            "correct": bool,
+            "correct_answer": "B) Paris",
+            "explanation": "Paris has been the capital...",
+            "reaction": "Could this BE any more obvious?" (personality-flavored)
+        }
+        """
+        ...
+
+    @abstractmethod
+    def get_hint(self) -> str:
+        """Generate a hint for the current question without revealing the answer."""
+        ...
+
+    @abstractmethod
+    def get_session_stats(self) -> dict:
+        """
+        Get current session statistics.
+
+        Returns: {"correct": 7, "total": 10, "accuracy": 70.0}
+        """
+        ...
+
+    @abstractmethod
+    def end_session(self) -> None:
+        """End the current quiz session and clear state."""
+        ...
+
+    @abstractmethod
+    def is_active(self) -> bool:
+        """Check if a quiz session is currently in progress."""
+        ...
+
+
 class MemoryProvider(ABC):
     """
     Interface for persistent memory — interaction logging, facts, and recall.

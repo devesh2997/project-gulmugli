@@ -23,6 +23,7 @@ import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
 import { VideoPlayer } from './components/VideoPlayer'
 import type { VideoMode } from './components/VideoPlayer'
+import { QuizCard } from './components/QuizCard'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -227,6 +228,13 @@ function AppContent() {
           onModeChange={handleVideoModeChange}
         />
       )}
+
+      {/* Quiz overlay -- z-index 45, above panels, below sleep mode */}
+      <AnimatePresence>
+        {assistant.quiz?.active && (
+          <QuizCard quiz={assistant.quiz} actions={assistant.actions} />
+        )}
+      </AnimatePresence>
 
       {/* Sleep mode tap-to-wake overlay */}
       <AnimatePresence>

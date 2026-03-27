@@ -207,6 +207,16 @@ Respond with valid JSON only. No explanation. No markdown.
    "aaj news kya hai" → query: "India news today"
    "IPL mein kya hua" → query: "IPL cricket latest score"
 
+12. "quiz" — Start or interact with a trivia quiz game
+   Params: {{"action": "start|answer|hint|score|quit", "category": "general|bollywood|movies|music|geography|tech|food|cricket", "difficulty": "easy|medium|hard", "answer": "user's answer text"}}
+   Start: "play quiz", "quiz khelna hai", "trivia start", "let's play a game", "quiz chalao", "bollywood quiz", "start a hard quiz"
+   Answer: any answer during an active quiz — "B", "Shah Rukh Khan", "Paris", "option C"
+   Hint: "hint", "clue", "give me a hint", "hint de do"
+   Score: "my score", "kitne aaye", "score bata"
+   Quit: "quit quiz", "stop quiz", "quiz band karo"
+   When starting, extract category and difficulty if mentioned: "play a hard bollywood quiz" → action: "start", category: "bollywood", difficulty: "hard"
+   Default category is "general", default difficulty is "medium"
+
 ## Format
 Always return an "intents" array, even for a single command.
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "Brief spoken acknowledgment IN CHARACTER."}}
@@ -342,6 +352,18 @@ User: "wake up"
 
 User: "jag ja"
 {{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "Good morning! What do you need?"}}
+
+User: "let's play a quiz"
+{{"intents": [{{"intent": "quiz", "params": {{"action": "start", "category": "general", "difficulty": "medium"}}}}], "response": "Let's play!"}}
+
+User: "bollywood quiz khelna hai"
+{{"intents": [{{"intent": "quiz", "params": {{"action": "start", "category": "bollywood", "difficulty": "medium"}}}}], "response": "Bollywood quiz coming up!"}}
+
+User: "start a hard cricket quiz"
+{{"intents": [{{"intent": "quiz", "params": {{"action": "start", "category": "cricket", "difficulty": "hard"}}}}], "response": "A tough cricket quiz it is!"}}
+
+User: "quit quiz"
+{{"intents": [{{"intent": "quiz", "params": {{"action": "quit"}}}}], "response": "Quiz ended."}}
 
 ### Chained commands
 User: "play Sajni and set the lights to red"

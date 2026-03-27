@@ -211,6 +211,59 @@ def _match_system(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_quiz(text: str) -> list[Intent] | None:
+    """Match unambiguous quiz commands."""
+    t = text.strip().lower()
+
+    # Start quiz: "play quiz", "quiz khelna hai", "trivia start", "let's play a game", "quiz chalao"
+    if re.fullmatch(
+        r"(play\s+quiz|play\s+trivia|quiz\s+(khelna?\s+hai|chalao|start|shuru\s+karo?)|"
+        r"trivia\s+start|let'?s\s+play\s+(a\s+)?game|start\s+(a\s+)?quiz|"
+        r"quiz\s+khel(te|na)\s+hain?)",
+        t,
+    ):
+        return [Intent(name="quiz", params={"action": "start"},
+                       response="Let's play!", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Quit quiz: "quit quiz", "stop quiz", "quiz band karo", "end quiz"
+    if re.fullmatch(
+        r"(quit\s+quiz|stop\s+quiz|end\s+quiz|exit\s+quiz|"
+        r"quiz\s+band\s+(karo?|do)|quiz\s+(stop|quit|end))",
+        t,
+    ):
+        return [Intent(name="quiz", params={"action": "quit"},
+                       response="Quiz ended.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Score: "score", "my score", "kitne aaye", "quiz score"
+    # Only match during active quiz — check lazily via import
+    if re.fullmatch(r"(my\s+score|quiz\s+score|kitne\s+aa?ye|score\s+bata(o)?|score)", t):
+        try:
+            # Lazy check: only match if quiz is actually active
+            # This prevents "score" from matching when no quiz is running
+            from core.intent_handler import _quiz_is_active
+            if _quiz_is_active():
+                return [Intent(name="quiz", params={"action": "score"},
+                               response="", confidence=1.0,
+                               meta={"source": "prefilter"})]
+        except (ImportError, AttributeError):
+            pass
+
+    # Hint: "hint", "clue", "give me a hint" — only during active quiz
+    if re.fullmatch(r"(hint|clue|give\s+me\s+a\s+hint|hint\s+do|hint\s+de\s+do)", t):
+        try:
+            from core.intent_handler import _quiz_is_active
+            if _quiz_is_active():
+                return [Intent(name="quiz", params={"action": "hint"},
+                               response="", confidence=1.0,
+                               meta={"source": "prefilter"})]
+        except (ImportError, AttributeError):
+            pass
+
+    return None
+
+
 def _match_sleep(text: str) -> list[Intent] | None:
     """Match unambiguous sleep/wake commands."""
     t = text.strip().lower()
@@ -244,6 +297,7 @@ def _match_sleep(text: str) -> list[Intent] | None:
 # If there's any ambiguity, let the LLM handle it.
 PREFILTER_CHAIN = [
     _match_sleep,
+    _match_quiz,
     _match_video_music,
     _match_music_control,
     _match_volume,

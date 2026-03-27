@@ -22,6 +22,7 @@ from core.interfaces import (
     WakeWordProvider,
     MemoryProvider,
     KnowledgeProvider,
+    QuizProvider,
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -38,6 +39,7 @@ _registry: dict[str, dict[str, type]] = {
     "wake_word": {},
     "memory": {},
     "knowledge": {},
+    "quiz": {},
 }
 
 

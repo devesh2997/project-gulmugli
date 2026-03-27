@@ -238,6 +238,28 @@ class FaceUI:
         self._sleep_mode = active
         self._broadcast({"type": "sleep_mode", "active": active})
 
+    def show_quiz(self, data: dict) -> None:
+        """
+        Show a quiz question on the dashboard.
+
+        Args:
+            data: Dict with category, difficulty, total, question, score.
+        """
+        self._broadcast({"type": "quiz_show", "data": data})
+
+    def update_quiz(self, state: dict) -> None:
+        """
+        Update quiz state on the dashboard (answer result, score change).
+
+        Args:
+            state: Dict with result, score, question_number, total.
+        """
+        self._broadcast({"type": "quiz_update", "state": state})
+
+    def close_quiz(self) -> None:
+        """Close the quiz overlay on the dashboard."""
+        self._broadcast({"type": "quiz_close"})
+
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
         pass

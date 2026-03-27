@@ -54,6 +54,25 @@ def trigger_wake(assistant: dict) -> str:
     return handle_intent(assistant, intent)
 
 
+# ── Quiz state helper ────────────────────────────────────────────
+# Exposed as a module-level function so the prefilter can check if a
+# quiz is active (for context-sensitive matching of "hint", "score", etc.)
+
+def _quiz_is_active() -> bool:
+    """Check if a quiz session is active. Used by prefilter for context-sensitive matching."""
+    return _quiz_provider_ref is not None and _quiz_provider_ref.is_active()
+
+
+# Module-level ref to the quiz provider, set by set_quiz_provider() from main.py.
+_quiz_provider_ref = None
+
+
+def set_quiz_provider(quiz_provider) -> None:
+    """Store a reference to the quiz provider for prefilter access."""
+    global _quiz_provider_ref
+    _quiz_provider_ref = quiz_provider
+
+
 # ── Helpers ──────────────────────────────────────────────────────
 
 def _build_now_playing_data(song, with_video: bool = False) -> dict:
@@ -506,6 +525,129 @@ def handle_intent(assistant: dict, intent) -> str:
         )
         resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.5)
         return resp.text
+
+    elif intent.name == "quiz" and assistant.get("quiz"):
+        action = intent.params.get("action", "start")
+        quiz = assistant["quiz"]
+        face_ui = assistant.get("face_ui")
+
+        if action == "start":
+            category = intent.params.get("category", "general")
+            difficulty = intent.params.get("difficulty", "medium")
+            quiz_cfg = config.get("quiz", {})
+            num_questions = quiz_cfg.get("default_num_questions", 10)
+            p = personality_manager.active
+            tone = p.tone
+
+            result = quiz.start_session(
+                category=category,
+                difficulty=difficulty,
+                num_questions=num_questions,
+                personality_tone=tone,
+            )
+
+            if not result.get("session_started"):
+                return result.get("error", "Could not start quiz.")
+
+            # Generate first question
+            question = quiz.generate_question()
+            if "error" in question:
+                return question["error"]
+
+            # Broadcast to dashboard
+            if face_ui:
+                face_ui.show_quiz({
+                    "category": category,
+                    "difficulty": difficulty,
+                    "total": num_questions,
+                    "question": question,
+                    "score": 0,
+                })
+
+            # Speak the question
+            options_text = ", ".join(question.get("options", []))
+            return f"{question.get('text', '')} Your options are: {options_text}"
+
+        elif action == "answer":
+            user_answer = intent.params.get("answer", "")
+            if not quiz.is_active():
+                return "There's no quiz running right now."
+
+            result = quiz.check_answer(user_answer)
+            if "error" in result:
+                return result["error"]
+
+            # Broadcast result to dashboard
+            if face_ui:
+                face_ui.update_quiz({
+                    "result": result,
+                    "score": result.get("score", 0),
+                    "question_number": result.get("question_number", 0),
+                    "total": result.get("total", 0),
+                })
+
+            reaction = result.get("reaction", "")
+            explanation = result.get("explanation", "")
+
+            # Auto-generate next question if session isn't complete
+            if quiz.is_active() and result.get("question_number", 0) < result.get("total", 0):
+                # Generate next question after a brief pause
+                next_q = quiz.generate_question()
+                if "error" not in next_q:
+                    if face_ui:
+                        face_ui.show_quiz({
+                            "category": quiz._category,
+                            "difficulty": quiz._difficulty,
+                            "total": quiz._num_questions,
+                            "question": next_q,
+                            "score": result.get("score", 0),
+                        })
+                    options_text = ", ".join(next_q.get("options", []))
+                    return f"{reaction} {explanation} Next question: {next_q.get('text', '')} Options: {options_text}"
+
+            elif quiz.is_active():
+                # Last question answered — show final stats
+                stats = quiz.get_session_stats()
+                quiz.end_session()
+                if face_ui:
+                    face_ui.close_quiz()
+                return (
+                    f"{reaction} {explanation} "
+                    f"Quiz complete! You got {stats['correct']} out of {stats['total']} "
+                    f"({stats['accuracy']}% accuracy)."
+                )
+
+            return f"{reaction} {explanation}"
+
+        elif action == "hint":
+            if not quiz.is_active():
+                return "No quiz is running right now."
+            hint = quiz.get_hint()
+            return f"Here's a hint: {hint}"
+
+        elif action == "score":
+            if not quiz.is_active():
+                return "No quiz is running right now."
+            stats = quiz.get_session_stats()
+            return (
+                f"You've got {stats['correct']} out of {stats['total']} correct "
+                f"({stats['accuracy']}% accuracy). "
+                f"{stats['out_of'] - stats['total']} questions remaining."
+            )
+
+        elif action == "quit":
+            if not quiz.is_active():
+                return "No quiz is running."
+            stats = quiz.get_session_stats()
+            quiz.end_session()
+            if face_ui:
+                face_ui.close_quiz()
+            return (
+                f"Quiz ended. Final score: {stats['correct']} out of {stats['total']} "
+                f"({stats['accuracy']}% accuracy)."
+            )
+
+        return intent.response or "I'm not sure what to do with that quiz command."
 
     elif intent.name == "system":
         action = intent.params.get("action", "")

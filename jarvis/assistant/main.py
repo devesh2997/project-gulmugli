@@ -181,6 +181,25 @@ def build_assistant() -> dict:
         assistant["knowledge"] = None
         log.info("Knowledge provider disabled in config.")
 
+    # Quiz — LLM-generated trivia with personality-flavored hosting
+    quiz_cfg = config.get("quiz", {})
+    if quiz_cfg.get("provider", "trivia"):
+        try:
+            from providers.quiz.trivia import TriviaQuizProvider
+            quiz = TriviaQuizProvider(brain=assistant["brain"])
+            assistant["quiz"] = quiz
+
+            # Register with intent_handler so prefilter can check is_active()
+            from core.intent_handler import set_quiz_provider
+            set_quiz_provider(quiz)
+
+            log.info("Quiz provider ready.")
+        except Exception as e:
+            log.info("Quiz provider not available (%s). Quiz features disabled.", e)
+            assistant["quiz"] = None
+    else:
+        assistant["quiz"] = None
+
     # Face UI — browser-based animated face (purely cosmetic, optional)
     face_ui = FaceUI(port=config.get("ui", {}).get("port", 8765))
     face_ui.start()

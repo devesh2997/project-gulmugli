@@ -254,8 +254,47 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
                 face_ui.send_settings(settings)
         return
 
+    elif action == "quiz_answer":
+        # User tapped an answer option on the quiz card
+        answer = params.get("answer", "")
+        if answer:
+            intent = Intent(
+                name="quiz",
+                params={"action": "answer", "answer": answer},
+                response="",
+            )
+
+    elif action == "quiz_hint":
+        # User tapped the hint button on the quiz card
+        intent = Intent(
+            name="quiz",
+            params={"action": "hint"},
+            response="",
+        )
+
+    elif action == "quiz_quit":
+        # User tapped the X/quit button on the quiz card
+        intent = Intent(
+            name="quiz",
+            params={"action": "quit"},
+            response="",
+        )
+
     if intent:
         try:
-            handle_intent(assistant, intent)
+            response = handle_intent(assistant, intent)
+            # For quiz actions, speak the response via TTS
+            if action in ("quiz_answer", "quiz_hint", "quiz_quit") and response:
+                voice_router = assistant.get("voice_router")
+                face_ui = assistant.get("face_ui")
+                if face_ui:
+                    face_ui.show_transcript(response, role="assistant")
+                if voice_router:
+                    def _speak_quiz():
+                        try:
+                            voice_router.speak(response)
+                        except Exception as e:
+                            log.warning("Quiz TTS failed: %s", e)
+                    threading.Thread(target=_speak_quiz, daemon=True).start()
         except Exception as e:
             log.warning("UI action failed: %s — %s", action, e)

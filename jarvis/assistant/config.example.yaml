@@ -301,6 +301,23 @@ sleep_mode:
   restore_volume_on_wake: true   # Restore music volume when waking
   wake_lights_brightness: 50     # Brightness when waking up (0-100)
 
+# --- Quiz / Trivia ---
+# Interactive personality-driven trivia game. The LLM generates questions
+# and evaluates answers (with fuzzy matching). Each personality hosts differently.
+quiz:
+  provider: "trivia"                 # options: trivia (LLM-generated). Future: opentdb (API)
+  default_num_questions: 10          # questions per session (can be overridden by voice)
+  time_limit_seconds: 30             # per-question time limit (0 = no limit)
+  categories:                        # available categories
+    - "general"
+    - "bollywood"
+    - "music"
+    - "geography"
+    - "tech"
+    - "movies"
+    - "food"
+    - "cricket"
+
 # --- Logging & Debug ---
 debug:
   log_level: "DEBUG" # DEBUG, INFO, WARNING, ERROR

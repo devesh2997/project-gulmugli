@@ -205,6 +205,63 @@ export interface BluetoothPairMessage {
   name?: string
 }
 
+// ─── Quiz / Trivia ──────────────────────────────────────────────
+export interface QuizShowMessage {
+  type: 'quiz_show'
+  data: {
+    question: string
+    category: string
+    difficulty: string
+    question_number: number
+    total_questions: number
+    time_limit?: number
+    options: string[]  // ["A) Paris", "B) London", ...]
+  }
+}
+
+export interface QuizUpdateMessage {
+  type: 'quiz_update'
+  state: {
+    correct: boolean
+    correct_answer: string
+    explanation?: string
+    reaction?: string  // personality-flavored response
+    score: { correct: number; total: number }
+  }
+}
+
+export interface QuizCloseMessage {
+  type: 'quiz_close'
+}
+
+export interface QuizQuestion {
+  question: string
+  category: string
+  difficulty: string
+  questionNumber: number
+  totalQuestions: number
+  timeLimit?: number
+  options: string[]
+}
+
+export interface QuizResult {
+  correct: boolean
+  correctAnswer: string
+  explanation?: string
+  reaction?: string
+}
+
+export interface QuizState {
+  active: boolean
+  question: QuizQuestion | null
+  lastResult: QuizResult | null
+  score: { correct: number; total: number }
+  /** Track per-question outcomes for the score dot visualization */
+  outcomes: ('correct' | 'wrong')[]
+  /** Whether we're showing the end-of-game stats */
+  showStats: boolean
+}
+
 export type ServerMessage =
   | StateMessage
   | PersonalityMessage
@@ -225,6 +282,9 @@ export type ServerMessage =
   | AudioOutputsMessage
   | BluetoothScanMessage
   | BluetoothPairMessage
+  | QuizShowMessage
+  | QuizUpdateMessage
+  | QuizCloseMessage
 
 // ─── Messages TO the assistant (browser → server) ─────────────────
 export type GestureType =
@@ -291,6 +351,7 @@ export interface AssistantStore {
   mood: AssistantMood
   settings: SettingSchema[]
   sleepMode: boolean
+  quiz: QuizState
   actions: AssistantActions
   sendAction: (action: UIAction) => void
 }
@@ -316,4 +377,8 @@ export interface AssistantActions {
   btPair: (mac: string) => void
   btDisconnect: (mac: string) => void
   closeVideo: () => void
+  // Quiz controls
+  quizAnswer: (answer: string) => void
+  quizHint: () => void
+  quizQuit: () => void
 }
