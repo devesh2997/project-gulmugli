@@ -67,13 +67,13 @@ export const pixelFaces: Record<string, FaceState> = {
       { x: 15, y: 17, opacity: 0.2 },
       { x: 16, y: 18, opacity: 0.2 },
     ],
-    // Gentle smile — slight upward curve
+    // Clear upward smile — corners UP, center flat
     mouth: [
-      { x: 12, y: 23, opacity: 0.4 },
-      { x: 13, y: 22, opacity: 0.55 }, { x: 14, y: 22, opacity: 0.6 },
-      { x: 15, y: 22, opacity: 0.6 }, { x: 16, y: 22, opacity: 0.6 },
-      { x: 17, y: 22, opacity: 0.6 }, { x: 18, y: 22, opacity: 0.55 },
-      { x: 19, y: 23, opacity: 0.4 },
+      { x: 12, y: 21, opacity: 0.35 },
+      { x: 13, y: 22, opacity: 0.5 }, { x: 14, y: 22, opacity: 0.55 },
+      { x: 15, y: 22, opacity: 0.55 }, { x: 16, y: 22, opacity: 0.55 },
+      { x: 17, y: 22, opacity: 0.55 }, { x: 18, y: 22, opacity: 0.5 },
+      { x: 19, y: 21, opacity: 0.35 },
     ],
   },
 

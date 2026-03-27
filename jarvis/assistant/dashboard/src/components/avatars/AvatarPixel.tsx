@@ -157,7 +157,9 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
     return result
   }, [featureGroups])
 
-  // Thinking shimmer: each pixel gets a cycling opacity offset
+  // Animate pixels: thinking = fast shimmer, idle/listening = gentle breathing
+  const isIdle = state === 'idle'
+  const needsBreathing = isIdle || isListening
   const shimmerDelay = isThinking
 
   const accent = 'var(--personality-accent)'
@@ -213,7 +215,9 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
                 y: pixel.y,
                 opacity: shimmerDelay
                   ? [pixel.opacity, pixel.opacity * 0.4, pixel.opacity]
-                  : pixel.opacity,
+                  : needsBreathing
+                    ? [pixel.opacity, pixel.opacity * 0.65, pixel.opacity]
+                    : pixel.opacity,
               }}
               exit={{ opacity: 0, scale: 0 }}
               transition={shimmerDelay
@@ -227,11 +231,22 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
                       delay: (index % 8) * 0.15,
                     },
                   }
-                : {
-                    x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
-                    y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
-                    opacity: { duration: 0.3, delay: index * 0.02 },
-                  }}
+                : needsBreathing
+                  ? {
+                      x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                      y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                      opacity: {
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: 'easeInOut' as const,
+                        delay: (index % 6) * 0.3,
+                      },
+                    }
+                  : {
+                      x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                      y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                      opacity: { duration: 0.3, delay: index * 0.02 },
+                    }}
             />
           ))}
         </AnimatePresence>
