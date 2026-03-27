@@ -141,16 +141,31 @@ function syncCSSVars(tokens: Record<string, any>): void {
 // ─── Initial token state ──────────────────────────────────────────────────────
 
 const DEFAULT_PERSONALITY = 'jarvis'
+const TOKEN_OVERRIDES_KEY = 'jarvis-token-overrides'
 
 function buildInitialTokens(): Record<string, any> {
-  return {
+  let tokens: Record<string, any> = {
     animation: animationTokens,
     layout: layoutTokens,
     time: timeTokens,
     ui: uiTokens,
-    // Active personality tokens merged under `personality` key
     personality: (personalitiesTokens as Record<string, any>)[DEFAULT_PERSONALITY] ?? {},
   }
+
+  // Restore persisted token overrides (colors, timing tweaks, etc.)
+  try {
+    const saved = localStorage.getItem(TOKEN_OVERRIDES_KEY)
+    if (saved) {
+      const overrides: Record<string, any> = JSON.parse(saved)
+      for (const [path, value] of Object.entries(overrides)) {
+        tokens = setNestedValue(tokens, path, value)
+      }
+    }
+  } catch {
+    // Corrupted localStorage — ignore
+  }
+
+  return tokens
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -179,6 +194,13 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
 
   const updateToken = useCallback((path: string, value: any) => {
     setTokens((prev) => setNestedValue(prev, path, value))
+
+    // Persist override so it survives page refreshes
+    try {
+      const saved = JSON.parse(localStorage.getItem(TOKEN_OVERRIDES_KEY) || '{}')
+      saved[path] = value
+      localStorage.setItem(TOKEN_OVERRIDES_KEY, JSON.stringify(saved))
+    } catch { /* quota exceeded or private mode — ignore */ }
   }, [])
 
   const setPersonality = useCallback((id: string) => {

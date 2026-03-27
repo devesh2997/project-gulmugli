@@ -12,8 +12,8 @@ import { Canvas } from './components/Canvas'
 import { Avatar } from './components/Avatar'
 import { Clock } from './components/Clock'
 import { StatusDot } from './components/StatusDot'
-import { PillCluster } from './components/PillCluster'
-import { NowPlayingPill } from './components/NowPlayingPill'
+import { ThoughtManifest } from './components/thoughts/ThoughtManifest'
+import { NowPlayingCompact } from './components/NowPlayingCompact'
 import { NowPlayingExpanded } from './components/NowPlayingExpanded'
 import { TransitionDissolver } from './components/TransitionDissolver'
 import SlidePanel from './components/SlidePanel'
@@ -78,19 +78,30 @@ function AppContent() {
   const vh = typeof window !== 'undefined' ? window.innerHeight : 540
   const avatarSize = Math.max(80, Math.min(vh * 0.22, 200))
 
+  // ── Track avatar center for thought orbit positions ──
+  const avatarRef = useRef<HTMLDivElement>(null)
+  const [avatarCenter, setAvatarCenter] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const measure = () => {
+      if (avatarRef.current) {
+        const rect = avatarRef.current.getBoundingClientRect()
+        setAvatarCenter({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
+      }
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [avatarSize])
+
   return (
     <div className="fixed inset-0 overflow-hidden">
       <Canvas />
 
-      {/* Center column: pills → avatar → clock, stacked vertically */}
+      {/* Center column: avatar → clock, stacked vertically */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ gap: 0 }}>
-        {/* Intent pills — above the avatar */}
-        <div style={{ minHeight: 44, display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
-          <PillCluster intents={assistant.intents} />
-        </div>
-
         {/* Avatar — overflow: visible so glow extends but doesn't push layout */}
-        <div style={{ width: avatarSize, height: avatarSize, position: 'relative', overflow: 'visible', flexShrink: 0 }}>
+        <div ref={avatarRef} style={{ width: avatarSize, height: avatarSize, position: 'relative', overflow: 'visible', flexShrink: 0 }}>
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
             <TransitionDissolver personality={assistant.personality}>
               <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
@@ -104,12 +115,19 @@ function AppContent() {
         </div>
       </div>
 
+      {/* Thought manifestations — orbiting the avatar */}
+      <ThoughtManifest
+        intents={assistant.intents}
+        avatarCenter={avatarCenter}
+        avatarSize={avatarSize}
+      />
+
       <StatusDot connected={assistant.connected} />
 
       {/* Now Playing */}
       <AnimatePresence>
         {assistant.nowPlaying && !nowPlayingExpanded && (
-          <NowPlayingPill
+          <NowPlayingCompact
             nowPlaying={assistant.nowPlaying}
             onExpand={() => setNowPlayingExpanded(true)}
           />

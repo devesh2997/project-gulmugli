@@ -19,6 +19,8 @@ The active personality affects:
     - Wake word: optional per-personality wake word (future: speaker ID)
 """
 
+from pathlib import Path
+
 from core.config import config
 from core.interfaces import Personality
 from core.logger import get_logger
@@ -77,6 +79,17 @@ class PersonalityManager:
             )
             self._active_id = "default"
 
+        # Restore persisted personality (survives restarts)
+        self._state_file = Path(__file__).parent.parent / "data" / ".personality_state"
+        if self._state_file.exists():
+            try:
+                saved_id = self._state_file.read_text().strip()
+                if saved_id in self._profiles:
+                    self._active_id = saved_id
+                    log.debug('Restored persisted personality: "%s"', saved_id)
+            except Exception:
+                pass  # Corrupted state file — ignore, use config default
+
         # Validate that the default personality exists
         if self._active_id not in self._profiles:
             available = list(self._profiles.keys())
@@ -119,6 +132,14 @@ class PersonalityManager:
                 )
 
         log.info('Switched to "%s" (%s)', self.active.display_name, self.active.description)
+
+        # Persist so the personality survives restarts
+        try:
+            self._state_file.parent.mkdir(parents=True, exist_ok=True)
+            self._state_file.write_text(self._active_id)
+        except Exception as e:
+            log.debug("Could not persist personality state: %s", e)
+
         return self.active
 
     def list(self) -> list[Personality]:
