@@ -84,14 +84,15 @@ function AppContent() {
     prevVideoIdRef.current = currentVideoId
   }, [assistant.nowPlaying?.videoId])
 
-  // Handle NowPlayingCompact tap: if video is active, expand video; otherwise expand audio
+  // Handle NowPlayingCompact tap: expand audio sheet (video thumbnail has its own handler)
   const handleCompactExpand = useCallback(() => {
-    if (hasVideo) {
-      setVideoMode('full')
-    } else {
-      setNowPlayingExpanded(true)
-    }
-  }, [hasVideo])
+    setNowPlayingExpanded(true)
+  }, [])
+
+  // Handle video expand from compact/expanded widgets
+  const handleExpandVideo = useCallback(() => {
+    setVideoMode('full')
+  }, [])
 
   // Handle video mode changes from VideoPlayer
   const handleVideoModeChange = useCallback((mode: VideoMode) => {
@@ -137,10 +138,10 @@ function AppContent() {
   }, [avatarSize])
 
   // Determine whether to show NowPlayingCompact: show when music is playing AND
-  // video is not in full mode (mini/hidden video still shows compact widget)
-  const showCompact = !!assistant.nowPlaying && !nowPlayingExpanded && videoMode !== 'full'
-  // NowPlayingExpanded (audio sheet): only when no video is active
-  const showExpanded = !!assistant.nowPlaying && nowPlayingExpanded && !hasVideo
+  // video is not in full mode AND not in browse mode
+  const showCompact = !!assistant.nowPlaying && !nowPlayingExpanded && videoMode !== 'full' && !assistant.youtubeBrowseUrl
+  // NowPlayingExpanded (audio sheet): show when expanded is toggled
+  const showExpanded = !!assistant.nowPlaying && nowPlayingExpanded && !assistant.youtubeBrowseUrl
 
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -195,7 +196,8 @@ function AppContent() {
             <NowPlayingCompact
               nowPlaying={assistant.nowPlaying!}
               onExpand={handleCompactExpand}
-              hasVideo={hasVideo}
+              videoId={assistant.nowPlaying!.videoId}
+              onExpandVideo={handleExpandVideo}
             />
           )}
           {showExpanded && (
@@ -203,6 +205,8 @@ function AppContent() {
               nowPlaying={assistant.nowPlaying!}
               actions={assistant.actions}
               onCollapse={() => setNowPlayingExpanded(false)}
+              videoId={assistant.nowPlaying!.videoId}
+              onExpandVideo={handleExpandVideo}
             />
           )}
         </AnimatePresence>
@@ -219,13 +223,15 @@ function AppContent() {
         </SlidePanel>
       </motion.div>
 
-      {/* Floating video player -- always mounted when videoId exists, mode controls visibility */}
-      {hasVideo && assistant.nowPlaying && (
+      {/* Floating video player -- mounted when videoId exists OR in browse mode */}
+      {(hasVideo || assistant.youtubeBrowseUrl) && (
         <VideoPlayer
-          nowPlaying={assistant.nowPlaying}
+          nowPlaying={assistant.nowPlaying ?? { title: '', artist: '', album: '', artUrl: null, duration: 0, position: 0, paused: false, videoId: null }}
           actions={assistant.actions}
-          mode={videoMode}
+          mode={assistant.youtubeBrowseUrl ? 'full' : videoMode}
           onModeChange={handleVideoModeChange}
+          browseUrl={assistant.youtubeBrowseUrl}
+          onCloseBrowse={assistant.actions.closeBrowse}
         />
       )}
 

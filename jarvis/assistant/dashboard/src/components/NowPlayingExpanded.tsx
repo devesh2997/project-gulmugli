@@ -21,6 +21,10 @@ interface NowPlayingExpandedProps {
   nowPlaying: NowPlaying
   actions: AssistantActions
   onCollapse: () => void
+  /** YouTube videoId for embedded peek video (empty string = no video) */
+  videoId?: string | null
+  /** Callback when the video area is tapped — expands to full video player */
+  onExpandVideo?: () => void
 }
 
 function fmt(s: number) {
@@ -120,7 +124,7 @@ function ControlBtn({ onClick, label, primary = false, size = 42, children }: {
   )
 }
 
-export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayingExpandedProps) {
+export function NowPlayingExpanded({ nowPlaying, actions, onCollapse, videoId, onExpandVideo }: NowPlayingExpandedProps) {
   const barRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -240,6 +244,53 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
             }}
           />
         </div>
+
+        {/* Video peek area — muted iframe showing current video */}
+        {videoId && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              onExpandVideo?.()
+            }}
+            style={{
+              width: '100%',
+              aspectRatio: '16 / 9',
+              borderRadius: 16,
+              overflow: 'hidden',
+              position: 'relative',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&mute=1&modestbranding=1`}
+              allow="autoplay; encrypted-media"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                display: 'block',
+                pointerEvents: 'none',
+              }}
+              title="Video peek"
+            />
+            {/* Tap-to-expand overlay hint */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.15)',
+              opacity: 0.7,
+              transition: 'opacity 0.2s',
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="white" opacity={0.7}>
+                <path d="M4 4h4V2H2v6h2V4zm16 0v4h2V2h-6v2h4zM4 20v-4H2v6h6v-2H4zm16 0h-4v2h6v-6h-2v4z" />
+              </svg>
+            </div>
+          </div>
+        )}
 
         {/* Visualiser */}
         <Visualiser paused={nowPlaying.paused} />

@@ -19,8 +19,10 @@ import type { NowPlaying } from '../types/assistant'
 interface NowPlayingCompactProps {
   nowPlaying: NowPlaying
   onExpand: () => void
-  /** When true, a video badge is shown and tap expands the video player instead of audio */
-  hasVideo?: boolean
+  /** YouTube videoId for mini thumbnail (empty string = no video) */
+  videoId?: string | null
+  /** Callback when the video thumbnail is tapped — expands to full video player */
+  onExpandVideo?: () => void
 }
 
 /** Organic waveform with more bars and sine-wave motion */
@@ -112,9 +114,10 @@ function MarqueeText({ text, style }: { text: string; style?: React.CSSPropertie
   )
 }
 
-export function NowPlayingCompact({ nowPlaying, onExpand, hasVideo }: NowPlayingCompactProps) {
+export function NowPlayingCompact({ nowPlaying, onExpand, videoId, onExpandVideo }: NowPlayingCompactProps) {
   const constraintsRef = useRef<HTMLDivElement>(null)
   const isLight = useLightMode()
+  const hasVideo = !!videoId
 
   return (
     <>
@@ -166,29 +169,52 @@ export function NowPlayingCompact({ nowPlaying, onExpand, hasVideo }: NowPlaying
           transition: 'background 0.6s ease, box-shadow 0.6s ease',
         }}
       >
-        {/* Waveform + video badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <Waveform paused={nowPlaying.paused} isLight={isLight} />
-          {hasVideo && (
+        {/* Video thumbnail (left) or waveform */}
+        {hasVideo ? (
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              onExpandVideo?.()
+            }}
+            style={{
+              width: 64,
+              height: 36,
+              borderRadius: 8,
+              overflow: 'hidden',
+              flexShrink: 0,
+              position: 'relative',
+              boxShadow: isLight
+                ? '0 1px 4px rgba(0,0,0,0.1)'
+                : `0 1px 8px rgba(0,0,0,0.3), 0 0 6px rgba(var(--personality-accent-rgb), 0.08)`,
+            }}
+          >
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+              alt=""
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+            {/* Play icon overlay */}
             <div style={{
-              width: 18,
-              height: 14,
-              borderRadius: 3,
-              background: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(var(--personality-accent-rgb), 0.2)',
+              position: 'absolute',
+              inset: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
+              background: 'rgba(0,0,0,0.2)',
             }}>
-              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                <path d="M1 1.5A.5.5 0 011.5 1h4a.5.5 0 01.5.5v5a.5.5 0 01-.5.5h-4a.5.5 0 01-.5-.5v-5z"
-                  fill={isLight ? '#4a3520' : 'var(--personality-accent)'} opacity={0.9} />
-                <path d="M7 2.5l2-1v5l-2-1v-3z"
-                  fill={isLight ? '#4a3520' : 'var(--personality-accent)'} opacity={0.9} />
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="white" opacity={0.85}>
+                <path d="M4 2l8 5-8 5V2z" />
               </svg>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <Waveform paused={nowPlaying.paused} isLight={isLight} />
+        )}
 
         {/* Song info */}
         <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>

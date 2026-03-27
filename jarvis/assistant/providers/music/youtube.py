@@ -145,15 +145,16 @@ class YouTubeMusicProvider(MusicProvider):
         self._last_song = song
         self._paused = False
 
-        # Video mode: the dashboard iframe handles both audio and video.
-        # We do NOT start mpv — just store the video_id for the dashboard.
+        # Always store video_id so the dashboard can display the video thumbnail.
+        # In video mode the dashboard iframe handles both audio and video;
+        # in normal mode mpv handles audio and the dashboard shows a mini thumbnail.
+        self._current_video_id = song.uri
+
         if video:
-            self._current_video_id = song.uri
             log.info('Video mode — dashboard will play videoId=%s', song.uri)
             AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
             return True
 
-        self._current_video_id = None
         url = f"https://www.youtube.com/watch?v={song.uri}"
 
         # mpv with:

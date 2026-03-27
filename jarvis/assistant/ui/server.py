@@ -260,6 +260,10 @@ class FaceUI:
         """Close the quiz overlay on the dashboard."""
         self._broadcast({"type": "quiz_close"})
 
+    def open_youtube(self, url: str) -> None:
+        """Open a YouTube URL in the dashboard's browse mode iframe."""
+        self._broadcast({"type": "youtube_browse", "url": url})
+
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
         pass

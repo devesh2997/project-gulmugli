@@ -264,6 +264,48 @@ def _match_quiz(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_youtube_search(text: str) -> list[Intent] | None:
+    """Match unambiguous YouTube search commands."""
+    t = text.strip().lower()
+
+    # "search X on youtube", "youtube search X", "search X on yt"
+    m = re.match(r"search\s+(.+?)\s+on\s+(youtube|yt)$", t)
+    if m:
+        query = m.group(1).strip()
+        if query:
+            return [Intent(name="youtube_search", params={"query": query},
+                           response=f"Opening YouTube search for {query}.",
+                           confidence=1.0, meta={"source": "prefilter"})]
+
+    m = re.match(r"(youtube|yt)\s+search\s+(.+)$", t)
+    if m:
+        query = m.group(2).strip()
+        if query:
+            return [Intent(name="youtube_search", params={"query": query},
+                           response=f"Opening YouTube search for {query}.",
+                           confidence=1.0, meta={"source": "prefilter"})]
+
+    # "youtube pe X dhundho/search karo"
+    m = re.match(r"(youtube|yt)\s+pe\s+(.+?)\s+(dhundho|search\s+karo?|khojo)$", t)
+    if m:
+        query = m.group(2).strip()
+        if query:
+            return [Intent(name="youtube_search", params={"query": query},
+                           response=f"Opening YouTube search for {query}.",
+                           confidence=1.0, meta={"source": "prefilter"})]
+
+    # "X youtube pe dhundho"
+    m = re.match(r"(.+?)\s+(youtube|yt)\s+pe\s+(dhundho|search\s+karo?|khojo)$", t)
+    if m:
+        query = m.group(1).strip()
+        if query:
+            return [Intent(name="youtube_search", params={"query": query},
+                           response=f"Opening YouTube search for {query}.",
+                           confidence=1.0, meta={"source": "prefilter"})]
+
+    return None
+
+
 def _match_sleep(text: str) -> list[Intent] | None:
     """Match unambiguous sleep/wake commands."""
     t = text.strip().lower()
@@ -298,6 +340,7 @@ def _match_sleep(text: str) -> list[Intent] | None:
 PREFILTER_CHAIN = [
     _match_sleep,
     _match_quiz,
+    _match_youtube_search,
     _match_video_music,
     _match_music_control,
     _match_volume,

@@ -217,6 +217,13 @@ Respond with valid JSON only. No explanation. No markdown.
    When starting, extract category and difficulty if mentioned: "play a hard bollywood quiz" → action: "start", category: "bollywood", difficulty: "hard"
    Default category is "general", default difficulty is "medium"
 
+13. "youtube_search" — Search for something on YouTube
+   Params: {{"query": "search terms"}}
+   "search old Hindi songs on YouTube" → youtube_search {{"query": "old Hindi songs"}}
+   "YouTube pe Sajni dhundho" → youtube_search {{"query": "Sajni"}}
+   "find cooking videos on YouTube" → youtube_search {{"query": "cooking videos"}}
+   "YouTube search Coldplay concerts" → youtube_search {{"query": "Coldplay concerts"}}
+
 ## Format
 Always return an "intents" array, even for a single command.
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "Brief spoken acknowledgment IN CHARACTER."}}

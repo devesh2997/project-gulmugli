@@ -38,6 +38,7 @@ interface InternalState {
   settings: SettingSchema[]
   sleepMode: boolean
   quiz: QuizState
+  youtubeBrowseUrl: string | null
 }
 
 const DEFAULT_STATE: InternalState = {
@@ -55,6 +56,7 @@ const DEFAULT_STATE: InternalState = {
   settings: [],
   sleepMode: false,
   quiz: { active: false, question: null, lastResult: null, score: { correct: 0, total: 0 }, outcomes: [], showStats: false },
+  youtubeBrowseUrl: null,
 }
 
 const MAX_TRANSCRIPT = 50
@@ -267,6 +269,10 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         }))
         break
 
+      case 'youtube_browse':
+        setState(prev => ({ ...prev, youtubeBrowseUrl: msg.url }))
+        break
+
       default:
         console.debug('[WS] Unknown message type:', msg)
     }
@@ -388,6 +394,9 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'close_video' }))
       }
+    },
+    closeBrowse: () => {
+      setState(prev => ({ ...prev, youtubeBrowseUrl: null }))
     },
     // Quiz controls
     quizAnswer: (answer: string) => {

@@ -25,6 +25,10 @@ interface VideoPlayerProps {
   actions: AssistantActions
   mode: VideoMode
   onModeChange: (mode: VideoMode) => void
+  /** When set, the player opens in browse mode — full iframe navigating to this URL */
+  browseUrl?: string | null
+  /** Called when the user closes browse mode */
+  onCloseBrowse?: () => void
 }
 
 // Mini player constants
@@ -62,8 +66,9 @@ function findNearestCorner(x: number, y: number): Corner {
   return 'top-left'
 }
 
-export function VideoPlayer({ nowPlaying, actions, mode, onModeChange }: VideoPlayerProps) {
+export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl, onCloseBrowse }: VideoPlayerProps) {
   const videoId = nowPlaying.videoId
+  const isBrowseMode = !!browseUrl
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [miniCorner, setMiniCorner] = useState<Corner>('bottom-right')
   const [miniHovered, setMiniHovered] = useState(false)
@@ -82,9 +87,13 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange }: VideoPl
   }, [])
 
   const handleClose = useCallback(() => {
-    onModeChange('hidden')
-    actions.closeVideo()
-  }, [actions, onModeChange])
+    if (isBrowseMode) {
+      onCloseBrowse?.()
+    } else {
+      onModeChange('hidden')
+      actions.closeVideo()
+    }
+  }, [actions, onModeChange, isBrowseMode, onCloseBrowse])
 
   const handleMinimize = useCallback(() => {
     onModeChange('mini')
@@ -150,15 +159,19 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange }: VideoPl
   // Mini mode dimensions
   const miniPos = getCornerPosition(miniCorner)
 
-  if (!videoId) return null
+  if (!videoId && !isBrowseMode) return null
 
-  // Determine iframe src — only set once per videoId
-  const iframeSrc = loadedVideoIdRef.current !== videoId
-    ? `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
-    : undefined
+  // Determine iframe src
+  let iframeSrc: string | undefined
+  if (isBrowseMode) {
+    // Browse mode: load the browse URL directly
+    iframeSrc = browseUrl ?? undefined
+  } else if (videoId && loadedVideoIdRef.current !== videoId) {
+    iframeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
+  }
 
-  // Update tracking ref
-  if (loadedVideoIdRef.current !== videoId) {
+  // Update tracking ref (only for video mode)
+  if (!isBrowseMode && videoId && loadedVideoIdRef.current !== videoId) {
     loadedVideoIdRef.current = videoId
   }
 
@@ -266,6 +279,7 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange }: VideoPl
           ref={iframeRef}
           src={iframeSrc}
           allow="autoplay; encrypted-media"
+          sandbox={isBrowseMode ? 'allow-scripts allow-same-origin allow-forms allow-popups' : undefined}
           style={{
             width: '100%',
             height: '100%',
@@ -274,11 +288,11 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange }: VideoPl
             display: 'block',
             pointerEvents: mode === 'mini' ? 'none' : 'auto',
           }}
-          title="Video player"
+          title={isBrowseMode ? 'YouTube Browse' : 'Video player'}
         />
 
-        {/* Controls overlay — full mode only */}
-        {mode === 'full' && (
+        {/* Controls overlay — full mode only, not in browse mode */}
+        {mode === 'full' && !isBrowseMode && (
           <VideoControls
             title={nowPlaying.title}
             artist={nowPlaying.artist}
@@ -290,6 +304,42 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange }: VideoPl
             onClose={handleClose}
             onMinimize={handleMinimize}
           />
+        )}
+
+        {/* Browse mode: close button */}
+        {isBrowseMode && mode === 'full' && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleClose()
+            }}
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 10,
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+            aria-label="Close browse"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.646 4.646a.5.5 0 01.708 0L8 7.293l2.646-2.647a.5.5 0 01.708.708L8.707 8l2.647 2.646a.5.5 0 01-.708.708L8 8.707l-2.646 2.647a.5.5 0 01-.708-.708L7.293 8 4.646 5.354a.5.5 0 010-.708z" />
+            </svg>
+          </motion.button>
         )}
 
         {/* Mini mode: playing border pulse */}

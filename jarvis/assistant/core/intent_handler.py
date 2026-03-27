@@ -84,7 +84,9 @@ def _build_now_playing_data(song, with_video: bool = False) -> dict:
         "duration": _parse_duration(song.duration),
         "position": 0,
     }
-    if with_video and song.uri:
+    # Always include video_id so the dashboard can show a mini video thumbnail.
+    # with_video is kept for future use (auto-expand video player vs compact).
+    if song.uri:
         data["video_id"] = song.uri
     return data
 
@@ -655,6 +657,15 @@ def handle_intent(assistant: dict, intent) -> str:
             )
 
         return intent.response or "I'm not sure what to do with that quiz command."
+
+    elif intent.name == "youtube_search":
+        query = intent.params.get("query", "")
+        face_ui = assistant.get("face_ui")
+        if face_ui and query:
+            import urllib.parse
+            url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(query)}"
+            face_ui.open_youtube(url)
+        return intent.response or f"Opening YouTube search for {query}"
 
     elif intent.name == "system":
         action = intent.params.get("action", "")

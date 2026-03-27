@@ -115,7 +115,8 @@ export interface NowPlayingData {
   art_url?: string | null
   duration?: number
   position?: number
-  video_id?: string
+  /** Always present (empty string if no video available) */
+  video_id: string
 }
 
 export interface NowPlayingMessage {
@@ -185,6 +186,11 @@ export interface SettingResultMessage {
 export interface SleepModeMessage {
   type: 'sleep_mode'
   active: boolean
+}
+
+export interface YouTubeBrowseMessage {
+  type: 'youtube_browse'
+  url: string
 }
 
 export interface AudioOutputsMessage {
@@ -285,6 +291,7 @@ export type ServerMessage =
   | QuizShowMessage
   | QuizUpdateMessage
   | QuizCloseMessage
+  | YouTubeBrowseMessage
 
 // ─── Messages TO the assistant (browser → server) ─────────────────
 export type GestureType =
@@ -352,6 +359,7 @@ export interface AssistantStore {
   settings: SettingSchema[]
   sleepMode: boolean
   quiz: QuizState
+  youtubeBrowseUrl: string | null
   actions: AssistantActions
   sendAction: (action: UIAction) => void
 }
@@ -377,6 +385,7 @@ export interface AssistantActions {
   btPair: (mac: string) => void
   btDisconnect: (mac: string) => void
   closeVideo: () => void
+  closeBrowse: () => void
   // Quiz controls
   quizAnswer: (answer: string) => void
   quizHint: () => void
