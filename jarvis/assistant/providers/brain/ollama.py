@@ -211,6 +211,8 @@ Only split into multiple intents when combining DIFFERENT intent types (music + 
 Your "response" field MUST match your current personality:
 {p.tone}
 
+IMPORTANT: Always respond in ENGLISH only. Even if the user speaks Hindi or Hinglish, your response text must be in English. Never use Hindi words like "haan", "bolo", "kya", etc. in the response. Keep responses short — one sentence max for acknowledgments.
+
 ## Examples
 
 User: "Sajni"

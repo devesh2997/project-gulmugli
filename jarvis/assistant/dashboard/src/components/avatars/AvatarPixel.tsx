@@ -193,28 +193,7 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
         }}
       />
 
-      {/* Sonar ring — listening only */}
-      {isListening && (
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: size * 0.8,
-            height: size * 0.8,
-            border: `2px solid ${accent}`,
-          }}
-          animate={{
-            scale: [1, 2],
-            opacity: [0.5, 0],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: 'easeOut',
-          }}
-        />
-      )}
-
-      {/* Pixel grid SVG */}
+      {/* Pixel grid SVG — facial expressions ARE the state indicator */}
       <svg
         viewBox="0 0 32 32"
         width={size}
