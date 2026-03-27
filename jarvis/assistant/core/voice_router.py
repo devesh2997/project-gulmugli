@@ -54,6 +54,7 @@ from core.config import config
 from core.interfaces import Personality, VoiceProvider
 from core.registry import get_provider, list_providers
 from core.logger import get_logger
+from core.audio_focus import AudioFocusManager, AudioChannel
 
 log = get_logger("voice.router")
 
@@ -266,71 +267,79 @@ class VoiceRouter:
         if provider is None:
             return False
 
-        sentences = self._split_sentences(text)
-        start = time.monotonic()
+        # Acquire audio focus for the ENTIRE multi-sentence utterance.
+        # This ducks/pauses music ONCE, not per sentence — no chatter.
+        focus = AudioFocusManager.instance()
+        focus.acquire(AudioChannel.TTS)
 
-        # For single sentences, use the simple direct path (no threading overhead)
-        if len(sentences) <= 1:
-            return self._speak_single(provider, voice_model, text, interrupt_event, start)
+        try:
+            sentences = self._split_sentences(text)
+            start = time.monotonic()
 
-        # Multi-sentence streaming: producer synthesizes ahead, consumer plays
-        log.debug(
-            'Streaming TTS: %d sentences, provider=%s',
-            len(sentences), type(provider).__name__,
-        )
+            # For single sentences, use the simple direct path (no threading overhead)
+            if len(sentences) <= 1:
+                return self._speak_single(provider, voice_model, text, interrupt_event, start)
 
-        # Queue holds WAV bytes; None = sentinel (no more sentences)
-        audio_queue: Queue = Queue(maxsize=2)  # buffer at most 2 sentences ahead
-        synth_error = [None]  # mutable container for error from synth thread
+            # Multi-sentence streaming: producer synthesizes ahead, consumer plays
+            log.debug(
+                'Streaming TTS: %d sentences, provider=%s',
+                len(sentences), type(provider).__name__,
+            )
 
-        def synthesize_ahead():
-            """Background thread: synthesize sentences and push to queue."""
-            for i, sentence in enumerate(sentences):
-                if interrupt_event and interrupt_event.is_set():
-                    break
+            # Queue holds WAV bytes; None = sentinel (no more sentences)
+            audio_queue: Queue = Queue(maxsize=2)  # buffer at most 2 sentences ahead
+            synth_error = [None]  # mutable container for error from synth thread
+
+            def synthesize_ahead():
+                """Background thread: synthesize sentences and push to queue."""
+                for i, sentence in enumerate(sentences):
+                    if interrupt_event and interrupt_event.is_set():
+                        break
+                    try:
+                        wav_bytes = provider.speak(sentence, voice_model=voice_model)
+                        audio_queue.put(wav_bytes)
+                    except Exception as e:
+                        log.warning("TTS synthesis failed for sentence %d: %s", i, e)
+                        synth_error[0] = e
+                        break
+                audio_queue.put(None)  # sentinel: done
+
+            synth_thread = threading.Thread(
+                target=synthesize_ahead, name="tts-synth", daemon=True,
+            )
+            synth_thread.start()
+
+            # Main thread: play audio as it arrives from the queue
+            from providers.voice.piper_tts import _play_wav_bytes
+
+            completed = True
+            while True:
+                wav_bytes = audio_queue.get()
+                if wav_bytes is None:
+                    break  # all sentences done
+
                 try:
-                    wav_bytes = provider.speak(sentence, voice_model=voice_model)
-                    audio_queue.put(wav_bytes)
+                    if not _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event):
+                        completed = False
+                        break  # interrupted
                 except Exception as e:
-                    log.warning("TTS synthesis failed for sentence %d: %s", i, e)
-                    synth_error[0] = e
-                    break
-            audio_queue.put(None)  # sentinel: done
-
-        synth_thread = threading.Thread(
-            target=synthesize_ahead, name="tts-synth", daemon=True,
-        )
-        synth_thread.start()
-
-        # Main thread: play audio as it arrives from the queue
-        from providers.voice.piper_tts import _play_wav_bytes
-
-        completed = True
-        while True:
-            wav_bytes = audio_queue.get()
-            if wav_bytes is None:
-                break  # all sentences done
-
-            try:
-                if not _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event):
+                    # PortAudio can fail if the audio device is busy (e.g., mpv playing music).
+                    # Log and skip this sentence rather than crashing the entire pipeline.
+                    log.warning("Audio playback failed (device busy?): %s", e)
                     completed = False
-                    break  # interrupted
-            except Exception as e:
-                # PortAudio can fail if the audio device is busy (e.g., mpv playing music).
-                # Log and skip this sentence rather than crashing the entire pipeline.
-                log.warning("Audio playback failed (device busy?): %s", e)
-                completed = False
-                break
+                    break
 
-        synth_thread.join(timeout=2.0)
+            synth_thread.join(timeout=2.0)
 
-        elapsed = time.monotonic() - start
-        if completed:
-            log.debug('Spoke %d sentences (%.2fs total).', len(sentences), elapsed)
-        else:
-            log.info('Speech interrupted after %.2fs.', elapsed)
+            elapsed = time.monotonic() - start
+            if completed:
+                log.debug('Spoke %d sentences (%.2fs total).', len(sentences), elapsed)
+            else:
+                log.info('Speech interrupted after %.2fs.', elapsed)
 
-        return completed
+            return completed
+        finally:
+            focus.release(AudioChannel.TTS)
 
     def _speak_single(self, provider, voice_model, text, interrupt_event, start) -> bool:
         """Speak a single sentence — no threading overhead."""

@@ -112,6 +112,10 @@ def _play_wav_bytes(wav_bytes: bytes, interrupt_event=None) -> bool:
     Uses sounddevice if available (preferred — pure Python, cross-platform),
     falls back to platform-specific commands (afplay on Mac, aplay on Linux).
 
+    Audio focus: If called from VoiceRouter (which already holds TTS focus),
+    this function skips focus management. If called directly (standalone),
+    it acquires/releases TTS focus itself so music still ducks/pauses.
+
     Args:
         wav_bytes: WAV audio data to play.
         interrupt_event: Optional threading.Event. If set during playback,
@@ -121,6 +125,23 @@ def _play_wav_bytes(wav_bytes: bytes, interrupt_event=None) -> bool:
     Returns:
         True if playback completed normally, False if interrupted.
     """
+    # Audio focus: only manage if not already held (VoiceRouter holds it for
+    # multi-sentence utterances; standalone calls need their own acquire/release)
+    from core.audio_focus import AudioFocusManager, AudioChannel
+    focus = AudioFocusManager.instance()
+    owns_focus = not focus.is_active(AudioChannel.TTS)
+    if owns_focus:
+        focus.acquire(AudioChannel.TTS)
+
+    try:
+        return _play_wav_bytes_inner(wav_bytes, interrupt_event)
+    finally:
+        if owns_focus:
+            focus.release(AudioChannel.TTS)
+
+
+def _play_wav_bytes_inner(wav_bytes: bytes, interrupt_event=None) -> bool:
+    """Actual WAV playback implementation (focus-unaware)."""
     try:
         import sounddevice as sd
         import numpy as np

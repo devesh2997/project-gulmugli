@@ -134,6 +134,9 @@ knowledge:
 audio:
   provider: "system" # options: system (OS-level), pulseaudio, pipewire, custom
   default_output: "default" # which output to use by default
+  focus:
+    duck_level: 20        # volume % for music when TTS is speaking (PulseAudio duck mode)
+    strategy: "auto"      # "auto" (detect), "pause" (macOS/ALSA), "duck" (PulseAudio)
   outputs:
     - name: "default"
       type: "system" # uses OS default audio device

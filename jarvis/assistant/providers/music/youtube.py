@@ -25,6 +25,7 @@ from core.interfaces import MusicProvider, SongResult
 from core.registry import register
 from core.config import config
 from core.logger import get_logger
+from core.audio_focus import AudioFocusManager, AudioChannel
 
 log = get_logger("music.youtube")
 
@@ -48,6 +49,17 @@ class YouTubeMusicProvider(MusicProvider):
 
         # Kill any orphaned mpv from previous sessions on startup
         self.stop()
+
+        # Register with AudioFocusManager so TTS can duck/pause us
+        focus = AudioFocusManager.instance()
+        focus.register_channel(
+            AudioChannel.MUSIC,
+            on_duck=self._focus_duck,
+            on_restore=self._focus_restore,
+            on_pause=self._focus_pause,
+            on_resume=self._focus_resume,
+            on_get_volume=self._focus_get_volume,
+        )
 
     def search(self, query: str, limit: int = None, raw_input: str = None) -> list[SongResult]:
         """
@@ -144,6 +156,7 @@ class YouTubeMusicProvider(MusicProvider):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
             return True
         except FileNotFoundError:
             install_hint = {
@@ -174,12 +187,14 @@ class YouTubeMusicProvider(MusicProvider):
     def pause(self) -> None:
         self._send_mpv_command({"command": ["set_property", "pause", True]})
         self._paused = True
+        AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
 
     def resume(self) -> None:
         # If mpv is still alive and paused, just unpause
         if self._mpv_process and self._mpv_process.poll() is None:
             self._send_mpv_command({"command": ["set_property", "pause", False]})
             self._paused = False
+            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
             return
 
         # mpv died (e.g. session restart) but we remember the last song — replay it
@@ -191,6 +206,8 @@ class YouTubeMusicProvider(MusicProvider):
         log.debug("Nothing to resume — no paused track or last song.")
 
     def stop(self) -> None:
+        AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
+
         # Kill the process we spawned this session
         if self._mpv_process:
             try:
@@ -275,3 +292,42 @@ class YouTubeMusicProvider(MusicProvider):
         except Exception:
             pass
         return None
+
+    # ──────────────────────────────────────────────────────────────
+    # Audio Focus callbacks
+    # ──────────────────────────────────────────────────────────────
+
+    def _focus_duck(self, level: int) -> None:
+        """Called by AudioFocusManager: lower mpv volume for ducking."""
+        self._send_mpv_command({"command": ["set_property", "volume", level]})
+
+    def _focus_restore(self, level: int) -> None:
+        """Called by AudioFocusManager: restore mpv volume after ducking."""
+        self._send_mpv_command({"command": ["set_property", "volume", level]})
+
+    def _focus_pause(self) -> None:
+        """
+        Called by AudioFocusManager: pause mpv for higher-priority audio.
+
+        CRITICAL: Does NOT set self._paused. This is a system-initiated pause,
+        not a user pause. The distinction matters in _focus_resume().
+        """
+        self._send_mpv_command({"command": ["set_property", "pause", True]})
+
+    def _focus_resume(self) -> None:
+        """
+        Called by AudioFocusManager: resume mpv after higher-priority audio ends.
+
+        CRITICAL: Only resumes if the user had NOT paused music themselves.
+        If the user said "pause", self._paused is True, and we respect that
+        — the music stays paused even after TTS finishes.
+        """
+        if self._paused:
+            log.debug("Focus resume skipped — user had paused music.")
+            return
+        self._send_mpv_command({"command": ["set_property", "pause", False]})
+
+    def _focus_get_volume(self) -> int:
+        """Called by AudioFocusManager: query current mpv volume."""
+        vol = self._query_mpv_property("volume")
+        return int(vol) if vol is not None else 100
