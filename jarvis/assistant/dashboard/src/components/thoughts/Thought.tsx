@@ -93,6 +93,10 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
   const isProcessing = badge.status === 'processing'
   const thoughtSize = 44
 
+  // Resolved state: expand to show detail, then fade
+  const resolvedSize = isDone ? 56 : isFailed ? 48 : thoughtSize
+  const hasDetail = isDone && badge.detail
+
   return (
     <motion.div
       style={{
@@ -105,27 +109,68 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
         zIndex: 40,
       }}
     >
-      {/* Resolve glow/shake wrapper */}
+      {/* Resolve: expand + glow for done, shake for failed, float for processing */}
       <motion.div
         animate={
-          isDone ? { filter: ['brightness(1)', 'brightness(1.6)', 'brightness(1)'] }
-          : isFailed ? { x: [0, -3, 3, -2, 2, 0] }
+          isDone ? {
+            scale: [1, 1.3, 1.2],
+            filter: ['brightness(1)', 'brightness(1.8)', 'brightness(1.3)'],
+          }
+          : isFailed ? { x: [0, -4, 4, -3, 3, 0], scale: [1, 0.9, 1] }
           : isProcessing ? { y: [0, -2, 0, 2, 0] }
           : {}
         }
         transition={
-          isDone ? { duration: 0.4 }
-          : isFailed ? { duration: 0.35 }
+          isDone ? { duration: 0.6, ease: 'easeOut' }
+          : isFailed ? { duration: 0.4 }
           : isProcessing ? { duration: 3, repeat: Infinity, ease: 'easeInOut' }
           : {}
         }
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
       >
         <ThoughtRenderer
           avatarType={avatarType}
           icon={badge.icon}
           status={badge.status}
-          size={thoughtSize}
+          size={isDone ? resolvedSize : thoughtSize}
         />
+        {/* Detail text fades in on done — shows what happened */}
+        {hasDetail && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.8 }}
+            animate={{ opacity: 0.7, y: 0, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            style={{
+              fontSize: 9,
+              fontWeight: 500,
+              color: 'var(--personality-accent)',
+              textAlign: 'center',
+              maxWidth: 100,
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              textShadow: '0 0 8px rgba(var(--personality-accent-rgb), 0.4)',
+            }}
+          >
+            {badge.detail}
+          </motion.div>
+        )}
+        {/* Failed indicator */}
+        {isFailed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: '#ff6b6b',
+              textShadow: '0 0 6px rgba(255, 107, 107, 0.3)',
+            }}
+          >
+            {badge.detail || 'Failed'}
+          </motion.div>
+        )}
       </motion.div>
     </motion.div>
   )

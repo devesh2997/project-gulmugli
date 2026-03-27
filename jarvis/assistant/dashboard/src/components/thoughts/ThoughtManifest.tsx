@@ -67,7 +67,7 @@ export function ThoughtManifest({ intents, avatarCenter, avatarSize }: ThoughtMa
     })
 
     for (const badge of intents) {
-      const delay = badge.status === 'done' ? 2000 : badge.status === 'failed' ? 3000 : null
+      const delay = badge.status === 'done' ? 3500 : badge.status === 'failed' ? 3000 : null
       if (delay !== null && !timers.current.has(badge.id)) {
         const t = setTimeout(() => {
           timers.current.delete(badge.id)

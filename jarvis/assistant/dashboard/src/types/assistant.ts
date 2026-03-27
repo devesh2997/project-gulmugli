@@ -43,6 +43,7 @@ export interface IntentBadge {
   label: string
   icon: IntentIcon
   status: IntentStatus
+  detail?: string  // contextual info from handler (e.g., "Playing Sajni by Arijit Singh")
 }
 
 // ─── Settings Schema ─────────────────────────────────────────────
