@@ -35,10 +35,13 @@ const CATEGORY_ORDER = [
 ]
 
 export function SettingsPanel({ store }: Props) {
-  const { settings, actions, personalities, personality } = store
+  const settings = store?.settings ?? []
+  const actions = store?.actions
+  const personalities = store?.personalities ?? []
+  const personality = store?.personality ?? 'jarvis'
 
   useEffect(() => {
-    if (!settings.length) actions.requestSettings()
+    if (!settings.length && actions?.requestSettings) actions.requestSettings()
   }, [settings.length, actions])
 
   const grouped = useMemo(() => {

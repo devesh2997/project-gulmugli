@@ -105,6 +105,14 @@ def build_assistant() -> dict:
         assistant["memory"] = None
         log.info("Memory disabled in config.")
 
+    # Inject recent conversation context into LLM system prompt
+    if assistant.get("memory"):
+        try:
+            from providers.brain.ollama import set_conversation_context
+            set_conversation_context(assistant["memory"])
+        except Exception as e:
+            log.debug("Could not set conversation context: %s", e)
+
     # Knowledge — optional, needs internet + library installed
     # This is the "internet-enhanced" layer. Without it, the assistant still works
     # perfectly for all local features. With it, the LLM can answer questions about
@@ -141,6 +149,13 @@ def build_assistant() -> dict:
         {"id": p.id, "display_name": p.display_name, "description": p.description}
         for p in personality_manager.list()
     ])
+
+    # Send settings schema to dashboard
+    try:
+        from core.config_manager import config_manager
+        face_ui.send_settings(config_manager.get_settings())
+    except Exception as e:
+        log.debug("Could not send settings to dashboard: %s", e)
 
     # Wake word — background listening for activation phrases
     ww_cfg = config.get("wake_word", {})

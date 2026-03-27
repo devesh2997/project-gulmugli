@@ -28,7 +28,8 @@ const COLOR_PRESETS = [
 const SCENES = ['Reading', 'Movie', 'Relax', 'Party']
 
 export function LightsPanel({ store }: Props) {
-  const { lights, actions } = store
+  const lights = store?.lights
+  const actions = store?.actions
   const trackRef = useRef<HTMLDivElement>(null)
 
   const on = lights?.on ?? false

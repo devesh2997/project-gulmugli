@@ -73,6 +73,35 @@ def _get_personality_names_for_prompt() -> str:
     )
 
 
+# Module-level recent context — set once at startup by set_conversation_context()
+_recent_context: str = ""
+
+
+def set_conversation_context(memory_provider) -> None:
+    """
+    Load recent interactions from memory and cache as a compact context string.
+    Called once at startup from build_assistant() in main.py.
+    """
+    global _recent_context
+    if not memory_provider:
+        return
+    try:
+        recent = memory_provider.get_recent(limit=5)
+        if not recent:
+            return
+        lines = []
+        for mem in reversed(recent):  # oldest first
+            # mem.content is a formatted string like "User asked to play Sajni"
+            summary = mem.content[:100] if mem.content else ""
+            if summary:
+                lines.append(f"- {summary}")
+        if lines:
+            _recent_context = "Recent conversation:\n" + "\n".join(lines)
+            log.debug("Loaded %d recent interactions for context", len(lines))
+    except Exception as e:
+        log.debug("Could not load conversation context: %s", e)
+
+
 def _build_system_prompt() -> str:
     """
     Build the classification system prompt.
@@ -83,7 +112,9 @@ def _build_system_prompt() -> str:
     """
     p = personality_manager.active
 
-    return f"""You are {p.display_name}, a smart voice assistant used in India. {p.tone}
+    context_section = f"\n\n## Recent Context\n{_recent_context}" if _recent_context else ""
+
+    return f"""You are {p.display_name}, a smart voice assistant used in India. {p.tone}{context_section}
 
 Your ONLY job is to classify the user's spoken request into structured intents.
 Extract parameters EXACTLY as the user said them. Do NOT modify, translate, or enrich song names.
