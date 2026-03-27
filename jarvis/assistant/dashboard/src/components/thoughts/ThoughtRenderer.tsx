@@ -1,45 +1,65 @@
 /**
- * ThoughtRenderer — dispatches to personality-specific thought visuals.
+ * ThoughtRenderer -- dispatches to personality-specific thought visuals.
  *
  * Each personality renders thoughts differently:
- *   orb        → Energy Wisps (glowing translucent circles with trailing particles)
- *   pixel      → Pixel Clouds (jittering 3x3 rect clusters)
- *   light      → Light Wisps (SVG stroke arc with glow head)
- *   caricature → Thought Bubbles (classic cartoon cloud trail)
+ *   orb        -> Energy Wisps (glowing translucent circles with trailing particles)
+ *   pixel      -> Pixel Clouds (jittering 3x3 rect clusters)
+ *   light      -> Light Wisps (SVG stroke arc with glow head)
+ *   caricature -> Thought Bubbles (classic cartoon cloud trail)
+ *
+ * Accepts a `phase` prop: 'spawn' or 'processing'.
+ * During processing, the icon is prominent (0.85 opacity) with energetic animations.
  */
 
 import { motion } from 'framer-motion'
 import type { AvatarType, IntentStatus } from '../../types/assistant'
 import { ThoughtIcon } from './ThoughtIcons'
 
+type ThoughtPhaseVisual = 'spawn' | 'processing'
+
 interface RendererProps {
   avatarType: AvatarType
   icon: string
   status: IntentStatus
   size: number
+  phase?: ThoughtPhaseVisual
 }
 
-export function ThoughtRenderer({ avatarType, icon, status, size }: RendererProps) {
+export function ThoughtRenderer({ avatarType, icon, status, size, phase = 'processing' }: RendererProps) {
   switch (avatarType) {
-    case 'orb': return <OrbWisp icon={icon} status={status} size={size} />
-    case 'pixel': return <PixelCloud icon={icon} status={status} size={size} />
-    case 'light': return <LightWisp icon={icon} status={status} size={size} />
-    case 'caricature': return <ThoughtBubble icon={icon} status={status} size={size} />
-    default: return <OrbWisp icon={icon} status={status} size={size} />
+    case 'orb': return <OrbWisp icon={icon} status={status} size={size} phase={phase} />
+    case 'pixel': return <PixelCloud icon={icon} status={status} size={size} phase={phase} />
+    case 'light': return <LightWisp icon={icon} status={status} size={size} phase={phase} />
+    case 'caricature': return <ThoughtBubble icon={icon} status={status} size={size} phase={phase} />
+    default: return <OrbWisp icon={icon} status={status} size={size} phase={phase} />
   }
 }
 
 type VariantProps = Omit<RendererProps, 'avatarType'>
 
-/* ── Orb: Energy Wisps ───────────────────────────────────────── */
-function OrbWisp({ icon, status, size }: VariantProps) {
+/** Icon opacity: high during processing so intent type is clearly visible. */
+const ICON_OPACITY_PROCESSING = 0.88
+const ICON_OPACITY_SPAWN = 0.5
+
+function iconOpacity(phase: ThoughtPhaseVisual) {
+  return phase === 'processing' ? ICON_OPACITY_PROCESSING : ICON_OPACITY_SPAWN
+}
+
+/* -- Orb: Energy Wisps ---------------------------------------------------- */
+function OrbWisp({ icon, status, size, phase = 'processing' }: VariantProps) {
   const s = Math.max(size, 14)
   const isProcessing = status === 'processing'
   return (
     <motion.div
       style={{ width: s, height: s, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      animate={isProcessing ? { scale: [0.9, 1.1, 0.9], opacity: [0.3, 0.5, 0.3] } : { scale: 1, opacity: 0.45 }}
-      transition={isProcessing ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
+      animate={isProcessing
+        ? { scale: [0.92, 1.12, 0.92], opacity: [0.35, 0.6, 0.35] }
+        : { scale: 1, opacity: 0.45 }
+      }
+      transition={isProcessing
+        ? { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+        : { duration: 0.3 }
+      }
     >
       {/* Main wisp glow */}
       <div style={{
@@ -68,19 +88,24 @@ function OrbWisp({ icon, status, size }: VariantProps) {
           transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut' }}
         />
       ))}
-      {/* Icon silhouette */}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
+      {/* Icon */}
+      <span style={{
+        position: 'relative', zIndex: 1,
+        opacity: iconOpacity(phase),
+        color: 'var(--personality-accent)',
+        display: 'flex',
+        transition: 'opacity 0.3s ease',
+      }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
   )
 }
 
-/* ── Pixel: Pixel Clouds ─────────────────────────────────────── */
-function PixelCloud({ icon, status, size }: VariantProps) {
+/* -- Pixel: Pixel Clouds -------------------------------------------------- */
+function PixelCloud({ icon, status, size, phase = 'processing' }: VariantProps) {
   const s = Math.max(size, 14)
   const px = 3
-  // 5 pixels in a loose cluster
   const offsets = [
     { x: 0, y: 0 }, { x: px + 1, y: -1 }, { x: -(px + 1), y: 1 },
     { x: 1, y: px + 1 }, { x: -(px), y: -(px) },
@@ -89,7 +114,7 @@ function PixelCloud({ icon, status, size }: VariantProps) {
   return (
     <motion.div style={{
       width: s, height: s, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      imageRendering: 'pixelated' as any,
+      imageRendering: 'pixelated' as React.CSSProperties['imageRendering'],
     }}>
       {offsets.map((off, i) => (
         <motion.div
@@ -107,17 +132,22 @@ function PixelCloud({ icon, status, size }: VariantProps) {
           transition={{ type: 'spring', stiffness: 200, damping: 12, delay: i * 0.05 }}
         />
       ))}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{
+        position: 'relative', zIndex: 1,
+        opacity: iconOpacity(phase),
+        color: 'var(--personality-accent)',
+        display: 'flex',
+        transition: 'opacity 0.3s ease',
+      }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
   )
 }
 
-/* ── Light: Light Wisps ──────────────────────────────────────── */
-function LightWisp({ icon, status, size }: VariantProps) {
+/* -- Light: Light Wisps --------------------------------------------------- */
+function LightWisp({ icon, status, size, phase = 'processing' }: VariantProps) {
   const s = Math.max(size, 14)
-  const r = s * 0.4
   const isProcessing = status === 'processing'
   return (
     <motion.div style={{ width: s, height: s, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -138,22 +168,27 @@ function LightWisp({ icon, status, size }: VariantProps) {
           cx={s * 0.8} cy={s * 0.5} r={3}
           fill="rgba(var(--personality-accent-rgb), 0.5)"
           style={{ filter: 'blur(2px)' }}
-          animate={isProcessing ? { r: [3, 4, 3], opacity: [0.4, 0.6, 0.4] } : {}}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          animate={isProcessing ? { r: [3, 5, 3], opacity: [0.4, 0.7, 0.4] } : {}}
+          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         />
       </svg>
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{
+        position: 'relative', zIndex: 1,
+        opacity: iconOpacity(phase),
+        color: 'var(--personality-accent)',
+        display: 'flex',
+        transition: 'opacity 0.3s ease',
+      }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>
   )
 }
 
-/* ── Caricature: Thought Bubbles ─────────────────────────────── */
-function ThoughtBubble({ icon, status, size }: VariantProps) {
+/* -- Caricature: Thought Bubbles ------------------------------------------ */
+function ThoughtBubble({ icon, status, size, phase = 'processing' }: VariantProps) {
   const s = Math.max(size, 14)
   const isProcessing = status === 'processing'
-  // Trail: 3 circles decreasing in size from thought to avatar
   const trail = [
     { r: s * 0.14, x: s * 0.25, y: s * 0.75, delay: 0.2 },
     { r: s * 0.1, x: s * 0.15, y: s * 0.85, delay: 0.1 },
@@ -187,7 +222,13 @@ function ThoughtBubble({ icon, status, size }: VariantProps) {
           transition={{ type: 'spring', stiffness: 400, damping: 15, delay: t.delay }}
         />
       ))}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.55, color: 'var(--personality-accent)', display: 'flex' }}>
+      <span style={{
+        position: 'relative', zIndex: 1,
+        opacity: iconOpacity(phase),
+        color: 'var(--personality-accent)',
+        display: 'flex',
+        transition: 'opacity 0.3s ease',
+      }}>
         <ThoughtIcon icon={icon} status={status} />
       </span>
     </motion.div>

@@ -1,8 +1,10 @@
 /**
- * Thought — a single thought element orbiting the avatar.
+ * Thought -- a single thought element orbiting the avatar.
  *
- * Handles the full lifecycle: spawn (from avatar center) -> orbit (float) ->
- * resolve (glow + dissolve back or shake + dissolve outward).
+ * 3-phase lifecycle:
+ *   Phase 1: SPAWN   -- personality-style element flies out from avatar center
+ *   Phase 2: PROCESS -- icon becomes prominent, energetic animation, gentle orbit float
+ *   Phase 3: RESOLVE -- personality wrapper morphs away, HD widget appears
  *
  * Position is computed from polar coordinates (angle + distance) relative
  * to the avatar center. Uses Framer Motion spring physics for the orbit
@@ -10,9 +12,12 @@
  */
 
 import { useEffect, useState } from 'react'
-import { motion, useSpring, useTransform } from 'framer-motion'
+import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion'
 import type { AvatarType, IntentBadge } from '../../types/assistant'
 import { ThoughtRenderer } from './ThoughtRenderer'
+import { ResolvedWidget } from './ResolvedWidget'
+
+type ThoughtPhase = 'spawn' | 'processing' | 'resolve'
 
 interface ThoughtProps {
   badge: IntentBadge
@@ -24,7 +29,6 @@ interface ThoughtProps {
 
 /** Slight curve offset so the path from center to orbit isn't a straight line. */
 function curvedPath(angle: number, distance: number): { x: number; y: number } {
-  // Add a small perpendicular offset that fades as we approach the target
   const perpAngle = angle + Math.PI / 2
   const curve = Math.sin(angle * 3) * distance * 0.08
   return {
@@ -34,9 +38,11 @@ function curvedPath(angle: number, distance: number): { x: number; y: number } {
 }
 
 export function Thought({ badge, angle, distance, center, avatarType }: ThoughtProps) {
-  const [phase, setPhase] = useState<'spawn' | 'orbit' | 'resolve'>('spawn')
+  const [phase, setPhase] = useState<ThoughtPhase>('spawn')
 
   const target = curvedPath(angle, distance)
+  const THOUGHT_SIZE = 44
+  const RESOLVED_SIZE = 60
 
   // Spring-driven offset from center
   const springConfig = { stiffness: 120, damping: 18, mass: 0.8 }
@@ -45,57 +51,42 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
   const thoughtScale = useSpring(0.3, springConfig)
   const thoughtOpacity = useSpring(0, { stiffness: 100, damping: 20 })
 
-  // Spawn -> orbit
+  // Phase 1 -> Phase 2: spawn to processing
   useEffect(() => {
-    // Small delay so the spawn is visible
     const t = setTimeout(() => {
       offsetX.set(target.x)
       offsetY.set(target.y)
       thoughtScale.set(1)
       thoughtOpacity.set(1)
-      setPhase('orbit')
+      setPhase('processing')
     }, 50)
     return () => clearTimeout(t)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Resolve when done/failed
+  // Phase 2 -> Phase 3: processing to resolve
   useEffect(() => {
     if (badge.status === 'done' || badge.status === 'failed') {
       setPhase('resolve')
-      if (badge.status === 'done') {
-        // Absorb back toward center
-        const t = setTimeout(() => {
-          offsetX.set(0)
-          offsetY.set(0)
-          thoughtScale.set(0.5)
-          thoughtOpacity.set(0)
-        }, 400) // brief glow hold
-        return () => clearTimeout(t)
-      } else {
-        // Rejected: dissolve outward
-        const t = setTimeout(() => {
-          offsetX.set(target.x * 1.8)
-          offsetY.set(target.y * 1.8)
-          thoughtScale.set(0.3)
-          thoughtOpacity.set(0)
-        }, 300) // after shake
-        return () => clearTimeout(t)
-      }
     }
-  }, [badge.status]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [badge.status])
 
-  // Compute absolute x/y
-  const absX = useTransform(offsetX, v => center.x + v - 22) // center the ~44px thought
-  const absY = useTransform(offsetY, v => center.y + v - 22)
+  // Phase 3 fade-out after resolve hold time
+  useEffect(() => {
+    if (phase !== 'resolve') return
+    const holdTime = badge.status === 'done' ? 3200 : 2800
+    const t = setTimeout(() => {
+      thoughtOpacity.set(0)
+      thoughtScale.set(0.6)
+    }, holdTime)
+    return () => clearTimeout(t)
+  }, [phase, badge.status]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isDone = badge.status === 'done'
-  const isFailed = badge.status === 'failed'
-  const isProcessing = badge.status === 'processing'
-  const thoughtSize = 44
+  // Compute absolute x/y (center the element)
+  const halfSize = phase === 'resolve' ? RESOLVED_SIZE / 2 : THOUGHT_SIZE / 2
+  const absX = useTransform(offsetX, v => center.x + v - halfSize)
+  const absY = useTransform(offsetY, v => center.y + v - halfSize)
 
-  // Resolved state: expand to show detail, then fade
-  const resolvedSize = isDone ? 56 : isFailed ? 48 : thoughtSize
-  const hasDetail = isDone && badge.detail
+  const isProcessing = phase === 'processing' && badge.status === 'processing'
 
   return (
     <motion.div
@@ -109,33 +100,56 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
         zIndex: 40,
       }}
     >
-      {/* Resolve: expand + glow for done, shake for failed, float for processing */}
+      {/* Orbital float animation during processing */}
       <motion.div
         animate={
-          isDone ? {
-            scale: [1, 1.3, 1.2],
-            filter: ['brightness(1)', 'brightness(1.8)', 'brightness(1.3)'],
-          }
-          : isFailed ? { x: [0, -4, 4, -3, 3, 0], scale: [1, 0.9, 1] }
-          : isProcessing ? { y: [0, -2, 0, 2, 0] }
-          : {}
+          isProcessing
+            ? { y: [0, -3, 0, 3, 0], x: [0, 1, 0, -1, 0] }
+            : {}
         }
         transition={
-          isDone ? { duration: 0.6, ease: 'easeOut' }
-          : isFailed ? { duration: 0.4 }
-          : isProcessing ? { duration: 3, repeat: Infinity, ease: 'easeInOut' }
-          : {}
+          isProcessing
+            ? { duration: 3.5, repeat: Infinity, ease: 'easeInOut' }
+            : {}
         }
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 4,
+        }}
       >
-        <ThoughtRenderer
-          avatarType={avatarType}
-          icon={badge.icon}
-          status={badge.status}
-          size={isDone ? resolvedSize : thoughtSize}
-        />
-        {/* Detail text fades in on done — shows what happened */}
-        {hasDetail && (
+        <AnimatePresence mode="wait">
+          {phase !== 'resolve' ? (
+            /* Phase 1 + 2: personality-styled thought with icon */
+            <motion.div
+              key="thought-renderer"
+              exit={{ scale: 0.7, opacity: 0, filter: 'blur(4px)' }}
+              transition={{ duration: 0.35 }}
+            >
+              <ThoughtRenderer
+                avatarType={avatarType}
+                icon={badge.icon}
+                status={badge.status}
+                size={THOUGHT_SIZE}
+                phase={phase === 'spawn' ? 'spawn' : 'processing'}
+              />
+            </motion.div>
+          ) : (
+            /* Phase 3: HD resolved widget */
+            <motion.div
+              key="resolved-widget"
+              initial={{ scale: 0.7, opacity: 0, filter: 'blur(4px)' }}
+              animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <ResolvedWidget badge={badge} size={RESOLVED_SIZE} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Detail text for non-resolve phases */}
+        {phase !== 'resolve' && badge.detail && badge.status === 'processing' && (
           <motion.div
             initial={{ opacity: 0, y: 4, scale: 0.8 }}
             animate={{ opacity: 0.7, y: 0, scale: 1 }}
@@ -154,21 +168,6 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
             }}
           >
             {badge.detail}
-          </motion.div>
-        )}
-        {/* Failed indicator */}
-        {isFailed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
-            style={{
-              fontSize: 9,
-              fontWeight: 600,
-              color: '#ff6b6b',
-              textShadow: '0 0 6px rgba(255, 107, 107, 0.3)',
-            }}
-          >
-            {badge.detail || 'Failed'}
           </motion.div>
         )}
       </motion.div>

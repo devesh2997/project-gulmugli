@@ -138,18 +138,84 @@ function syncCSSVars(tokens: Record<string, any>): void {
   }
 }
 
+// ─── Warm personality palettes ────────────────────────────────────────────────
+// Override the neon/cyan accents from personalities.json with warm, personal tones.
+// Each palette defines: accent (primary UI colour), glow_color (ambient background
+// tint with alpha), background_tint (warm base for Canvas backgrounds), and
+// glow_soft (subtle ambient light colour).
+
+interface WarmPalette {
+  accent: string
+  glow_color: string
+  background_tint: string
+  glow_soft: string
+}
+
+const WARM_PERSONALITY_PALETTES: Record<string, WarmPalette> = {
+  jarvis: {
+    accent:          '#d4a574', // warm gold
+    glow_color:      '#d4a57425',
+    background_tint: '#3a2d1e', // warm amber base
+    glow_soft:       '#c9956830', // soft golden glow
+  },
+  devesh: {
+    accent:          '#7fb5a6', // sage teal
+    glow_color:      '#7fb5a625',
+    background_tint: '#1e3029', // warm sage green base
+    glow_soft:       '#7fb5a630', // soft teal glow
+  },
+  girlfriend: {
+    accent:          '#d4918e', // dusty rose
+    glow_color:      '#d4918e25',
+    background_tint: '#352428', // cream with rose warmth
+    glow_soft:       '#d4918e30', // soft pink glow
+  },
+  chandler: {
+    accent:          '#a88bc7', // warm lavender
+    glow_color:      '#a88bc725',
+    background_tint: '#28223a', // soft violet base
+    glow_soft:       '#a88bc730', // muted purple glow
+  },
+}
+
+/**
+ * Merge warm palette overrides onto a personality's base JSON data.
+ * Preserves avatarType, mood_default, tint from the JSON but replaces
+ * accent and glow_color with warm values, and adds new warm-specific tokens.
+ */
+function applyWarmPalette(
+  baseData: Record<string, any>,
+  personalityId: string,
+): Record<string, any> {
+  const warm = WARM_PERSONALITY_PALETTES[personalityId]
+  if (!warm) return baseData
+  return {
+    ...baseData,
+    accent:          warm.accent,
+    glow_color:      warm.glow_color,
+    background_tint: warm.background_tint,
+    glow_soft:       warm.glow_soft,
+  }
+}
+
 // ─── Initial token state ──────────────────────────────────────────────────────
 
 const DEFAULT_PERSONALITY = 'jarvis'
 const TOKEN_OVERRIDES_KEY = 'jarvis-token-overrides'
 
 function buildInitialTokens(): Record<string, any> {
+  const basePersonality = (personalitiesTokens as Record<string, any>)[DEFAULT_PERSONALITY] ?? {}
+  const warmPersonality = applyWarmPalette(basePersonality, DEFAULT_PERSONALITY)
+
   let tokens: Record<string, any> = {
     animation: animationTokens,
     layout: layoutTokens,
     time: timeTokens,
-    ui: uiTokens,
-    personality: (personalitiesTokens as Record<string, any>)[DEFAULT_PERSONALITY] ?? {},
+    ui: {
+      ...uiTokens,
+      backgroundMode: 'gradient', // default background mode: "gradient" | "texture" | "glass"
+    },
+    personality: warmPersonality,
   }
 
   // Restore persisted token overrides (colors, timing tweaks, etc.)
@@ -213,12 +279,9 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
     setCurrentPersonality(id)
     setTokens((prev) => {
       const next = structuredClone(prev)
-      // Merge personality tokens under the `personality` key
-      next.personality = personalityData
-
-      // Also push accent + glow up to canvas-level CSS vars so components can
-      // reference --personality-accent and --personality-glow_color directly
-      // without knowing about nested paths.
+      // Merge personality tokens under the `personality` key,
+      // applying warm palette overrides for the new personality.
+      next.personality = applyWarmPalette(personalityData, id)
       return next
     })
   }, [])

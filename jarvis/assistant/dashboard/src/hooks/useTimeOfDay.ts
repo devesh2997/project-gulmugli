@@ -6,12 +6,17 @@
  * (0-1) within the 1-hour transition window around each boundary, and
  * writes interpolated values to `time.current.*` tokens every 60 seconds.
  *
- * Transitions:
- *   morning → afternoon: window 11:00–13:00 (boundary at 12)
- *   afternoon → night:   window 20:00–22:00 (boundary at 21)
- *   night → morning:     window 05:00–07:00 (boundary at 6, crosses midnight)
+ * Warm palette overrides: The base time palettes from time.json are
+ * overridden here with warm tones (peach mornings, golden afternoons,
+ * deep navy nights) before interpolation. This keeps the JSON file as
+ * the structural source of truth while the hook owns the actual colours.
  *
- * Outside transition windows the palette is constant — t is clamped to 0 or 1.
+ * Transitions:
+ *   morning -> afternoon: window 11:00-13:00 (boundary at 12)
+ *   afternoon -> night:   window 20:00-22:00 (boundary at 21)
+ *   night -> morning:     window 05:00-07:00 (boundary at 6, crosses midnight)
+ *
+ * Outside transition windows the palette is constant -- t is clamped to 0 or 1.
  *
  * Call once at the app root level (inside <TokenProvider>). The hook fires
  * immediately on mount so the palette is correct before the first render.
@@ -20,7 +25,7 @@
 import { useEffect, useRef } from 'react'
 import { useTokens } from '../context/TokenProvider'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// -- Types -------------------------------------------------------------------
 
 interface TimePalette {
   canvas_gradient_start: string
@@ -32,7 +37,41 @@ interface TimePalette {
   brightness: number
 }
 
-// ─── Colour helpers ───────────────────────────────────────────────────────────
+// -- Warm palette overrides --------------------------------------------------
+// These replace the dark/neon values from time.json with warm, inviting tones.
+// NO pure black anywhere.
+
+const WARM_PALETTES: Record<PaletteName, TimePalette> = {
+  morning: {
+    canvas_gradient_start: '#2d2118', // warm cocoa brown
+    canvas_gradient_end:   '#3a2a1e', // slightly lighter, peach undertone
+    accent_primary:        '#e8b88a', // soft peach
+    accent_glow:           '#d4956a', // warm coral
+    text_primary_opacity:  0.75,
+    orb_breathe_duration:  '4s',
+    brightness:            0.75,
+  },
+  afternoon: {
+    canvas_gradient_start: '#2a1f14', // warm dark amber
+    canvas_gradient_end:   '#33261a', // golden brown
+    accent_primary:        '#d4a574', // warm gold
+    accent_glow:           '#c9956a', // amber
+    text_primary_opacity:  0.85,
+    orb_breathe_duration:  '4s',
+    brightness:            1.0,
+  },
+  night: {
+    canvas_gradient_start: '#141828', // deep navy (NOT black)
+    canvas_gradient_end:   '#1a1e30', // dark indigo
+    accent_primary:        '#8b7db5', // muted lavender
+    accent_glow:           '#6b5d99', // deep purple
+    text_primary_opacity:  0.45,
+    orb_breathe_duration:  '6s',
+    brightness:            0.38,
+  },
+}
+
+// -- Colour helpers ----------------------------------------------------------
 
 /** Parse a 6-digit hex string (with or without #) to [r, g, b] 0-255. */
 function hexToRgb(hex: string): [number, number, number] {
@@ -41,13 +80,13 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]
 }
 
-/** Convert [r, g, b] 0-255 back to a lowercase hex string like "#0d2a2a". */
+/** Convert [r, g, b] 0-255 back to a lowercase hex string like "#2d2118". */
 function rgbToHex(r: number, g: number, b: number): string {
   const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)))
   return '#' + [r, g, b].map((c) => clamp(c).toString(16).padStart(2, '0')).join('')
 }
 
-/** Linearly interpolate two hex colours. t=0 → a, t=1 → b. */
+/** Linearly interpolate two hex colours. t=0 -> a, t=1 -> b. */
 function lerpHex(a: string, b: string, t: number): string {
   const [ar, ag, ab] = hexToRgb(a)
   const [br, bg, bb] = hexToRgb(b)
@@ -90,17 +129,8 @@ function lerpPalettes(from: TimePalette, to: TimePalette, t: number): TimePalett
   }
 }
 
-// ─── Time logic ───────────────────────────────────────────────────────────────
+// -- Time logic --------------------------------------------------------------
 
-/**
- * The three named boundaries and their 1-hour transition windows.
- * Each entry describes: which palette transitions into which, and the hour
- * range [start, end] of the full 2-hour window centred on the boundary.
- *
- *   morning→afternoon: boundary 12:00, window [11, 13]
- *   afternoon→night:   boundary 21:00, window [20, 22]
- *   night→morning:     boundary 06:00, window [05, 07]  (crosses midnight)
- */
 const TRANSITIONS = [
   { from: 'morning' as const,   to: 'afternoon' as const, windowStart: 11, windowEnd: 13 },
   { from: 'afternoon' as const, to: 'night' as const,     windowStart: 20, windowEnd: 22 },
@@ -118,26 +148,15 @@ interface BlendResult {
 /**
  * Given fractional hours (e.g. 14.5 = 14:30), determine which two palettes
  * to blend and return the interpolation factor t in [0, 1].
- *
- * t=0 → entirely `from` palette
- * t=1 → entirely `to` palette
  */
 function computeBlend(fractionalHour: number): BlendResult {
   for (const { from, to, windowStart, windowEnd } of TRANSITIONS) {
-    // Handle midnight wrapping: night→morning window spans ~05–07 which is
-    // entirely inside 0-24 so no special case, but windowEnd > windowStart
-    // is always true for these specific values — safe to compare directly.
     if (fractionalHour >= windowStart && fractionalHour <= windowEnd) {
       const t = (fractionalHour - windowStart) / (windowEnd - windowStart)
       return { fromName: from, toName: to, t }
     }
   }
 
-  // Outside all transition windows — determine current steady-state palette.
-  // Boundaries (holding periods):
-  //   morning:   [07, 11)   — after night→morning finishes, before morning→afternoon starts
-  //   afternoon: [13, 20)   — after morning→afternoon finishes, before afternoon→night starts
-  //   night:     [22, 29)   — after afternoon→night finishes; wraps via %24 to [22,24) ∪ [0,5)
   let steady: PaletteName
   const h = fractionalHour
   if (h >= 7 && h < 11) {
@@ -145,14 +164,13 @@ function computeBlend(fractionalHour: number): BlendResult {
   } else if (h >= 13 && h < 20) {
     steady = 'afternoon'
   } else {
-    // [22, 24) ∪ [0, 5) — night
     steady = 'night'
   }
 
   return { fromName: steady, toName: steady, t: 0 }
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// -- Hook --------------------------------------------------------------------
 
 /**
  * Expose a global testing API: window.__setSimulatedHour(14.5) sets 2:30pm.
@@ -164,32 +182,20 @@ if (typeof window !== 'undefined') {
   (window as any).__setSimulatedHour = (hour: number | null) => {
     simulatedHour = hour
     console.log(`[useTimeOfDay] Simulated hour: ${hour === null ? 'OFF (real time)' : hour}`)
-    // Trigger an immediate update
     window.dispatchEvent(new CustomEvent('time-sim-change'))
   }
 }
 
 export function useTimeOfDay(): void {
-  const { getToken, updateToken } = useTokens()
+  const { updateToken } = useTokens()
 
-  // Stable refs to avoid re-triggering the effect when token state changes
-  const getTokenRef = useRef(getToken)
-  getTokenRef.current = getToken
   const updateTokenRef = useRef(updateToken)
   updateTokenRef.current = updateToken
 
   useEffect(() => {
     function update() {
-      const morning   = getTokenRef.current('time.morning')   as TimePalette | undefined
-      const afternoon = getTokenRef.current('time.afternoon') as TimePalette | undefined
-      const night     = getTokenRef.current('time.night')     as TimePalette | undefined
-
-      if (!morning || !afternoon || !night) {
-        console.warn('[useTimeOfDay] time.* tokens not found — TokenProvider not ready?')
-        return
-      }
-
-      const palettes: Record<PaletteName, TimePalette> = { morning, afternoon, night }
+      // Use warm palette overrides instead of the JSON values
+      const palettes = WARM_PALETTES
 
       let fractionalHour: number
       if (simulatedHour !== null) {
@@ -202,10 +208,17 @@ export function useTimeOfDay(): void {
       const { fromName, toName, t } = computeBlend(fractionalHour)
       const interpolated = lerpPalettes(palettes[fromName], palettes[toName], t)
 
+      // Determine the current phase name for Canvas background mode
+      let phase: PaletteName
+      if (fromName === toName) {
+        phase = fromName
+      } else {
+        phase = t >= 0.5 ? toName : fromName
+      }
+
       const root = document.documentElement.style
       for (const [key, value] of Object.entries(interpolated)) {
         root.setProperty(`--time-current-${key}`, String(value))
-        // Also generate rgb variant for hex colors
         if (typeof value === 'string' && value.startsWith('#')) {
           const clean = value.replace('#', '').slice(0, 6)
           const n = parseInt(clean, 16)
@@ -214,13 +227,16 @@ export function useTimeOfDay(): void {
           }
         }
       }
+
+      // Expose the current phase and blend factor so Canvas can use them
+      root.setProperty('--time-current-phase', phase)
+      root.setProperty('--time-current-blend_t', String(t))
     }
 
     update()
 
     const intervalId = setInterval(update, 60_000)
 
-    // Listen for simulation changes
     const onSimChange = () => update()
     window.addEventListener('time-sim-change', onSimChange)
 

@@ -1,7 +1,8 @@
 /**
  * Generic sliding overlay panel.
  *
- * Slides in from a specified edge with glassmorphism styling.
+ * Slides in from a specified edge with frosted glass styling.
+ * Small drag handle bar at the top/side for visual affordance.
  * Click outside to dismiss.
  */
 
@@ -21,15 +22,42 @@ const variants = {
   bottom: { hidden: { y: '100%' },  visible: { y: 0 } },
 }
 
+function DragHandle({ direction }: { direction: 'left' | 'right' | 'bottom' }) {
+  const isBottom = direction === 'bottom'
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: isBottom ? '12px 0 4px' : '0 4px 0 12px',
+      ...(isBottom ? {} : {
+        position: 'absolute' as const,
+        top: 0,
+        bottom: 0,
+        [direction === 'left' ? 'right' : 'left']: 0,
+        width: 20,
+        flexDirection: 'column' as const,
+      }),
+    }}>
+      <div style={{
+        width: isBottom ? 40 : 4,
+        height: isBottom ? 4 : 40,
+        borderRadius: 2,
+        background: 'rgba(255,255,255,0.2)',
+      }} />
+    </div>
+  )
+}
+
 export default function SlidePanel({ isOpen, onClose, direction, children }: SlidePanelProps) {
   const isBottom = direction === 'bottom'
 
   const panelStyle: React.CSSProperties = {
     position: 'fixed',
     zIndex: 200,
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    background: 'rgba(10, 10, 18, 0.85)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    background: 'rgba(20, 18, 25, 0.85)',
     border: '1px solid rgba(255,255,255,0.08)',
     overflowY: 'auto',
     ...(isBottom
@@ -71,6 +99,7 @@ export default function SlidePanel({ isOpen, onClose, direction, children }: Sli
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
             style={panelStyle}
           >
+            <DragHandle direction={direction} />
             {children}
           </motion.div>
         </>
