@@ -1,16 +1,16 @@
 /**
- * ResolvedWidget -- HD mini-widget that appears when a thought resolves (Phase 3).
+ * ResolvedWidget — HD mini-widgets for resolved thoughts (Phase 3).
  *
- * Each intent type gets a unique resolved visual:
- *   music  -> mini album-art card with song title + checkmark
- *   bulb   -> glowing circle showing actual light color + brightness
- *   volume -> arc/semicircle showing volume level
- *   brain  -> small speech bubble with "..." that fades
- *   search -> small speech bubble with "..." that fades
- *   memory -> small speech bubble with "..." that fades
- *   failed -> red-tinted version with X mark
+ * Inspired by Apple's Dynamic Island: each widget is a rich, self-contained
+ * visual that communicates its result through colour, animation, and shape
+ * rather than just text. Every widget uses the personality accent colour
+ * as its primary chromatic identity.
  *
- * Uses personality accent color for shadow/glow.
+ * Design principles:
+ *   - Frosted glass aesthetic with warm undertones
+ *   - Generous use of personality accent colour (not just borders — fills, glows, gradients)
+ *   - Every widget has a satisfying "success" or "failure" micro-animation
+ *   - Detail text is secondary — the visual should communicate the state
  */
 
 import { motion } from 'framer-motion'
@@ -21,215 +21,227 @@ interface ResolvedWidgetProps {
   size: number
 }
 
-export function ResolvedWidget({ badge, size }: ResolvedWidgetProps) {
-  const isFailed = badge.status === 'failed'
+// Shared frosted glass base style
+const glassBase = (size: number, accentOpacity = 0.15): React.CSSProperties => ({
+  width: size,
+  height: size,
+  borderRadius: size * 0.28,
+  background: `linear-gradient(135deg, rgba(var(--personality-accent-rgb), ${accentOpacity}), rgba(var(--personality-accent-rgb), ${accentOpacity * 0.4}))`,
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: '1px solid rgba(var(--personality-accent-rgb), 0.2)',
+  boxShadow: `0 4px 20px rgba(var(--personality-accent-rgb), 0.25), inset 0 1px 0 rgba(255,255,255,0.06)`,
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  position: 'relative' as const,
+})
 
-  if (isFailed) {
+const enterAnim = {
+  initial: { scale: 0.5, opacity: 0, filter: 'blur(8px)' },
+  animate: { scale: 1, opacity: 1, filter: 'blur(0px)' },
+  transition: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] },
+}
+
+export function ResolvedWidget({ badge, size }: ResolvedWidgetProps) {
+  if (badge.status === 'failed') {
     return <FailedWidget size={size} detail={badge.detail} />
   }
-
   switch (badge.icon) {
-    case 'music':
-      return <MusicResolvedWidget size={size} detail={badge.detail} />
-    case 'bulb':
-      return <LightResolvedWidget size={size} detail={badge.detail} />
-    case 'volume':
-      return <VolumeResolvedWidget size={size} detail={badge.detail} />
-    default:
-      return <ChatResolvedWidget size={size} />
+    case 'music': return <MusicWidget size={size} detail={badge.detail} />
+    case 'bulb': return <LightWidget size={size} detail={badge.detail} />
+    case 'volume': return <VolumeWidget size={size} detail={badge.detail} />
+    default: return <SuccessWidget size={size} detail={badge.detail} />
   }
 }
 
-/* -- Music: mini album card with checkmark -------------------------------- */
-function MusicResolvedWidget({ size, detail }: { size: number; detail?: string }) {
+/* ── Music: vinyl record with spinning animation + song info ────────── */
+function MusicWidget({ size, detail }: { size: number; detail?: string }) {
   return (
-    <motion.div
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.2,
-        background: 'rgba(var(--personality-accent-rgb), 0.12)',
-        border: '1px solid rgba(var(--personality-accent-rgb), 0.25)',
-        boxShadow: '0 0 12px rgba(var(--personality-accent-rgb), 0.2)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 2,
-        overflow: 'hidden',
-        position: 'relative',
-      }}
-    >
-      {/* Mini equalizer bars as background decoration */}
-      <div style={{ display: 'flex', gap: 1.5, alignItems: 'flex-end', height: size * 0.3 }}>
-        {[0, 1, 2, 3].map(i => (
-          <motion.div
-            key={i}
-            style={{
-              width: 2.5,
-              borderRadius: 1,
-              background: 'var(--personality-accent)',
-            }}
-            animate={{ height: [size * 0.08, size * 0.22, size * 0.12, size * 0.18, size * 0.08] }}
-            transition={{ duration: 1.2, repeat: 2, delay: i * 0.1, ease: 'easeInOut' }}
-          />
-        ))}
-      </div>
-      {/* Checkmark */}
-      <svg width={size * 0.28} height={size * 0.28} viewBox="0 0 16 16" fill="none">
-        <motion.path
-          d="M3 8.5L6.5 12L13 4"
-          stroke="#4ade80"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        />
-      </svg>
-      {/* Song title if present */}
-      {detail && (
+    <motion.div {...enterAnim} style={glassBase(size, 0.18)}>
+      {/* Ambient glow pulse behind widget */}
+      <motion.div
+        style={{
+          position: 'absolute', inset: -4, borderRadius: size * 0.32,
+          background: 'radial-gradient(circle, rgba(var(--personality-accent-rgb), 0.3) 0%, transparent 70%)',
+        }}
+        animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.05, 0.95] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Spinning vinyl/disc */}
+      <motion.div
+        style={{
+          width: size * 0.52, height: size * 0.52, borderRadius: '50%',
+          background: `conic-gradient(from 0deg, rgba(var(--personality-accent-rgb), 0.3), rgba(var(--personality-accent-rgb), 0.1), rgba(var(--personality-accent-rgb), 0.3))`,
+          border: '2px solid rgba(var(--personality-accent-rgb), 0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+      >
+        {/* Center dot */}
         <div style={{
-          fontSize: 7,
-          fontWeight: 500,
-          color: 'var(--personality-accent)',
-          textAlign: 'center',
-          maxWidth: size - 6,
-          lineHeight: 1.1,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          opacity: 0.8,
-        }}>
+          width: size * 0.12, height: size * 0.12, borderRadius: '50%',
+          background: 'var(--personality-accent)',
+          boxShadow: '0 0 8px rgba(var(--personality-accent-rgb), 0.5)',
+        }} />
+      </motion.div>
+
+      {/* Animated checkmark overlay */}
+      <motion.div
+        style={{ position: 'absolute', bottom: size * 0.08, right: size * 0.08 }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.3, type: 'spring', stiffness: 500, damping: 15 }}
+      >
+        <svg width={size * 0.22} height={size * 0.22} viewBox="0 0 20 20">
+          <circle cx="10" cy="10" r="9" fill="#4ade80" opacity={0.9} />
+          <motion.path
+            d="M6 10.5L8.5 13L14 7"
+            stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ duration: 0.3, delay: 0.45 }}
+          />
+        </svg>
+      </motion.div>
+
+      {/* Song title */}
+      {detail && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          style={{
+            position: 'absolute', bottom: 3, left: 4, right: 4,
+            fontSize: 7, fontWeight: 600, color: 'var(--personality-accent)',
+            textAlign: 'center', lineHeight: 1.1,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}
+        >
           {detail}
-        </div>
+        </motion.div>
       )}
     </motion.div>
   )
 }
 
-/* -- Lights: glowing circle with color + brightness ----------------------- */
-function LightResolvedWidget({ size, detail }: { size: number; detail?: string }) {
-  // Try to extract color from detail string (e.g., "Lights set to red at 80%")
-  // Fallback to personality accent
+/* ── Lights: radiating glow with light rays ─────────────────────────── */
+function LightWidget({ size, detail }: { size: number; detail?: string }) {
   return (
-    <motion.div
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: 'rgba(var(--personality-accent-rgb), 0.08)',
-        border: '1px solid rgba(var(--personality-accent-rgb), 0.2)',
-        boxShadow: '0 0 16px rgba(var(--personality-accent-rgb), 0.3), inset 0 0 12px rgba(var(--personality-accent-rgb), 0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-      }}
-    >
-      {/* Inner glow circle */}
+    <motion.div {...enterAnim} style={{ ...glassBase(size, 0.12), borderRadius: '50%' }}>
+      {/* Radiating light rays */}
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+        <motion.div
+          key={angle}
+          style={{
+            position: 'absolute',
+            width: 2, height: size * 0.25,
+            background: `linear-gradient(to top, rgba(var(--personality-accent-rgb), 0.5), transparent)`,
+            transformOrigin: `50% ${size * 0.5}px`,
+            transform: `rotate(${angle}deg)`,
+            top: 0,
+          }}
+          initial={{ scaleY: 0, opacity: 0 }}
+          animate={{ scaleY: 1, opacity: 0.7 }}
+          transition={{ delay: 0.1 + (angle / 360) * 0.3, duration: 0.4 }}
+        />
+      ))}
+
+      {/* Central glow orb */}
       <motion.div
         style={{
-          width: size * 0.5,
-          height: size * 0.5,
-          borderRadius: '50%',
-          background: 'rgba(var(--personality-accent-rgb), 0.4)',
-          filter: 'blur(3px)',
+          width: size * 0.45, height: size * 0.45, borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(var(--personality-accent-rgb), 0.8) 0%, rgba(var(--personality-accent-rgb), 0.3) 60%, transparent 100%)`,
+          boxShadow: `0 0 ${size * 0.3}px rgba(var(--personality-accent-rgb), 0.5)`,
         }}
-        animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.4, 0.7, 0.4] }}
+        animate={{
+          boxShadow: [
+            `0 0 ${size * 0.2}px rgba(var(--personality-accent-rgb), 0.4)`,
+            `0 0 ${size * 0.4}px rgba(var(--personality-accent-rgb), 0.6)`,
+            `0 0 ${size * 0.2}px rgba(var(--personality-accent-rgb), 0.4)`,
+          ],
+        }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       />
-      {/* Bulb icon center */}
+
+      {/* Bulb icon */}
       <svg
-        width={size * 0.32}
-        height={size * 0.32}
+        width={size * 0.22} height={size * 0.22}
         viewBox="0 0 24 24"
-        fill="var(--personality-accent)"
+        fill="white" fillOpacity={0.9}
         style={{ position: 'absolute' }}
       >
-        <path d="M9 21h6M10 17h4M12 3a6 6 0 0 1 3.7 10.7c-.5.5-.7 1.1-.7 1.8V17H9v-1.5c0-.7-.3-1.3-.7-1.8A6 6 0 0 1 12 3z" />
+        <path d="M12 3a6 6 0 0 1 3.7 10.7c-.5.5-.7 1.1-.7 1.8V17H9v-1.5c0-.7-.3-1.3-.7-1.8A6 6 0 0 1 12 3z" />
+        <path d="M9 21h6" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round" />
       </svg>
     </motion.div>
   )
 }
 
-/* -- Volume: arc showing the level ---------------------------------------- */
-function VolumeResolvedWidget({ size, detail }: { size: number; detail?: string }) {
-  // Try to extract volume level from detail (e.g. "Volume set to 50")
+/* ── Volume: circular gauge with level indicator ────────────────────── */
+function VolumeWidget({ size, detail }: { size: number; detail?: string }) {
   const levelMatch = detail?.match(/(\d+)/)
   const level = levelMatch ? Math.min(100, Math.max(0, parseInt(levelMatch[1], 10))) : 50
   const fraction = level / 100
 
-  const r = size * 0.38
+  // Arc math
+  const r = size * 0.36
   const cx = size / 2
   const cy = size / 2
-  // Arc from -135deg to +135deg (270 deg sweep for full)
-  const startAngle = -225 * (Math.PI / 180)
-  const endAngle = 45 * (Math.PI / 180)
-  const sweepAngle = startAngle + (endAngle - startAngle) * fraction
-
-  const arcPath = (angle: number) => ({
-    x: cx + r * Math.cos(angle),
-    y: cy + r * Math.sin(angle),
-  })
-
-  const start = arcPath(startAngle)
-  const end = arcPath(endAngle)
-  const filled = arcPath(sweepAngle)
-  const largeArcBg = 1
-  const largeArcFill = fraction > 0.5 ? 1 : 0
+  const startDeg = -225
+  const endDeg = 45
+  const sweepDeg = startDeg + (endDeg - startDeg) * fraction
+  const toRad = (d: number) => d * Math.PI / 180
+  const arcPt = (deg: number) => ({ x: cx + r * Math.cos(toRad(deg)), y: cy + r * Math.sin(toRad(deg)) })
+  const start = arcPt(startDeg)
+  const end = arcPt(endDeg)
+  const filled = arcPt(sweepDeg)
 
   return (
-    <motion.div
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      style={{
-        width: size,
-        height: size,
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Background arc track */}
+    <motion.div {...enterAnim} style={glassBase(size, 0.12)}>
+      {/* Ambient glow that intensifies with volume */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: size * 0.28,
+        background: `radial-gradient(circle, rgba(var(--personality-accent-rgb), ${0.1 + fraction * 0.2}) 0%, transparent 70%)`,
+      }} />
+
+      <svg width={size * 0.85} height={size * 0.85} viewBox={`0 0 ${size} ${size}`} style={{ position: 'relative' }}>
+        {/* Background track */}
         <path
-          d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcBg} 1 ${end.x} ${end.y}`}
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth={3}
-          strokeLinecap="round"
+          d={`M ${start.x} ${start.y} A ${r} ${r} 0 1 1 ${end.x} ${end.y}`}
+          fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={4} strokeLinecap="round"
         />
-        {/* Filled arc */}
+        {/* Filled arc with gradient effect via filter */}
         <motion.path
-          d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFill} 1 ${filled.x} ${filled.y}`}
-          fill="none"
-          stroke="var(--personality-accent)"
-          strokeWidth={3}
-          strokeLinecap="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.85 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          style={{ filter: 'drop-shadow(0 0 4px rgba(var(--personality-accent-rgb), 0.4))' }}
+          d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${fraction > 0.5 ? 1 : 0} 1 ${filled.x} ${filled.y}`}
+          fill="none" stroke="var(--personality-accent)" strokeWidth={4} strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+          style={{ filter: `drop-shadow(0 0 6px rgba(var(--personality-accent-rgb), 0.5))` }}
+        />
+        {/* End dot */}
+        <motion.circle
+          cx={filled.x} cy={filled.y} r={3}
+          fill="var(--personality-accent)"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.7, type: 'spring', stiffness: 400 }}
+          style={{ filter: `drop-shadow(0 0 4px rgba(var(--personality-accent-rgb), 0.6))` }}
         />
       </svg>
+
       {/* Level number */}
       <div style={{
         position: 'absolute',
-        fontSize: size * 0.22,
-        fontWeight: 700,
+        fontSize: size * 0.24, fontWeight: 700,
         color: 'var(--personality-accent)',
-        opacity: 0.85,
-        fontFamily: 'ui-monospace, "SF Mono", "Cascadia Mono", monospace',
+        fontFamily: 'ui-monospace, "SF Mono", monospace',
+        textShadow: `0 0 8px rgba(var(--personality-accent-rgb), 0.4)`,
       }}>
         {level}
       </div>
@@ -237,94 +249,111 @@ function VolumeResolvedWidget({ size, detail }: { size: number; detail?: string 
   )
 }
 
-/* -- Chat/Brain/Search/Memory: speech bubble with dots -------------------- */
-function ChatResolvedWidget({ size }: { size: number }) {
+/* ── Generic success: checkmark with ripple ──────────────────────────── */
+function SuccessWidget({ size, detail }: { size: number; detail?: string }) {
   return (
-    <motion.div
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      style={{
-        width: size,
-        height: size * 0.75,
-        borderRadius: size * 0.25,
-        borderBottomLeftRadius: size * 0.08,
-        background: 'rgba(var(--personality-accent-rgb), 0.1)',
-        border: '1px solid rgba(var(--personality-accent-rgb), 0.2)',
-        boxShadow: '0 0 10px rgba(var(--personality-accent-rgb), 0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 3,
-      }}
-    >
-      {[0, 1, 2].map(i => (
+    <motion.div {...enterAnim} style={glassBase(size, 0.12)}>
+      {/* Success ripple */}
+      <motion.div
+        style={{
+          position: 'absolute', width: size * 0.6, height: size * 0.6,
+          borderRadius: '50%', border: '2px solid rgba(var(--personality-accent-rgb), 0.3)',
+        }}
+        initial={{ scale: 0.5, opacity: 0.8 }}
+        animate={{ scale: 1.8, opacity: 0 }}
+        transition={{ duration: 1, ease: 'easeOut' }}
+      />
+
+      {/* Checkmark in accent circle */}
+      <motion.div
+        style={{
+          width: size * 0.45, height: size * 0.45, borderRadius: '50%',
+          background: `linear-gradient(135deg, var(--personality-accent), rgba(var(--personality-accent-rgb), 0.7))`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 2px 12px rgba(var(--personality-accent-rgb), 0.4)`,
+        }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.15, type: 'spring', stiffness: 400, damping: 15 }}
+      >
+        <svg width={size * 0.22} height={size * 0.22} viewBox="0 0 16 16" fill="none">
+          <motion.path
+            d="M3 8.5L6.5 12L13 4"
+            stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ duration: 0.3, delay: 0.35 }}
+          />
+        </svg>
+      </motion.div>
+
+      {detail && (
         <motion.div
-          key={i}
+          initial={{ opacity: 0 }} animate={{ opacity: 0.8 }}
+          transition={{ delay: 0.4 }}
           style={{
-            width: 4,
-            height: 4,
-            borderRadius: '50%',
-            background: 'var(--personality-accent)',
+            position: 'absolute', bottom: 4, left: 4, right: 4,
+            fontSize: 7, fontWeight: 600, color: 'var(--personality-accent)',
+            textAlign: 'center', lineHeight: 1.1,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}
-          animate={{ opacity: [0.3, 0.8, 0.3], y: [0, -2, 0] }}
-          transition={{ duration: 0.8, repeat: 2, delay: i * 0.15, ease: 'easeInOut' }}
-        />
-      ))}
+        >
+          {detail}
+        </motion.div>
+      )}
     </motion.div>
   )
 }
 
-/* -- Failed: red-tinted with X mark --------------------------------------- */
+/* ── Failed: red glass with animated X ───────────────────────────────── */
 function FailedWidget({ size, detail }: { size: number; detail?: string }) {
   return (
     <motion.div
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      {...enterAnim}
       style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.2,
-        background: 'rgba(255, 80, 80, 0.08)',
-        border: '1px solid rgba(255, 80, 80, 0.25)',
-        boxShadow: '0 0 10px rgba(255, 80, 80, 0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 2,
+        ...glassBase(size, 0.08),
+        background: 'linear-gradient(135deg, rgba(255, 80, 80, 0.15), rgba(255, 60, 60, 0.06))',
+        border: '1px solid rgba(255, 80, 80, 0.3)',
+        boxShadow: '0 4px 20px rgba(255, 80, 80, 0.2), inset 0 1px 0 rgba(255,255,255,0.04)',
       }}
     >
-      {/* X mark */}
-      <svg width={size * 0.3} height={size * 0.3} viewBox="0 0 16 16" fill="none">
-        <motion.path
-          d="M4 4L12 12M12 4L4 12"
-          stroke="#ff6b6b"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.3 }}
-        />
-      </svg>
-      {detail && (
-        <div style={{
-          fontSize: 7,
-          fontWeight: 500,
-          color: '#ff6b6b',
-          textAlign: 'center',
-          maxWidth: size - 6,
-          lineHeight: 1.1,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          opacity: 0.7,
-        }}>
-          {detail}
-        </div>
-      )}
+      {/* Shake animation */}
+      <motion.div
+        animate={{ x: [0, -3, 3, -2, 2, 0] }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}
+      >
+        {/* X mark in red circle */}
+        <motion.div
+          style={{
+            width: size * 0.4, height: size * 0.4, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ff6b6b, #ff4444)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 10px rgba(255, 80, 80, 0.4)',
+          }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 400, damping: 15 }}
+        >
+          <svg width={size * 0.2} height={size * 0.2} viewBox="0 0 16 16" fill="none">
+            <motion.path
+              d="M4 4L12 12M12 4L4 12"
+              stroke="#fff" strokeWidth={2.5} strokeLinecap="round"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 0.25, delay: 0.35 }}
+            />
+          </svg>
+        </motion.div>
+
+        {detail && (
+          <div style={{
+            fontSize: 7, fontWeight: 600, color: '#ff8888',
+            textAlign: 'center', maxWidth: size - 8, lineHeight: 1.1,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {detail}
+          </div>
+        )}
+      </motion.div>
     </motion.div>
   )
 }

@@ -7,7 +7,7 @@
  * The panel background subtly tints with the current light colour.
  */
 
-import { useRef, useCallback, useState } from 'react'
+import { useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import type { AssistantStore } from '../types/assistant'
 import { LightOrb } from './lights/LightOrb'

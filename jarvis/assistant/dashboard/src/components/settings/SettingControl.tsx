@@ -8,8 +8,8 @@
  * All controls use personality accent color and spring animations.
  */
 
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react'
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
+import { useState, useRef, useCallback, useLayoutEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { SettingSchema } from '../../types/assistant'
 
 interface Props {

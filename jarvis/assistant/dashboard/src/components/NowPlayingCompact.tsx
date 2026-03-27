@@ -118,6 +118,7 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
       />
       <motion.div
         layoutId="now-playing"
+        data-gesture-ignore="true"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 20, opacity: 0 }}

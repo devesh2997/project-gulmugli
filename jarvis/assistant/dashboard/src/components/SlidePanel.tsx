@@ -93,6 +93,7 @@ export default function SlidePanel({ isOpen, onClose, direction, children }: Sli
           {/* Panel */}
           <motion.div
             key="panel"
+            data-panel="true"
             initial={variants[direction].hidden}
             animate={variants[direction].visible}
             exit={variants[direction].hidden}
