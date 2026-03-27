@@ -13,6 +13,7 @@ That's it. No other code changes needed.
 """
 
 from core.interfaces import (
+    AudioOutputProvider,
     BrainProvider,
     MusicProvider,
     LightProvider,
@@ -28,6 +29,7 @@ from core.interfaces import (
 # ═══════════════════════════════════════════════════════════════
 
 _registry: dict[str, dict[str, type]] = {
+    "audio": {},
     "brain": {},
     "music": {},
     "lights": {},

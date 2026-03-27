@@ -132,7 +132,7 @@ knowledge:
 # When you add a Bluetooth speaker or move to a Jetson with HDMI + BT,
 # configure outputs here. All providers route audio through this.
 audio:
-  provider: "system" # options: system (OS-level), pulseaudio, pipewire, custom
+  provider: "auto" # options: auto (detect platform), coreaudio (macOS), pulseaudio (Linux/Jetson), alsa (Pi)
   default_output: "default" # which output to use by default
   focus:
     duck_level: 20        # volume % for music when TTS is speaking (PulseAudio duck mode)

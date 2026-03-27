@@ -65,6 +65,22 @@ try:
 except Exception:
     pass  # duckduckgo_search not installed
 
+# Audio output providers — platform-specific, optional
+try:
+    from providers.audio.coreaudio import CoreAudioProvider
+except Exception:
+    pass  # not on macOS or missing osascript
+
+try:
+    from providers.audio.pulseaudio import PulseAudioProvider
+except Exception:
+    pass  # pactl not available
+
+try:
+    from providers.audio.alsa import AlsaAudioProvider
+except Exception:
+    pass  # amixer not available
+
 # As you add more providers, import them here:
 # from providers.music.spotify import SpotifyMusicProvider
 # from providers.brain.llamacpp import LlamaCppBrainProvider

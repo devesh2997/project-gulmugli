@@ -191,16 +191,14 @@ def handle_intent(assistant: dict, intent) -> str:
 
     elif intent.name == "volume":
         # System-level volume — applies to all audio output (music, TTS, etc.)
-        # Currently routes through the music provider's mpv instance since that's
-        # the only audio output. When AudioOutputProvider is implemented, this
-        # will route through that instead.
+        # Prefers AudioOutputProvider (system volume) when available,
+        # falls back to mpv volume via MusicProvider.
         value = str(intent.params.get("level", ""))
         output = intent.params.get("output", "default")
         numeric = ''.join(c for c in value if c.isdigit())
         level = min(100, max(0, int(numeric))) if numeric else 50
 
         if assistant.get("audio"):
-            # Future: use AudioOutputProvider
             assistant["audio"].set_volume(level, output=output)
         elif assistant.get("music"):
             # Fallback: route through mpv (current state)

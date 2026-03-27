@@ -200,8 +200,8 @@ class AudioOutputProvider(ABC):
       - On edge devices, this maps to ALSA/PulseAudio/PipeWire
       - On Mac simulation, this maps to mpv's volume + system volume
 
-    Current implementations: none yet (volume temporarily handled in MusicProvider)
-    Future implementations: PulseAudio, PipeWire, ALSA, CoreAudio (macOS), Bluetooth
+    Current implementations: CoreAudio (macOS), PulseAudio (Linux/Jetson), ALSA (Pi)
+    Future implementations: PipeWire, Bluetooth-only
     """
 
     @abstractmethod
@@ -226,6 +226,40 @@ class AudioOutputProvider(ABC):
     def set_default_output(self, output: str) -> None:
         """Switch the default audio output (e.g., switch from HDMI to Bluetooth)."""
         ...
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if this audio provider can operate on the current platform."""
+        ...
+
+    def bluetooth_scan(self, timeout: int = 10) -> list[dict]:
+        """
+        Scan for nearby Bluetooth audio devices.
+
+        Returns: [{"name": "JBL Flip 6", "mac_address": "AA:BB:CC:DD:EE:FF", "paired": False}, ...]
+
+        Default implementation returns empty list — override in providers
+        that support Bluetooth (all current ones delegate to BluetoothHelper).
+        """
+        return []
+
+    def bluetooth_pair(self, mac_address: str) -> bool:
+        """
+        Pair, trust, and connect to a Bluetooth device.
+
+        Returns True if the device was successfully connected.
+        Default: returns False (no Bluetooth support).
+        """
+        return False
+
+    def bluetooth_disconnect(self, mac_address: str) -> bool:
+        """
+        Disconnect a paired Bluetooth device.
+
+        Returns True if the device was successfully disconnected.
+        Default: returns False (no Bluetooth support).
+        """
+        return False
 
 
 class MusicProvider(ABC):

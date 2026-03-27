@@ -11,6 +11,8 @@ Usage:
 """
 
 import argparse
+import platform
+import shutil
 import threading
 
 from core.config import config
@@ -28,6 +30,25 @@ from ui.actions import handle_ui_action
 import providers  # noqa: F401
 
 log = get_logger("main")
+
+
+def _resolve_audio_provider() -> str | None:
+    """
+    Auto-detect the best audio provider for the current platform.
+
+    Detection order:
+      1. macOS → "coreaudio"
+      2. Linux with pactl → "pulseaudio" (Jetson, desktop Linux, PipeWire compat)
+      3. Linux with amixer → "alsa" (bare Pi, minimal Linux)
+      4. None → no system audio control, fall back to mpv volume
+    """
+    if platform.system() == "Darwin":
+        return "coreaudio"
+    if shutil.which("pactl"):
+        return "pulseaudio"
+    if shutil.which("amixer"):
+        return "alsa"
+    return None
 
 
 def build_assistant() -> dict:
@@ -75,6 +96,31 @@ def build_assistant() -> dict:
     except Exception as e:
         log.warning("Light provider not available (%s). Light features disabled.", e)
         assistant["lights"] = None
+
+    # Audio output — system volume, device switching, Bluetooth
+    audio_cfg = config.get("audio", {})
+    audio_provider_name = audio_cfg.get("provider", "auto")
+    if audio_provider_name == "auto":
+        audio_provider_name = _resolve_audio_provider()
+
+    if audio_provider_name:
+        try:
+            audio = get_provider("audio", audio_provider_name)
+            if audio.is_available():
+                assistant["audio"] = audio
+                log.info("AudioOutputProvider: %s", audio_provider_name)
+            else:
+                assistant["audio"] = None
+                log.info(
+                    "Audio provider '%s' registered but not available on this platform.",
+                    audio_provider_name,
+                )
+        except Exception as e:
+            log.info("Audio provider not available (%s). Volume falls back to mpv.", e)
+            assistant["audio"] = None
+    else:
+        assistant["audio"] = None
+        log.info("No audio provider detected. Volume falls back to mpv.")
 
     # Voice (TTS) — smart routing per personality with fallback
     # VoiceRouter handles: preferred provider → fallback → text-only
