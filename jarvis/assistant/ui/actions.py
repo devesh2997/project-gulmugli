@@ -86,12 +86,12 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
         return
 
     elif action == "get_settings":
-        # Dashboard requesting the config settings list
+        # Dashboard requesting the flat settings list with current values
         from core.config_manager import config_manager
         face_ui = assistant.get("face_ui")
         if face_ui:
-            settings = config_manager.get_settings_by_category()
-            face_ui._broadcast({"type": "settings", "categories": settings})
+            settings = config_manager.get_settings()
+            face_ui.send_settings(settings)
         return
 
     elif action == "update_setting":
@@ -103,10 +103,10 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
         face_ui = assistant.get("face_ui")
         if face_ui:
             face_ui._broadcast({"type": "setting_result", "path": path, **result})
-            # If successful, send the updated settings list
+            # If successful, resend updated settings list
             if result.get("ok"):
-                settings = config_manager.get_settings_by_category()
-                face_ui._broadcast({"type": "settings", "categories": settings})
+                settings = config_manager.get_settings()
+                face_ui.send_settings(settings)
         return
 
     if intent:

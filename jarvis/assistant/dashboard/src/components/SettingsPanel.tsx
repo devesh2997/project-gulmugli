@@ -6,7 +6,7 @@
  * Personality picker sits at the top as a special section.
  */
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { AssistantStore } from '../types/assistant'
 import { SettingControl } from './settings/SettingControl'
@@ -40,9 +40,14 @@ export function SettingsPanel({ store }: Props) {
   const personalities = store?.personalities ?? []
   const personality = store?.personality ?? 'jarvis'
 
+  // Request settings once on mount — not on every re-render
+  const requestedRef = useRef(false)
   useEffect(() => {
-    if (!settings.length && actions?.requestSettings) actions.requestSettings()
-  }, [settings.length, actions])
+    if (!requestedRef.current && !settings.length && actions?.requestSettings) {
+      requestedRef.current = true
+      actions.requestSettings()
+    }
+  }, [])
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof settings> = {}
