@@ -12,6 +12,7 @@ import { Canvas } from './components/Canvas'
 import { Avatar } from './components/Avatar'
 import { Clock } from './components/Clock'
 import { StatusDot } from './components/StatusDot'
+import { BrightnessControl } from './components/BrightnessControl'
 import { ThoughtManifest } from './components/thoughts/ThoughtManifest'
 import { NowPlayingCompact } from './components/NowPlayingCompact'
 import { NowPlayingExpanded } from './components/NowPlayingExpanded'
@@ -134,6 +135,7 @@ function AppContent() {
       />
 
       <StatusDot connected={assistant.connected} />
+      <BrightnessControl />
 
       {/* Now Playing */}
       <AnimatePresence>

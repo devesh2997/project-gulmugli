@@ -43,31 +43,31 @@ interface TimePalette {
 
 const WARM_PALETTES: Record<PaletteName, TimePalette> = {
   morning: {
-    canvas_gradient_start: '#1e1a16', // very dark warm charcoal (not brown)
-    canvas_gradient_end:   '#252019', // slightly warmer, hint of amber
+    canvas_gradient_start: '#2c2824', // warm medium grey — noticeably lighter than night
+    canvas_gradient_end:   '#35302a', // warm taupe
     accent_primary:        '#e8c4a0', // soft warm cream
     accent_glow:           '#d4a878', // muted gold
-    text_primary_opacity:  0.8,
+    text_primary_opacity:  0.85,
     orb_breathe_duration:  '4s',
-    brightness:            0.8,
+    brightness:            0.85,
   },
   afternoon: {
-    canvas_gradient_start: '#1c1816', // deep charcoal with warmth
-    canvas_gradient_end:   '#221e1a', // slightly lighter, warm undertone
-    accent_primary:        '#c9a87c', // warm gold (less saturated)
+    canvas_gradient_start: '#363230', // warm grey — the BRIGHTEST mode
+    canvas_gradient_end:   '#3e3a36', // light warm charcoal
+    accent_primary:        '#c9a87c', // warm gold
     accent_glow:           '#b89468', // amber
-    text_primary_opacity:  0.85,
+    text_primary_opacity:  0.9,
     orb_breathe_duration:  '4s',
     brightness:            1.0,
   },
   night: {
-    canvas_gradient_start: '#121420', // deep midnight blue
+    canvas_gradient_start: '#121420', // deep midnight blue — the DARKEST mode
     canvas_gradient_end:   '#181a28', // dark slate with blue undertone
     accent_primary:        '#8b7db5', // muted lavender
     accent_glow:           '#6b5d99', // deep purple
-    text_primary_opacity:  0.45,
+    text_primary_opacity:  0.5,
     orb_breathe_duration:  '6s',
-    brightness:            0.38,
+    brightness:            0.4,
   },
 }
 
@@ -216,8 +216,30 @@ export function useTimeOfDay(): void {
         phase = t >= 0.5 ? toName : fromName
       }
 
+      // Check for manual brightness override (0-100). -1 or absent = auto (time-based).
+      // This lets the user lighten or darken the background independently.
       const root = document.documentElement.style
-      for (const [key, value] of Object.entries(interpolated)) {
+      const overrideStr = getComputedStyle(document.documentElement)
+        .getPropertyValue('--ui-brightness-override').trim()
+      const override = overrideStr ? parseFloat(overrideStr) : -1
+
+      let final = interpolated
+      if (override >= 0 && override <= 100) {
+        // Override brightness: 0 = darkest (night-like), 50 = current auto, 100 = brightest (afternoon-like)
+        // We lerp the canvas gradient colours between the extremes
+        const darkest = WARM_PALETTES.night
+        const brightest = WARM_PALETTES.afternoon
+        const factor = override / 100
+        final = {
+          ...interpolated,
+          canvas_gradient_start: lerpHex(darkest.canvas_gradient_start, brightest.canvas_gradient_start, factor),
+          canvas_gradient_end: lerpHex(darkest.canvas_gradient_end, brightest.canvas_gradient_end, factor),
+          text_primary_opacity: darkest.text_primary_opacity + (brightest.text_primary_opacity - darkest.text_primary_opacity) * factor,
+          brightness: darkest.brightness + (brightest.brightness - darkest.brightness) * factor,
+        }
+      }
+
+      for (const [key, value] of Object.entries(final)) {
         root.setProperty(`--time-current-${key}`, String(value))
         if (typeof value === 'string' && value.startsWith('#')) {
           const clean = value.replace('#', '').slice(0, 6)
