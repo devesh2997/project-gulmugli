@@ -290,7 +290,7 @@ def handle_intent(assistant: dict, intent) -> str:
                     try:
                         from core.interfaces import SongResult
                         sleep_query = sleep_cfg.get("sleep_music_query", "soothing relaxing sleep music ambient")
-                        results = music.search(sleep_query, sleep_query)
+                        results = music.search(sleep_query, raw_input=sleep_query)
                         if results:
                             music.play(results[0])
                             log.info("Playing sleep music: %s", results[0].title)
