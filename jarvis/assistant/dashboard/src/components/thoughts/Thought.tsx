@@ -42,7 +42,7 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
 
   const target = curvedPath(angle, distance)
   const THOUGHT_SIZE = 44
-  const RESOLVED_SIZE = 60
+  const RESOLVED_SIZE = 76
 
   // Spring-driven offset from center
   const springConfig = { stiffness: 120, damping: 18, mass: 0.8 }
@@ -141,7 +141,7 @@ export function Thought({ badge, angle, distance, center, avatarType }: ThoughtP
               key="resolved-widget"
               initial={{ scale: 0.7, opacity: 0, filter: 'blur(4px)' }}
               animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
             >
               <ResolvedWidget badge={badge} size={RESOLVED_SIZE} />
             </motion.div>
