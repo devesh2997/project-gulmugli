@@ -24,7 +24,7 @@ import { LightsPanel } from './components/LightsPanel'
 type PanelId = 'transcript' | 'settings' | 'lights' | null
 
 function AppContent() {
-  const { updateToken } = useTokens()
+  const { updateToken, setPersonality, currentPersonality } = useTokens()
 
   // Stable ref for updateToken to avoid re-creating useAssistant
   const updateTokenRef = useRef(updateToken)
@@ -34,6 +34,13 @@ function AppContent() {
   }, [])
 
   const assistant = useAssistant('ws://localhost:8765', stableUpdateToken)
+
+  // Sync personality from backend → TokenProvider on connect/change
+  useEffect(() => {
+    if (assistant.personality && assistant.personality !== currentPersonality) {
+      setPersonality(assistant.personality)
+    }
+  }, [assistant.personality, currentPersonality, setPersonality])
 
   useTimeOfDay()
 

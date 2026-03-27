@@ -144,6 +144,9 @@ def build_assistant() -> dict:
     # WebSocket thread, which is fine — handle_ui_action is thread-safe.
     face_ui.on_action = lambda action_data: handle_ui_action(assistant, action_data)
 
+    # Sync FaceUI with the (possibly restored) active personality
+    face_ui.set_personality(personality_manager.active.id)
+
     # Send personality list to dashboard so it can show a switcher
     face_ui.set_personalities([
         {"id": p.id, "display_name": p.display_name, "description": p.description}
