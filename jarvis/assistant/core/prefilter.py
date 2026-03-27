@@ -177,8 +177,12 @@ def prefilter_intent(user_input: str) -> list[Intent] | None:
     """
     start = time.time()
 
+    # Strip trailing punctuation that STT adds — "What's the time?" → "What's the time"
+    # This prevents fullmatch failures on otherwise-matching patterns.
+    cleaned = re.sub(r'[.!?]+$', '', user_input.strip())
+
     for matcher in PREFILTER_CHAIN:
-        result = matcher(user_input)
+        result = matcher(cleaned)
         if result is not None:
             elapsed_ms = (time.time() - start) * 1000
             intent_names = " + ".join(i.name for i in result)

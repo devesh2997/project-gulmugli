@@ -81,9 +81,13 @@ function AppContent() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // ── Avatar size: responsive, capped so it doesn't overwhelm small screens ──
+  // ── Avatar size: responsive to viewport, generous for 5.5" screens ──
+  // On 960x540 (5.5" landscape): ~162px. On 1920x1080: ~260px.
+  // The avatar is the centerpiece — it should feel substantial.
   const vh = typeof window !== 'undefined' ? window.innerHeight : 540
-  const avatarSize = Math.max(80, Math.min(vh * 0.22, 200))
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 960
+  const smallerDim = Math.min(vh, vw)
+  const avatarSize = Math.max(120, Math.min(smallerDim * 0.3, 280))
 
   // ── Track avatar center for thought orbit positions ──
   const avatarRef = useRef<HTMLDivElement>(null)

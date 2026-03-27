@@ -22,13 +22,25 @@ export type FaceFeature =
 export type FaceState = Record<FaceFeature, PixelData>
 
 /**
- * Alternate mouth frame for speaking animation.
+ * Speaking mouth frames — multiple shapes for natural speech animation.
+ * The component cycles through these at variable speeds.
  */
 export const speakingMouthClosed: PixelData = [
-  { x: 13, y: 22, opacity: 0.7 }, { x: 14, y: 22, opacity: 0.7 },
-  { x: 15, y: 22, opacity: 0.7 }, { x: 16, y: 22, opacity: 0.7 },
-  { x: 17, y: 22, opacity: 0.7 }, { x: 18, y: 22, opacity: 0.7 },
+  { x: 13, y: 22, opacity: 0.6 }, { x: 14, y: 22, opacity: 0.65 },
+  { x: 15, y: 22, opacity: 0.65 }, { x: 16, y: 22, opacity: 0.65 },
+  { x: 17, y: 22, opacity: 0.65 }, { x: 18, y: 22, opacity: 0.6 },
 ]
+
+/** Medium-open mouth — in between full open and closed */
+export const speakingMouthMedium: PixelData = [
+  { x: 13, y: 21, opacity: 0.6 }, { x: 14, y: 21, opacity: 0.65 },
+  { x: 15, y: 21, opacity: 0.7 }, { x: 16, y: 21, opacity: 0.7 },
+  { x: 17, y: 21, opacity: 0.65 }, { x: 18, y: 21, opacity: 0.6 },
+  { x: 14, y: 22, opacity: 0.55 }, { x: 15, y: 22, opacity: 0.6 },
+  { x: 16, y: 22, opacity: 0.6 }, { x: 17, y: 22, opacity: 0.55 },
+]
+
+// speakingMouthFrames is assembled after pixelFaces is defined (see bottom of file)
 
 // ─── State faces ────────────────────────────────────────────────────
 
@@ -273,3 +285,11 @@ export const pixelMoodOverlays: Record<string, Partial<Record<MoodFeature, Pixel
     ],
   },
 }
+
+/** Speaking mouth frames: closed → medium → wide open → medium (natural speech cycle) */
+export const speakingMouthFrames: PixelData[] = [
+  speakingMouthClosed,
+  speakingMouthMedium,
+  pixelFaces.speaking.mouth,  // full wide open
+  speakingMouthMedium,
+]

@@ -17,6 +17,7 @@ import {
   pixelFaces,
   pixelMoodOverlays,
   speakingMouthClosed,
+  speakingMouthFrames,
   type PixelData,
   type FaceFeature,
   type MoodFeature,
@@ -109,15 +110,22 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
   const isListening = state === 'listening'
   const glowConfig = GLOW_CONFIGS[state] ?? GLOW_CONFIGS.idle
 
-  // Speaking mouth animation: alternate between open/closed every 300ms
-  const [mouthOpen, setMouthOpen] = useState(true)
+  // Speaking mouth animation: cycle through 4 mouth shapes with variable timing
+  // for more natural speech movement (closed → medium → wide → medium → ...)
+  const [mouthFrame, setMouthFrame] = useState(0)
   useEffect(() => {
     if (!isSpeaking) {
-      setMouthOpen(true)
+      setMouthFrame(0)
       return
     }
-    const interval = setInterval(() => setMouthOpen(prev => !prev), 300)
-    return () => clearInterval(interval)
+    const cycle = () => {
+      setMouthFrame(prev => (prev + 1) % speakingMouthFrames.length)
+      // Variable timing: 150-350ms between frames (natural speech rhythm)
+      const nextDelay = 150 + Math.random() * 200
+      timerId = setTimeout(cycle, nextDelay)
+    }
+    let timerId = setTimeout(cycle, 200)
+    return () => clearTimeout(timerId)
   }, [isSpeaking])
 
   // Idle blink: eyes close briefly every 3-5 seconds
@@ -137,8 +145,8 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
     return () => clearTimeout(timerId)
   }, [isIdle])
 
-  const mouthFrame = isSpeaking
-    ? (mouthOpen ? pixelFaces.speaking.mouth : speakingMouthClosed)
+  const currentMouthFrame = isSpeaking
+    ? speakingMouthFrames[mouthFrame % speakingMouthFrames.length]
     : undefined
 
   // Closed eyes for blink — single row, dimmer
@@ -152,7 +160,7 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
   ]
 
   const featureGroups = useMemo(() => {
-    const base = mergePixels(state, mood, mouthFrame)
+    const base = mergePixels(state, mood, currentMouthFrame)
     if (!isBlinking) return base
     // Override eyes with closed variant during blink
     return base.map(g =>
@@ -160,7 +168,7 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
       : g.feature === 'right_eye' ? { ...g, pixels: blinkEyesR }
       : g
     )
-  }, [state, mood, mouthFrame, isBlinking])
+  }, [state, mood, currentMouthFrame, isBlinking])
 
   // Flatten all pixels with their keys and colors for rendering
   const allPixels = useMemo(() => {
