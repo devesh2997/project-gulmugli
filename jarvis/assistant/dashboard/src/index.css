@@ -18,6 +18,16 @@ html, body, #root {
   height: 100%;
   overflow: hidden;
   background: #050505;
+  font-family: var(--font-sans);
+}
+
+/* ── Text rendering — crisp on AMOLED, smooth everywhere ──────── */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  /* Inter font features: alt glyphs for a cleaner feel */
 }
 
 /* ── Fullscreen kiosk mode ─────────────────────────────────────── */
@@ -29,9 +39,15 @@ body.kiosk .escape-hint {
   display: none;
 }
 
-/* ── Scrollbar styling ─────────────────────────────────────────── */
+/* ── Selection color — personality-tinted ─────────────────────── */
+::selection {
+  background: rgba(var(--personality-accent-rgb, 180, 140, 100), 0.25);
+  color: inherit;
+}
+
+/* ── Scrollbar — thin, personality-aware, fades when idle ──────── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -39,12 +55,66 @@ body.kiosk .escape-hint {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--personality-accent-rgb, 255, 255, 255), 0.12);
   border-radius: 9999px;
+  transition: background 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--personality-accent-rgb, 255, 255, 255), 0.25);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--personality-accent-rgb, 255, 255, 255), 0.12) transparent;
+}
+
+/* ── Focus rings — personality-colored for accessibility ───────── */
+:focus-visible {
+  outline: 2px solid rgba(var(--personality-accent-rgb, 180, 140, 100), 0.4);
+  outline-offset: 2px;
+}
+
+/* ── Input styling — remove browser defaults ──────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--personality-accent, #b48c64);
+  margin-top: -5px;
+  box-shadow: 0 0 8px rgba(var(--personality-accent-rgb, 180, 140, 100), 0.3);
+  border: none;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--personality-accent, #b48c64);
+  border: none;
+  box-shadow: 0 0 8px rgba(var(--personality-accent-rgb, 180, 140, 100), 0.3);
 }
 
 /* ── Keyframe animations ────────────────────────────────────────── */
@@ -80,4 +150,19 @@ body.kiosk .escape-hint {
 @keyframes slide-in-left {
   from { opacity: 0; transform: translateX(-16px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.8; transform: scale(1.02); }
+}
+
+/* ── Utility: hide scrollbar but keep scrolling ───────────────── */
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
 }

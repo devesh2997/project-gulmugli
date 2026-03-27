@@ -1,10 +1,12 @@
 /**
- * SettingsPanel — grouped settings with per-type controls.
+ * SettingsPanel — grouped settings with personality-themed category sections.
  *
- * Settings are fetched via WebSocket and grouped by category.
- * Each category renders as a collapsible section with an icon, a subtle
- * divider, and smooth height animation. Personality picker sits at the
- * top as a special section.
+ * Redesigned to feel purpose-built:
+ *   - Category headers use a short personality accent bar instead of full borders
+ *   - Sections have a subtle hover glow and spring-animated collapse
+ *   - Background mode picker uses pill-shaped selectors with smooth transitions
+ *   - Overall spacing follows a rhythmic 8px grid
+ *   - Loading state shows a breathing personality-colored skeleton
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -18,12 +20,12 @@ interface Props {
   store: AssistantStore
 }
 
-/** Background mode switcher — gradient / texture / glass */
+/** Background mode switcher — pill-shaped selectors */
 function BackgroundModePicker() {
   const modes = [
-    { id: 'gradient', label: 'Gradient', desc: 'Clean smooth blend' },
-    { id: 'texture', label: 'Texture', desc: 'Fabric-like grain' },
-    { id: 'glass', label: 'Glass', desc: 'Frosted backlight' },
+    { id: 'gradient', label: 'Gradient', desc: 'Smooth blend' },
+    { id: 'texture', label: 'Texture', desc: 'Fabric grain' },
+    { id: 'glass', label: 'Glass', desc: 'Frosted glow' },
   ]
   const [active, setActive] = useState('gradient')
 
@@ -40,9 +42,7 @@ function BackgroundModePicker() {
 
   return (
     <div data-gesture-ignore="true">
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
-      }}>
+      <SectionLabel icon={
         <svg width="14" height="14" viewBox="0 0 24 24"
           fill="none" stroke="var(--personality-accent)" strokeWidth="2" strokeLinecap="round"
           style={{ opacity: 0.6 }}
@@ -50,36 +50,56 @@ function BackgroundModePicker() {
           <rect x="3" y="3" width="18" height="18" rx="3" />
           <path d="M3 9h18" />
         </svg>
-        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
-          Background Style
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      } label="Background Style" />
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         {modes.map(m => (
           <motion.button
             key={m.id}
             onClick={() => handleSwitch(m.id)}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              flex: 1,
-              padding: '10px 8px',
-              borderRadius: 12,
-              border: `1px solid ${m.id === active
-                ? 'rgba(var(--personality-accent-rgb), 0.3)'
-                : 'var(--border-subtle)'}`,
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            animate={{
               background: m.id === active
                 ? 'rgba(var(--personality-accent-rgb), 0.1)'
-                : 'transparent',
+                : 'rgba(255, 255, 255, 0.02)',
+            }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            style={{
+              flex: 1,
+              padding: '12px 8px 10px',
+              borderRadius: 14,
+              border: 'none',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column' as const,
               alignItems: 'center',
               gap: 4,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {/* Active indicator line at top */}
+            <motion.div
+              animate={{
+                scaleX: m.id === active ? 1 : 0,
+                opacity: m.id === active ? 1 : 0,
+              }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: '20%',
+                right: '20%',
+                height: 2,
+                borderRadius: 1,
+                background: 'var(--personality-accent)',
+                transformOrigin: 'center',
+              }}
+            />
             <span style={{
               fontSize: 11, fontWeight: 600,
               color: m.id === active ? 'var(--personality-accent)' : 'var(--text-secondary)',
+              transition: 'color 0.2s ease',
             }}>
               {m.label}
             </span>
@@ -92,6 +112,29 @@ function BackgroundModePicker() {
           </motion.button>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** Reusable section label with accent bar */
+function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+    }}>
+      {icon && (
+        <span style={{ display: 'flex', alignItems: 'center', opacity: 0.7 }}>
+          {icon}
+        </span>
+      )}
+      <span style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: '0.14em',
+        textTransform: 'uppercase' as const,
+        color: 'rgba(var(--personality-accent-rgb), 0.5)',
+        flex: 1, textAlign: 'left',
+      }}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -187,18 +230,33 @@ function CategorySection({ cat, children }: { cat: string; children: React.React
   const iconColor = 'rgba(var(--personality-accent-rgb), 0.5)'
 
   return (
-    <section>
-      {/* Category header — tap to toggle */}
-      <button
+    <section style={{ position: 'relative' }}>
+      {/* Category header — accent bar + tap to toggle */}
+      <motion.button
         onClick={() => setOpen(!open)}
+        whileHover={{ x: 2 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
           width: '100%', padding: '0 0 12px 0',
           background: 'none', border: 'none', cursor: 'pointer',
-          borderBottom: '1px solid var(--border-subtle)',
-          marginBottom: open ? 16 : 0,
+          position: 'relative',
         }}
       >
+        {/* Short accent bar on the left */}
+        <motion.div
+          animate={{
+            height: open ? 16 : 8,
+            opacity: open ? 0.6 : 0.2,
+          }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          style={{
+            width: 2,
+            borderRadius: 1,
+            background: 'var(--personality-accent)',
+            flexShrink: 0,
+          }}
+        />
         {/* Icon */}
         {IconFn && (
           <span style={{ display: 'flex', alignItems: 'center', opacity: 0.7 }}>
@@ -207,7 +265,7 @@ function CategorySection({ cat, children }: { cat: string; children: React.React
         )}
         {/* Label */}
         <span style={{
-          fontSize: 10, fontWeight: 600, letterSpacing: 2,
+          fontSize: 10, fontWeight: 600, letterSpacing: '0.14em',
           textTransform: 'uppercase' as const,
           color: iconColor,
           flex: 1, textAlign: 'left',
@@ -223,7 +281,7 @@ function CategorySection({ cat, children }: { cat: string; children: React.React
         >
           <path d="M6 9l6 6 6-6" />
         </motion.svg>
-      </button>
+      </motion.button>
 
       {/* Collapsible content */}
       <AnimatePresence initial={false}>
@@ -232,10 +290,14 @@ function CategorySection({ cat, children }: { cat: string; children: React.React
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
             style={{ overflow: 'hidden' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 16,
+              paddingLeft: 10,
+              paddingBottom: 4,
+            }}>
               {children}
             </div>
           </motion.div>
@@ -251,7 +313,7 @@ export function SettingsPanel({ store }: Props) {
   const personalities = store?.personalities ?? []
   const personality = store?.personality ?? 'jarvis'
 
-  // Request settings once on mount — not on every re-render
+  // Request settings once on mount
   const requestedRef = useRef(false)
   useEffect(() => {
     if (!requestedRef.current && !settings.length && actions?.requestSettings) {
@@ -280,9 +342,9 @@ export function SettingsPanel({ store }: Props) {
     return (
       <div style={{ padding: 32, textAlign: 'center' }}>
         <motion.div
-          animate={{ opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          style={{ color: 'var(--text-secondary)', fontSize: 13 }}
+          animate={{ opacity: [0.2, 0.5, 0.2] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ color: 'var(--personality-accent)', fontSize: 13, fontWeight: 500 }}
         >
           Loading settings...
         </motion.div>
@@ -290,7 +352,7 @@ export function SettingsPanel({ store }: Props) {
     )
   }
 
-  // When brightness is being adjusted, fade everything else so user sees the main UI
+  // When brightness is being adjusted, fade everything else
   const [adjustingBrightness, setAdjustingBrightness] = useState(false)
   const handleBrightnessAdjusting = useCallback((isAdjusting: boolean) => {
     setAdjustingBrightness(isAdjusting)
@@ -299,9 +361,9 @@ export function SettingsPanel({ store }: Props) {
   return (
     <div style={{
       padding: '24px 20px', maxWidth: 400, margin: '0 auto',
-      display: 'flex', flexDirection: 'column', gap: 24,
+      display: 'flex', flexDirection: 'column', gap: 28,
     }}>
-      {/* Personality Picker — fades during brightness adjustment */}
+      {/* Personality Picker */}
       <motion.div animate={{ opacity: adjustingBrightness ? 0.15 : 1 }} transition={{ duration: 0.3 }}>
         {personalities.length > 0 && (
           <PersonalityPicker
@@ -312,17 +374,17 @@ export function SettingsPanel({ store }: Props) {
         )}
       </motion.div>
 
-      {/* Ambient Brightness — always visible */}
+      {/* Ambient Brightness */}
       <BrightnessControl onAdjusting={handleBrightnessAdjusting} />
 
-      {/* Background Mode — always visible */}
+      {/* Background Mode */}
       <BackgroundModePicker />
 
-      {/* Setting Categories — fades during brightness adjustment */}
+      {/* Setting Categories */}
       <motion.div
         animate={{ opacity: adjustingBrightness ? 0.08 : 1 }}
         transition={{ duration: 0.3 }}
-        style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 28 }}
       >
       {orderedCategories.map(cat => (
         <CategorySection key={cat} cat={cat}>

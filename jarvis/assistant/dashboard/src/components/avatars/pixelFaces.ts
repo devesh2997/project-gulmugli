@@ -33,11 +33,35 @@ export const speakingMouthClosed: PixelData = [
 
 /** Medium-open mouth — in between full open and closed */
 export const speakingMouthMedium: PixelData = [
+  // Upper lip
   { x: 13, y: 21, opacity: 0.6 }, { x: 14, y: 21, opacity: 0.65 },
   { x: 15, y: 21, opacity: 0.7 }, { x: 16, y: 21, opacity: 0.7 },
   { x: 17, y: 21, opacity: 0.65 }, { x: 18, y: 21, opacity: 0.6 },
+  // Opening
   { x: 14, y: 22, opacity: 0.55 }, { x: 15, y: 22, opacity: 0.6 },
   { x: 16, y: 22, opacity: 0.6 }, { x: 17, y: 22, opacity: 0.55 },
+  // Lower lip
+  { x: 13, y: 23, opacity: 0.5 }, { x: 14, y: 23, opacity: 0.55 },
+  { x: 15, y: 23, opacity: 0.55 }, { x: 16, y: 23, opacity: 0.55 },
+  { x: 17, y: 23, opacity: 0.55 }, { x: 18, y: 23, opacity: 0.5 },
+]
+
+/** Wide-open "O" mouth — dramatic open shape for speaking emphasis */
+export const speakingMouthWide: PixelData = [
+  // Upper lip
+  { x: 13, y: 20, opacity: 0.6 }, { x: 14, y: 20, opacity: 0.7 },
+  { x: 15, y: 20, opacity: 0.75 }, { x: 16, y: 20, opacity: 0.75 },
+  { x: 17, y: 20, opacity: 0.7 }, { x: 18, y: 20, opacity: 0.6 },
+  // Opening top
+  { x: 13, y: 21, opacity: 0.55 }, { x: 18, y: 21, opacity: 0.55 },
+  // Opening mid
+  { x: 13, y: 22, opacity: 0.55 }, { x: 18, y: 22, opacity: 0.55 },
+  // Opening bottom
+  { x: 13, y: 23, opacity: 0.55 }, { x: 18, y: 23, opacity: 0.55 },
+  // Lower lip
+  { x: 13, y: 24, opacity: 0.6 }, { x: 14, y: 24, opacity: 0.65 },
+  { x: 15, y: 24, opacity: 0.7 }, { x: 16, y: 24, opacity: 0.7 },
+  { x: 17, y: 24, opacity: 0.65 }, { x: 18, y: 24, opacity: 0.6 },
 ]
 
 // speakingMouthFrames is assembled after pixelFaces is defined (see bottom of file)
@@ -129,11 +153,13 @@ export const pixelFaces: Record<string, FaceState> = {
       { x: 15, y: 17, opacity: 0.25 },
       { x: 16, y: 18, opacity: 0.25 },
     ],
-    // Slightly parted — ready to respond
+    // Slightly open — welcoming, ready to respond (visible gap)
     mouth: [
-      { x: 13, y: 22, opacity: 0.5 }, { x: 14, y: 22, opacity: 0.55 },
-      { x: 15, y: 22, opacity: 0.55 }, { x: 16, y: 22, opacity: 0.55 },
-      { x: 17, y: 22, opacity: 0.55 }, { x: 18, y: 22, opacity: 0.5 },
+      { x: 13, y: 21, opacity: 0.5 }, { x: 14, y: 21, opacity: 0.55 },
+      { x: 15, y: 21, opacity: 0.55 }, { x: 16, y: 21, opacity: 0.55 },
+      { x: 17, y: 21, opacity: 0.55 }, { x: 18, y: 21, opacity: 0.5 },
+      { x: 14, y: 22, opacity: 0.4 }, { x: 15, y: 22, opacity: 0.45 },
+      { x: 16, y: 22, opacity: 0.45 }, { x: 17, y: 22, opacity: 0.4 },
     ],
   },
 
@@ -169,10 +195,11 @@ export const pixelFaces: Record<string, FaceState> = {
       { x: 15, y: 17, opacity: 0.25 },
       { x: 16, y: 18, opacity: 0.25 },
     ],
-    // Pursed/flat — concentrated, NOT an "O" shape
+    // Pursed/flat — small contemplative line, shifted right for asymmetry
     mouth: [
-      { x: 14, y: 22, opacity: 0.55 }, { x: 15, y: 22, opacity: 0.6 },
-      { x: 16, y: 22, opacity: 0.6 }, { x: 17, y: 22, opacity: 0.55 },
+      { x: 15, y: 22, opacity: 0.55 }, { x: 16, y: 22, opacity: 0.6 },
+      { x: 17, y: 22, opacity: 0.65 }, { x: 18, y: 22, opacity: 0.6 },
+      { x: 19, y: 21, opacity: 0.4 },
     ],
   },
 
@@ -286,10 +313,12 @@ export const pixelMoodOverlays: Record<string, Partial<Record<MoodFeature, Pixel
   },
 }
 
-/** Speaking mouth frames: closed → medium → wide open → medium (natural speech cycle) */
+/** Speaking mouth frames: closed → medium → wide O → full open → medium (natural speech cycle) */
 export const speakingMouthFrames: PixelData[] = [
   speakingMouthClosed,
   speakingMouthMedium,
+  speakingMouthWide,          // dramatic O shape
   pixelFaces.speaking.mouth,  // full wide open
   speakingMouthMedium,
+  speakingMouthClosed,
 ]

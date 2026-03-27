@@ -1,13 +1,13 @@
 /**
- * Transcript — conversation view with text command input.
+ * Transcript — AI conversation view with personality-themed messages.
  *
- * Redesigned from a generic chat list to a personal conversation flow:
- *   - Messages float with personality-coloured accents
- *   - User messages are right-aligned with subtle accent bubble
- *   - Assistant messages are left-aligned with frosted glass bubble
- *   - Timestamps shown for time gaps > 5 minutes
- *   - Text input at the bottom for typing commands when voice isn't convenient
- *   - Auto-scrolls to newest message
+ * Redesigned to feel like conversing with a character:
+ *   - User messages: right-aligned with personality accent tint, small "You" label
+ *   - Assistant messages: left-aligned with frosted glass, personality accent left bar
+ *   - Timestamp dividers styled as thin centered lines with time in the middle
+ *   - Empty state shows breathing personality orb instead of plain icon
+ *   - Text input has personality glow when focused
+ *   - Messages animate in with staggered spring physics
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,7 +19,7 @@ interface TranscriptProps {
   onSendText?: (text: string) => void
 }
 
-/** Format a timestamp (epoch ms or ISO string) for display */
+/** Format a timestamp for display */
 function formatTime(ts: number | string): string {
   try {
     const d = typeof ts === 'number' ? new Date(ts) : new Date(ts)
@@ -77,35 +77,41 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
         boxSizing: 'border-box',
       }}
     >
-      {/* Header */}
+      {/* Header — minimal with accent line */}
       <div style={{
-        padding: '16px 20px 12px',
+        padding: '16px 20px 14px',
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        borderBottom: '1px solid rgba(var(--personality-accent-rgb), 0.08)',
+        position: 'relative',
       }}>
-        {/* Animated pulse dot */}
+        {/* Breathing accent line under header */}
         <motion.div
+          animate={{ scaleX: [0.2, 0.5, 0.2], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           style={{
-            width: 8, height: 8, borderRadius: '50%',
+            position: 'absolute',
+            bottom: 0,
+            left: '10%',
+            right: '10%',
+            height: 1,
             background: 'var(--personality-accent)',
-            boxShadow: '0 0 6px rgba(var(--personality-accent-rgb), 0.4)',
+            transformOrigin: 'center',
           }}
-          animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
         <span style={{
-          fontSize: 12, fontWeight: 600,
-          letterSpacing: '0.08em',
-          color: 'var(--text-secondary)',
+          fontSize: 11, fontWeight: 600,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'rgba(var(--personality-accent-rgb), 0.5)',
         }}>
           Conversation
         </span>
         <span style={{
           fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto',
+          fontFamily: 'var(--font-mono)',
         }}>
-          {messages.length > 0 ? `${messages.length} messages` : ''}
+          {messages.length > 0 ? `${messages.length}` : ''}
         </span>
       </div>
 
@@ -115,10 +121,10 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '12px 16px',
+          padding: '16px 16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 6,
+          gap: 8,
           scrollBehavior: 'smooth',
         }}
       >
@@ -129,20 +135,27 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 12,
-            opacity: 0.4,
+            gap: 16,
           }}>
-            {/* Mic icon */}
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-              stroke="var(--personality-accent)" strokeWidth="1.5" strokeLinecap="round">
-              <rect x="9" y="1" width="6" height="12" rx="3" />
-              <path d="M5 10a7 7 0 0 0 14 0" />
-              <line x1="12" y1="17" x2="12" y2="21" />
-              <line x1="8" y1="21" x2="16" y2="21" />
-            </svg>
+            {/* Breathing personality orb */}
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.15, 0.3, 0.15],
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(var(--personality-accent-rgb), 0.3) 0%, transparent 70%)',
+              }}
+            />
             <p style={{
-              fontSize: 13, color: 'var(--text-tertiary)',
-              textAlign: 'center', lineHeight: 1.5, margin: 0,
+              fontSize: 12, color: 'var(--text-tertiary)',
+              textAlign: 'center', lineHeight: 1.6, margin: 0,
+              fontWeight: 400,
+              letterSpacing: '0.02em',
             }}>
               Say something or type below
             </p>
@@ -157,54 +170,100 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
 
               return (
                 <motion.div key={`${msg.timestamp}-${i}`}>
-                  {/* Timestamp divider */}
+                  {/* Timestamp divider — centered line with time */}
                   {showTimestamp && msg.timestamp && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      style={{
-                        textAlign: 'center',
-                        padding: '8px 0 4px',
-                        fontSize: 10,
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '12px 0 6px',
+                    }}>
+                      <div style={{
+                        flex: 1, height: 1,
+                        background: 'rgba(var(--personality-accent-rgb), 0.08)',
+                      }} />
+                      <span style={{
+                        fontSize: 9,
                         color: 'var(--text-tertiary)',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {formatTime(msg.timestamp)}
-                    </motion.div>
+                        letterSpacing: '0.08em',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 500,
+                      }}>
+                        {formatTime(msg.timestamp)}
+                      </span>
+                      <div style={{
+                        flex: 1, height: 1,
+                        background: 'rgba(var(--personality-accent-rgb), 0.08)',
+                      }} />
+                    </div>
                   )}
 
                   {/* Message bubble */}
                   <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 30,
+                      delay: 0.02,
+                    }}
                     style={{
                       display: 'flex',
-                      justifyContent: isUser ? 'flex-end' : 'flex-start',
+                      flexDirection: 'column',
+                      alignItems: isUser ? 'flex-end' : 'flex-start',
                       padding: '2px 0',
                     }}
                   >
+                    {/* Role label */}
+                    <span style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: isUser
+                        ? 'rgba(var(--personality-accent-rgb), 0.4)'
+                        : 'var(--text-tertiary)',
+                      marginBottom: 3,
+                      paddingLeft: isUser ? 0 : 12,
+                      paddingRight: isUser ? 12 : 0,
+                    }}>
+                      {isUser ? 'You' : 'Assistant'}
+                    </span>
+
                     <div style={{
                       maxWidth: '82%',
-                      padding: '8px 14px',
-                      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      padding: '10px 14px',
+                      borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       background: isUser
-                        ? 'rgba(var(--personality-accent-rgb), 0.15)'
-                        : 'var(--surface-subtle)',
-                      border: `1px solid ${isUser
-                        ? 'rgba(var(--personality-accent-rgb), 0.2)'
-                        : 'var(--border-subtle)'}`,
-                      backdropFilter: 'blur(8px)',
+                        ? 'rgba(var(--personality-accent-rgb), 0.12)'
+                        : 'rgba(255, 255, 255, 0.04)',
+                      border: 'none',
+                      backdropFilter: isUser ? undefined : 'blur(8px)',
+                      position: 'relative',
+                      overflow: 'hidden',
                     }}>
+                      {/* Accent bar on assistant messages */}
+                      {!isUser && (
+                        <div style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 6,
+                          bottom: 6,
+                          width: 2,
+                          borderRadius: 1,
+                          background: 'rgba(var(--personality-accent-rgb), 0.3)',
+                        }} />
+                      )}
                       <p style={{
                         margin: 0,
                         fontSize: 13,
-                        lineHeight: 1.5,
+                        lineHeight: 1.6,
                         color: isUser
                           ? 'var(--personality-accent)'
                           : 'var(--text-primary)',
                         wordBreak: 'break-word',
+                        letterSpacing: '0.01em',
                       }}>
                         {msg.text}
                       </p>
@@ -220,8 +279,26 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
       {/* Text input bar */}
       <div style={{
         padding: '12px 16px 16px',
-        borderTop: '1px solid rgba(var(--personality-accent-rgb), 0.06)',
+        position: 'relative',
       }}>
+        {/* Subtle glow line above input */}
+        <motion.div
+          animate={{
+            opacity: inputFocused ? 0.5 : 0.1,
+            scaleX: inputFocused ? 1 : 0.4,
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '15%',
+            right: '15%',
+            height: 1,
+            background: 'var(--personality-accent)',
+            transformOrigin: 'center',
+          }}
+        />
+
         <div style={{
           display: 'flex',
           gap: 8,
@@ -242,23 +319,22 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
               placeholder="Type a command..."
               style={{
                 width: '100%',
-                padding: '10px 14px',
-                borderRadius: 20,
-                border: `1px solid ${inputFocused
-                  ? 'rgba(var(--personality-accent-rgb), 0.3)'
-                  : 'var(--border-subtle)'}`,
+                padding: '10px 16px',
+                borderRadius: 22,
+                border: 'none',
                 background: inputFocused
                   ? 'rgba(var(--personality-accent-rgb), 0.06)'
-                  : 'var(--surface-subtle)',
+                  : 'rgba(255, 255, 255, 0.04)',
                 color: 'var(--text-primary)',
                 fontSize: 13,
                 outline: 'none',
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
-                transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
+                transition: 'background 0.3s ease, box-shadow 0.3s ease',
                 boxShadow: inputFocused
-                  ? '0 0 12px rgba(var(--personality-accent-rgb), 0.15)'
-                  : 'none',
+                  ? '0 0 16px rgba(var(--personality-accent-rgb), 0.12), inset 0 0 0 1px rgba(var(--personality-accent-rgb), 0.15)'
+                  : 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+                letterSpacing: '0.01em',
               }}
             />
           </div>
@@ -267,18 +343,20 @@ export default function Transcript({ messages = [], onSendText }: TranscriptProp
           <motion.button
             onClick={handleSend}
             whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            style={{
-              width: 36, height: 36, borderRadius: 18,
+            whileTap={{ scale: 0.9 }}
+            animate={{
               background: inputValue.trim()
                 ? 'var(--personality-accent)'
-                : 'var(--surface-subtle)',
+                : 'rgba(255, 255, 255, 0.04)',
+            }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            style={{
+              width: 36, height: 36, borderRadius: 18,
               border: 'none',
               cursor: inputValue.trim() ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background 0.2s',
               boxShadow: inputValue.trim()
-                ? '0 2px 10px rgba(var(--personality-accent-rgb), 0.3)'
+                ? '0 2px 12px rgba(var(--personality-accent-rgb), 0.3)'
                 : 'none',
               flexShrink: 0,
             }}

@@ -391,10 +391,11 @@ def run_wake_word_mode(assistant: dict):
     detection_event = threading.Event()
     detection_data = [None]  # mutable container for passing data between threads
 
-    # Interrupt event — shared with TTS playback. When the wake word fires
-    # during TTS, this event is set, causing _play_wav_bytes to call sd.stop()
-    # and return immediately.
-    tts_interrupt = threading.Event()
+    # Pipeline state — protected by a lock so the main loop and the wake word
+    # callback can safely coordinate cancellation.
+    _pipeline_lock = threading.Lock()
+    _active_cancel_event = [None]   # the cancel event for the currently running pipeline
+    _active_interrupt_event = [None]  # the TTS interrupt event for the current pipeline
 
     def on_wake_word(detection: WakeWordDetection):
         """
@@ -402,11 +403,20 @@ def run_wake_word_mode(assistant: dict):
 
         Two scenarios:
           1. Assistant is idle → normal activation (detection_event signals main loop)
-          2. Assistant is speaking → barge-in (tts_interrupt stops playback,
-             then detection_event signals the main loop to process the new command)
+          2. Assistant is thinking/speaking → cancel current pipeline + barge-in
+
+        When the user says the wake word while a pipeline is running:
+          - cancel_event is set → pipeline aborts at next checkpoint
+          - interrupt_event is set → TTS playback stops immediately
+          - detection_event is set → main loop starts a new record/transcribe cycle
         """
-        # Always interrupt TTS if it's playing (harmless if not playing)
-        tts_interrupt.set()
+        with _pipeline_lock:
+            # Cancel the running pipeline (if any)
+            if _active_cancel_event[0] is not None:
+                _active_cancel_event[0].set()
+            # Interrupt TTS playback (if any)
+            if _active_interrupt_event[0] is not None:
+                _active_interrupt_event[0].set()
 
         detection_data[0] = detection
         detection_event.set()
@@ -429,7 +439,6 @@ def run_wake_word_mode(assistant: dict):
             detection = detection_data[0]
             detection_data[0] = None
             detection_event.clear()
-            tts_interrupt.clear()  # reset for next cycle
 
             if detection is None:
                 continue
@@ -496,13 +505,20 @@ def run_wake_word_mode(assistant: dict):
             # thinking, executing actions, or speaking.
             wake_word_provider.resume_listening()
 
-            # Cancel any in-progress pipeline from a previous command
-            if hasattr(run_wake_word_mode, '_cancel_event') and run_wake_word_mode._cancel_event:
-                run_wake_word_mode._cancel_event.set()
-
-            # Create a cancellation event for this pipeline run
+            # Create fresh events for this pipeline run, and cancel any
+            # previous pipeline atomically under the lock.
             cancel_event = threading.Event()
-            run_wake_word_mode._cancel_event = cancel_event
+            interrupt_event = threading.Event()
+
+            with _pipeline_lock:
+                # Cancel the old pipeline (if still running)
+                if _active_cancel_event[0] is not None:
+                    _active_cancel_event[0].set()
+                if _active_interrupt_event[0] is not None:
+                    _active_interrupt_event[0].set()
+                # Install new events
+                _active_cancel_event[0] = cancel_event
+                _active_interrupt_event[0] = interrupt_event
 
             def _run_pipeline(text, cancel_evt, interrupt_evt):
                 """Run the full pipeline in a background thread."""
@@ -513,10 +529,17 @@ def run_wake_word_mode(assistant: dict):
                     process_input(
                         assistant, text,
                         interrupt_event=interrupt_evt,
+                        cancel_event=cancel_evt,
                     )
                 except Exception as e:
                     log.error("Pipeline error: %s", e)
                 finally:
+                    # Clear ourselves as the active pipeline (only if we're
+                    # still the active one — a newer pipeline may have replaced us)
+                    with _pipeline_lock:
+                        if _active_cancel_event[0] is cancel_evt:
+                            _active_cancel_event[0] = None
+                            _active_interrupt_event[0] = None
                     # Back to idle if this pipeline wasn't cancelled
                     if not cancel_evt.is_set():
                         face_ui = assistant.get("face_ui")
@@ -532,7 +555,7 @@ def run_wake_word_mode(assistant: dict):
                 )
                 run_wake_word_mode._executor = _intent_executor
 
-            _intent_executor.submit(_run_pipeline, user_input, cancel_event, tts_interrupt)
+            _intent_executor.submit(_run_pipeline, user_input, cancel_event, interrupt_event)
 
     except (KeyboardInterrupt, EOFError):
         print(f"\n{name}: Goodbye!")

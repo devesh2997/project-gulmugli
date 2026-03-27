@@ -326,9 +326,9 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         />
       )}
 
-      {/* Core orb */}
+      {/* Core orb — shape deforms per state for visible differentiation */}
       <motion.div
-        className="absolute rounded-full"
+        className="absolute"
         style={{
           width: size,
           height: size,
@@ -341,9 +341,39 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           `,
         }}
         variants={activeOrbVariants}
-        animate={state === 'thinking'
-          ? { ...(activeOrbVariants as any).animate, ...thinkingRotation }
-          : 'animate'}
+        animate={
+          state === 'listening'
+            ? {
+                // Elongate vertically — leaning forward to listen
+                ...(activeOrbVariants as any).animate,
+                borderRadius: ['50%', '45% 45% 50% 50%', '50%'],
+                scaleX: [config.scale * 0.94, config.scale * 0.92, config.scale * 0.94],
+                scaleY: [config.scale * 1.08, config.scale * 1.12, config.scale * 1.08],
+                transition: {
+                  borderRadius: { duration: breatheDuration, repeat: Infinity, ease: 'easeInOut' as const },
+                  scaleX: { duration: breatheDuration, repeat: Infinity, ease: 'easeInOut' as const },
+                  scaleY: { duration: breatheDuration, repeat: Infinity, ease: 'easeInOut' as const },
+                  opacity: (activeOrbVariants as any).animate.transition,
+                },
+              }
+            : state === 'thinking'
+              ? { ...(activeOrbVariants as any).animate, ...thinkingRotation }
+              : state === 'speaking'
+                ? {
+                    // Rhythmic bounce — scale Y and X pulse in antiphase for "breathing speech"
+                    ...(speakingVariants as any).animate,
+                    scaleX: [config.scale * 1.04, config.scale * 0.96, config.scale * 1.02, config.scale * 1.04],
+                    scaleY: [config.scale * 0.96, config.scale * 1.06, config.scale * 0.98, config.scale * 0.96],
+                    borderRadius: '50%',
+                    transition: {
+                      duration: 0.6,
+                      repeat: Infinity,
+                      ease: 'easeInOut' as const,
+                      times: [0, 0.25, 0.6, 1],
+                    },
+                  }
+                : { ...(activeOrbVariants as any).animate, borderRadius: '50%' }
+        }
       />
 
       {/* Inner highlight — gives depth, orbits more visibly when thinking */}
@@ -359,27 +389,73 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         }}
         animate={state === 'thinking'
           ? {
-              // Orbit around center when thinking
-              x: [0, size * 0.2, 0, -size * 0.2, 0],
-              y: [-size * 0.15, 0, size * 0.15, 0, -size * 0.15],
-              opacity: [0.7, 0.5, 0.7, 0.5, 0.7],
+              // Orbit around center when thinking — wider, slower, deliberate
+              x: [0, size * 0.25, 0, -size * 0.25, 0],
+              y: [-size * 0.2, 0, size * 0.2, 0, -size * 0.2],
+              opacity: [0.8, 0.4, 0.8, 0.4, 0.8],
+              scale: [1, 1.2, 1, 0.8, 1],
               transition: {
-                duration: 2,
+                duration: 2.5,
                 repeat: Infinity,
                 ease: 'linear' as const,
               },
             }
-          : {
-              x: 0,
-              y: -size * 0.15,
-              opacity: [0.6, 0.3, 0.6],
-              transition: {
-                duration: breatheDuration * 0.7,
-                repeat: Infinity,
-                ease: 'easeInOut' as const,
-              },
-            }}
+          : state === 'speaking'
+            ? {
+                // Pulsing highlight during speech — quick rhythmic throb
+                x: 0,
+                y: [size * -0.1, 0, size * -0.1],
+                opacity: [0.8, 0.3, 0.8],
+                scale: [1, 1.4, 1],
+                transition: {
+                  duration: 0.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut' as const,
+                },
+              }
+            : state === 'listening'
+              ? {
+                  // Highlight drifts upward — orb is "looking up" attentively
+                  x: 0,
+                  y: -size * 0.22,
+                  opacity: [0.7, 0.4, 0.7],
+                  transition: {
+                    y: { type: 'spring', stiffness: 200, damping: 15 },
+                    opacity: { duration: breatheDuration * 0.6, repeat: Infinity, ease: 'easeInOut' as const },
+                  },
+                }
+              : {
+                  x: 0,
+                  y: -size * 0.15,
+                  opacity: [0.6, 0.3, 0.6],
+                  transition: {
+                    duration: breatheDuration * 0.7,
+                    repeat: Infinity,
+                    ease: 'easeInOut' as const,
+                  },
+                }}
       />
+
+      {/* Speaking ripple ring — expanding ring during speech */}
+      {state === 'speaking' && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            width: size * 0.8,
+            height: size * 0.8,
+            border: `1.5px solid ${isLight ? d(0.3) : a(0.25)}`,
+          }}
+          animate={{
+            scale: [1, 1.8],
+            opacity: [0.5, 0],
+          }}
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            ease: 'easeOut',
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -10,7 +10,7 @@
  *   --personality-glow_color  background glow color
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useLightMode } from '../../hooks/useLightMode'
 import type { AssistantState, AssistantMood } from '../../types/assistant'
@@ -21,6 +21,17 @@ import {
   type GlowFeature,
   type LightFaceState,
 } from './lightFaces'
+
+/**
+ * Speaking mouth path frames — cycles between open and closed shapes
+ * for natural-feeling speech animation via path interpolation.
+ */
+const SPEAKING_MOUTH_PATHS = [
+  'M40 77 Q60 94, 80 77',   // wide open
+  'M44 79 Q60 86, 76 79',   // medium
+  'M46 80 Q60 82, 74 80',   // nearly closed
+  'M44 79 Q60 86, 76 79',   // medium
+]
 
 export interface AvatarLightProps {
   size: number
@@ -163,12 +174,39 @@ function GlowElement({ name, glow, isLight }: { name: string; glow: GlowFeature;
 
 export function AvatarLight({ size, state, mood }: AvatarLightProps) {
   const isSleeping = state === 'sleeping'
+  const isSpeaking = state === 'speaking'
+  const isListening = state === 'listening'
+  const isThinking = state === 'thinking'
+  const isIdle = state === 'idle'
   const isLight = useLightMode()
 
-  const { features, glows } = useMemo(
+  // Speaking mouth animation — cycle through mouth shapes
+  const [mouthFrame, setMouthFrame] = useState(0)
+  useEffect(() => {
+    if (!isSpeaking) { setMouthFrame(0); return }
+    const cycle = () => {
+      setMouthFrame(prev => (prev + 1) % SPEAKING_MOUTH_PATHS.length)
+      const nextDelay = 180 + Math.random() * 180
+      timerId = setTimeout(cycle, nextDelay)
+    }
+    let timerId = setTimeout(cycle, 200)
+    return () => clearTimeout(timerId)
+  }, [isSpeaking])
+
+  const { features: baseFeatures, glows } = useMemo(
     () => mergeFace(state, mood),
     [state, mood],
   )
+
+  // Override mouth path with animated frame when speaking
+  const features = useMemo(() => {
+    if (!isSpeaking) return baseFeatures
+    const currentPath = SPEAKING_MOUTH_PATHS[mouthFrame % SPEAKING_MOUTH_PATHS.length]
+    return {
+      ...baseFeatures,
+      mouth: { ...baseFeatures.mouth, d: currentPath },
+    }
+  }, [baseFeatures, isSpeaking, mouthFrame])
 
   const glow = 'var(--personality-glow_color)'
 
@@ -197,12 +235,34 @@ export function AvatarLight({ size, state, mood }: AvatarLightProps) {
         }}
       />
 
-      {/* Face SVG */}
-      <svg
+      {/* Face SVG — spatial movement per state */}
+      <motion.svg
         viewBox="0 0 120 120"
         width={size}
         height={size}
         style={{ overflow: 'visible' }}
+        animate={
+          isIdle
+            ? { y: [0, -1.5, 0, 0.8, 0], rotate: 0 }
+            : isListening
+              ? { y: -2, rotate: 0 }
+              : isSpeaking
+                ? { y: [0, -1, 0.5, 0], rotate: [0, 0.3, 0, -0.3] }
+                : isThinking
+                  ? { y: [0, 0.5, 0], rotate: [0, -0.8, 0] }
+                  : { y: 0, rotate: 0 }
+        }
+        transition={
+          isIdle
+            ? { duration: 4.5, repeat: Infinity, ease: 'easeInOut' }
+            : isListening
+              ? { type: 'spring', stiffness: 350, damping: 18 }
+              : isSpeaking
+                ? { duration: 0.7, repeat: Infinity, ease: 'easeInOut' }
+                : isThinking
+                  ? { duration: 3, repeat: Infinity, ease: 'easeInOut' }
+                  : { duration: 0.4 }
+        }
       >
         {/* Glow halos (render behind strokes) */}
         {Object.entries(glows).map(([name, g]) => (
@@ -232,7 +292,7 @@ export function AvatarLight({ size, state, mood }: AvatarLightProps) {
             }}
           />
         )}
-      </svg>
+      </motion.svg>
     </div>
   )
 }

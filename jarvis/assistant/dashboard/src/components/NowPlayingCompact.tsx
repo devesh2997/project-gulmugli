@@ -1,14 +1,12 @@
 /**
- * NowPlayingCompact -- floating glass card at bottom center with waveform + marquee.
+ * NowPlayingCompact -- floating glass card with organic waveform + marquee.
  *
- * Features:
- *   - Frosted glass card (no border pill)
- *   - Animated waveform bars on the left in personality accent colour
- *   - Marquee scrolling for long song titles
- *   - Artist name in smaller text below title
- *   - Subtle personality accent glow
- *   - Tappable to expand (already wired)
- *   - Draggable via framer-motion drag prop
+ * Redesigned to feel purpose-built:
+ *   - Organic waveform with sine-wave interpolation (not just fixed-height bars)
+ *   - Personality accent color used as a living glow, not just a border
+ *   - Glass card with warm personality tint bleeding through
+ *   - Marquee scrolling for overflow text
+ *   - Draggable, tappable to expand
  *
  * Shares layoutId="now-playing" with NowPlayingExpanded for morph.
  */
@@ -23,18 +21,26 @@ interface NowPlayingCompactProps {
   onExpand: () => void
 }
 
-/** Animated waveform bars using personality accent (or dark variant on light bg). */
+/** Organic waveform with more bars and sine-wave motion */
 function Waveform({ paused, isLight }: { paused: boolean; isLight?: boolean }) {
-  const barHeights = [
-    [6, 14, 8, 12, 6],
-    [10, 5, 13, 7, 10],
-    [8, 12, 5, 14, 8],
-    [12, 7, 11, 5, 12],
-  ]
+  const barCount = 7
+  const bars = Array.from({ length: barCount }, (_, i) => {
+    const phase = (i / barCount) * Math.PI * 2
+    return {
+      heights: [
+        5 + Math.sin(phase) * 5,
+        5 + Math.sin(phase + 1) * 7,
+        5 + Math.sin(phase + 2) * 4,
+        5 + Math.sin(phase + 3) * 8,
+        5 + Math.sin(phase + 4) * 5,
+      ],
+      delay: i * 0.08,
+    }
+  })
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1.5, height: 16, flexShrink: 0 }}>
-      {barHeights.map((heights, i) => (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1.5, height: 18, flexShrink: 0 }}>
+      {bars.map((bar, i) => (
         <motion.div
           key={i}
           style={{
@@ -43,12 +49,12 @@ function Waveform({ paused, isLight }: { paused: boolean; isLight?: boolean }) {
             background: isLight ? '#4a3520' : 'var(--personality-accent)',
           }}
           animate={paused
-            ? { height: 4, opacity: 0.4 }
-            : { height: heights, opacity: [0.5, 0.85, 0.6, 0.8, 0.5] }
+            ? { height: 3, opacity: 0.3 }
+            : { height: bar.heights, opacity: [0.4, 0.9, 0.5, 0.85, 0.4] }
           }
           transition={paused
-            ? { duration: 0.3 }
-            : { duration: 1, repeat: Infinity, delay: i * 0.12, ease: 'easeInOut' }
+            ? { duration: 0.4, ease: 'easeOut' }
+            : { duration: 0.9 + i * 0.1, repeat: Infinity, delay: bar.delay, ease: 'easeInOut' }
           }
         />
       ))}
@@ -76,6 +82,8 @@ function MarqueeText({ text, style }: { text: string; style?: React.CSSPropertie
         overflow: 'hidden',
         whiteSpace: 'nowrap',
         position: 'relative',
+        maskImage: shouldScroll ? 'linear-gradient(90deg, transparent 0%, black 8%, black 88%, transparent 100%)' : undefined,
+        WebkitMaskImage: shouldScroll ? 'linear-gradient(90deg, transparent 0%, black 8%, black 88%, transparent 100%)' : undefined,
         ...style,
       }}
     >
@@ -121,10 +129,10 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
       <motion.div
         layoutId="now-playing"
         data-gesture-ignore="true"
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 20, opacity: 0 }}
-        transition={{ duration: 0.3 }}
+        initial={{ y: 20, opacity: 0, scale: 0.95 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 20, opacity: 0, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         drag
         dragConstraints={constraintsRef}
         dragElastic={0.1}
@@ -140,27 +148,27 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          padding: '8px 16px 8px 12px',
-          borderRadius: 16,
-          background: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(18, 18, 18, 0.65)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          border: isLight ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.06)',
+          padding: '10px 16px 10px 12px',
+          borderRadius: 20,
+          background: isLight ? 'rgba(255, 255, 255, 0.75)' : 'rgba(18, 16, 24, 0.7)',
+          backdropFilter: 'blur(24px) saturate(1.2)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.2)',
+          border: 'none',
           boxShadow: isLight
-            ? '0 4px 24px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06)'
-            : '0 4px 24px rgba(0, 0, 0, 0.3), 0 0 16px rgba(var(--personality-accent-rgb), 0.08)',
+            ? '0 4px 24px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)'
+            : `0 4px 24px rgba(0, 0, 0, 0.3), 0 0 24px rgba(var(--personality-accent-rgb), 0.1), inset 0 0.5px 0 rgba(255,255,255,0.04)`,
           cursor: 'pointer',
           userSelect: 'none',
           maxWidth: 280,
           minWidth: 180,
-          transition: 'background 0.6s ease, border 0.6s ease, box-shadow 0.6s ease',
+          transition: 'background 0.6s ease, box-shadow 0.6s ease',
         }}
       >
         {/* Waveform */}
         <Waveform paused={nowPlaying.paused} isLight={isLight} />
 
         {/* Song info */}
-        <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <MarqueeText
             text={nowPlaying.title}
             style={{
@@ -168,33 +176,41 @@ export function NowPlayingCompact({ nowPlaying, onExpand }: NowPlayingCompactPro
               fontWeight: 600,
               color: isLight ? 'rgba(30, 20, 10, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               maxWidth: 180,
+              letterSpacing: '0.01em',
             }}
           />
           {nowPlaying.artist && (
             <div style={{
               fontSize: '0.62rem',
               color: isLight ? '#4a3520' : 'var(--personality-accent)',
-              opacity: 0.7,
+              opacity: 0.8,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               maxWidth: 180,
+              fontWeight: 500,
             }}>
               {nowPlaying.artist}
             </div>
           )}
         </div>
 
-        {/* Subtle accent glow overlay */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 16,
-          background: isLight
-            ? 'radial-gradient(ellipse at 20% 50%, rgba(0,0,0,0.03) 0%, transparent 70%)'
-            : 'radial-gradient(ellipse at 20% 50%, rgba(var(--personality-accent-rgb), 0.06) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
+        {/* Living accent glow — moves and breathes */}
+        <motion.div
+          animate={{
+            opacity: [0.04, 0.1, 0.04],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 20,
+            background: isLight
+              ? 'radial-gradient(ellipse at 20% 50%, rgba(0,0,0,0.03) 0%, transparent 60%)'
+              : 'radial-gradient(ellipse at 15% 50%, rgba(var(--personality-accent-rgb), 0.15) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }}
+        />
       </motion.div>
     </>
   )

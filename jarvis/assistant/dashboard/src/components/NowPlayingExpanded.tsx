@@ -1,15 +1,13 @@
 /**
- * NowPlayingExpanded -- full-width bottom sheet with frosted glass.
+ * NowPlayingExpanded -- immersive full-width bottom sheet music experience.
  *
- * Features:
- *   - Bottom sheet (slides up from bottom) with frosted glass
- *   - Large visualiser at the top
- *   - Song title + artist prominently displayed
- *   - Progress bar with seek
- *   - Playback controls (prev, play/pause, skip, stop) as clean icon buttons
- *   - Volume slider
- *   - Close button or swipe down to collapse
- *   - Personality accent for all highlights
+ * Redesigned to feel purpose-built:
+ *   - Organic visualiser with smooth sine-wave motion and personality gradient
+ *   - Large album art with personality-colored glow halo
+ *   - Custom progress bar with fluid seek knob
+ *   - Borderless control buttons with personality accent fills
+ *   - Custom volume slider matching the visual language
+ *   - Ambient personality color wash behind everything
  *
  * Shares layoutId="now-playing" with NowPlayingCompact for morph animation.
  * Auto-collapses after 6 seconds of no interaction.
@@ -30,20 +28,24 @@ function fmt(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 }
 
-/** Large animated visualiser bars */
+/** Organic visualiser with sine-wave interpolation */
 function Visualiser({ paused }: { paused: boolean }) {
-  const barCount = 24
+  const barCount = 32
   const bars = Array.from({ length: barCount }, (_, i) => {
-    const phase = i * 0.4
+    const center = barCount / 2
+    const dist = Math.abs(i - center) / center
+    const amplitude = 1 - dist * 0.6
+    const phase = i * 0.35
     return {
       heights: [
-        8 + Math.sin(phase) * 16,
-        8 + Math.sin(phase + 1.2) * 20,
-        8 + Math.sin(phase + 2.4) * 14,
-        8 + Math.sin(phase + 3.6) * 18,
-        8 + Math.sin(phase) * 16,
+        6 + Math.sin(phase) * 18 * amplitude,
+        6 + Math.sin(phase + 1.0) * 22 * amplitude,
+        6 + Math.sin(phase + 2.0) * 14 * amplitude,
+        6 + Math.sin(phase + 3.0) * 20 * amplitude,
+        6 + Math.sin(phase) * 18 * amplitude,
       ],
-      delay: i * 0.04,
+      delay: i * 0.03,
+      opacity: 0.3 + amplitude * 0.5,
     }
   })
 
@@ -52,27 +54,27 @@ function Visualiser({ paused }: { paused: boolean }) {
       display: 'flex',
       alignItems: 'flex-end',
       justifyContent: 'center',
-      gap: 2,
-      height: 40,
+      gap: 1.5,
+      height: 48,
       width: '100%',
-      padding: '0 8px',
+      padding: '0 12px',
     }}>
       {bars.map((bar, i) => (
         <motion.div
           key={i}
           style={{
-            width: 3,
-            borderRadius: 1.5,
+            width: 2.5,
+            borderRadius: 2,
             background: 'var(--personality-accent)',
             flexShrink: 0,
           }}
           animate={paused
-            ? { height: 3, opacity: 0.2 }
-            : { height: bar.heights, opacity: [0.3, 0.7, 0.4, 0.65, 0.3] }
+            ? { height: 2, opacity: 0.12 }
+            : { height: bar.heights, opacity: bar.opacity }
           }
           transition={paused
-            ? { duration: 0.4 }
-            : { duration: 1.2, repeat: Infinity, delay: bar.delay, ease: 'easeInOut' }
+            ? { duration: 0.5, ease: 'easeOut' }
+            : { duration: 1.0 + (i % 3) * 0.2, repeat: Infinity, delay: bar.delay, ease: 'easeInOut' }
           }
         />
       ))}
@@ -80,8 +82,8 @@ function Visualiser({ paused }: { paused: boolean }) {
   )
 }
 
-/** Clean icon button for controls */
-function ControlBtn({ onClick, label, primary = false, size = 40, children }: {
+/** Borderless control button with personality accent */
+function ControlBtn({ onClick, label, primary = false, size = 42, children }: {
   onClick: () => void
   label: string
   primary?: boolean
@@ -90,8 +92,8 @@ function ControlBtn({ onClick, label, primary = false, size = 40, children }: {
 }) {
   return (
     <motion.button
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.92 }}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.88 }}
       onClick={onClick}
       aria-label={label}
       style={{
@@ -104,14 +106,13 @@ function ControlBtn({ onClick, label, primary = false, size = 40, children }: {
         justifyContent: 'center',
         flexShrink: 0,
         background: primary
-          ? 'rgba(var(--personality-accent-rgb), 0.15)'
-          : 'var(--surface-subtle)',
-        border: primary
-          ? '1px solid rgba(var(--personality-accent-rgb), 0.3)'
-          : '1px solid var(--border-subtle)',
+          ? 'rgba(var(--personality-accent-rgb), 0.2)'
+          : 'rgba(255, 255, 255, 0.04)',
+        border: 'none',
         color: primary
           ? 'var(--personality-accent)'
           : 'var(--text-secondary)',
+        transition: 'background 0.2s ease',
       }}
     >
       {children}
@@ -142,7 +143,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
   }, [nowPlaying.duration, actions, reset])
 
   const handleSeekPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.stopPropagation() // prevent sheet drag
+    e.stopPropagation()
     const target = e.currentTarget
     target.setPointerCapture(e.pointerId)
     seekFromEvent(e.clientX)
@@ -175,7 +176,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.4)',
+          background: 'rgba(0, 0, 0, 0.5)',
           zIndex: 59,
         }}
       />
@@ -187,7 +188,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 280, mass: 0.8 }}
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0, bottom: 0.4 }}
@@ -199,54 +200,79 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
           left: 0,
           right: 0,
           zIndex: 60,
-          padding: '16px 24px 32px',
-          borderRadius: '20px 20px 0 0',
-          background: 'rgba(14, 14, 14, 0.88)',
-          backdropFilter: 'blur(32px)',
-          WebkitBackdropFilter: 'blur(32px)',
-          border: '1px solid var(--border-subtle)',
-          borderBottom: 'none',
-          boxShadow: '0 -4px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(var(--personality-accent-rgb), 0.05)',
+          padding: '12px 24px 36px',
+          borderRadius: '28px 28px 0 0',
+          background: 'rgba(12, 10, 18, 0.92)',
+          backdropFilter: 'blur(40px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.4)',
+          border: 'none',
+          boxShadow: '0 -4px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(var(--personality-accent-rgb), 0.06)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: 18,
           maxWidth: 480,
           marginLeft: 'auto',
           marginRight: 'auto',
+          overflow: 'hidden',
         }}
       >
+        {/* Ambient personality wash at the top */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 120,
+          background: 'radial-gradient(ellipse at 50% -20%, rgba(var(--personality-accent-rgb), 0.1) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
         {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 4 }}>
-          <div style={{
-            width: 36,
-            height: 4,
-            borderRadius: 2,
-            background: 'var(--text-tertiary)',
-          }} />
+        <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 2 }}>
+          <motion.div
+            animate={{ opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              background: 'rgba(var(--personality-accent-rgb), 0.4)',
+            }}
+          />
         </div>
 
         {/* Visualiser */}
         <Visualiser paused={nowPlaying.paused} />
 
         {/* Art + info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
           {nowPlaying.artUrl
-            ? <img
-                src={nowPlaying.artUrl}
-                alt=""
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 12,
-                  objectFit: 'cover',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                }}
-              />
+            ? <div style={{ position: 'relative', flexShrink: 0 }}>
+                {/* Glow behind art */}
+                <div style={{
+                  position: 'absolute',
+                  inset: -8,
+                  borderRadius: 18,
+                  background: 'rgba(var(--personality-accent-rgb), 0.12)',
+                  filter: 'blur(16px)',
+                }} />
+                <img
+                  src={nowPlaying.artUrl}
+                  alt=""
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 14,
+                    objectFit: 'cover',
+                    position: 'relative',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+                  }}
+                />
+              </div>
             : <div style={{
                 width: 72,
                 height: 72,
-                borderRadius: 12,
+                borderRadius: 14,
                 background: 'rgba(var(--personality-accent-rgb), 0.08)',
                 display: 'flex',
                 alignItems: 'center',
@@ -266,17 +292,19 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              letterSpacing: '0.01em',
             }}>
               {nowPlaying.title}
             </div>
             <div style={{
               fontSize: '0.82rem',
               color: 'var(--personality-accent)',
-              opacity: 0.75,
+              opacity: 0.85,
               marginTop: 3,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              fontWeight: 500,
             }}>
               {nowPlaying.artist}
             </div>
@@ -307,9 +335,9 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
               aria-valuemax={nowPlaying.duration}
               style={{
                 width: '100%',
-                height: 12,  /* larger hit target for touch */
+                height: 14,
                 borderRadius: 9999,
-                background: 'var(--surface-subtle)',
+                background: 'rgba(255, 255, 255, 0.06)',
                 cursor: 'pointer',
                 position: 'relative',
                 display: 'flex',
@@ -317,13 +345,17 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
                 touchAction: 'none',
               }}
             >
+              {/* Track fill with gradient */}
               <motion.div
                 style={{
-                  height: '100%',
+                  height: 4,
                   borderRadius: 9999,
-                  background: 'var(--personality-accent)',
+                  background: `linear-gradient(90deg, rgba(var(--personality-accent-rgb), 0.6), var(--personality-accent))`,
                   width: `${pct}%`,
-                  boxShadow: '0 0 6px rgba(var(--personality-accent-rgb), 0.3)',
+                  position: 'absolute',
+                  top: '50%',
+                  left: 0,
+                  transform: 'translateY(-50%)',
                 }}
                 transition={{ duration: 0.5 }}
               />
@@ -331,15 +363,14 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
               <motion.div
                 style={{
                   position: 'absolute',
-                  top: -4,
+                  top: '50%',
                   left: `${pct}%`,
-                  width: 12,
-                  height: 12,
+                  width: 14,
+                  height: 14,
                   borderRadius: '50%',
                   background: 'var(--personality-accent)',
-                  transform: 'translateX(-50%)',
-                  boxShadow: '0 0 8px rgba(var(--personality-accent-rgb), 0.4)',
-                  opacity: 0.9,
+                  transform: 'translate(-50%, -50%)',
+                  boxShadow: '0 0 12px rgba(var(--personality-accent-rgb), 0.4)',
                 }}
               />
             </div>
@@ -347,9 +378,10 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
               display: 'flex',
               justifyContent: 'space-between',
               marginTop: 6,
-              fontSize: '0.62rem',
+              fontSize: '0.6rem',
               color: 'var(--text-tertiary)',
-              fontFamily: 'ui-monospace, "SF Mono", "Cascadia Mono", monospace',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
             }}>
               <span>{fmt(nowPlaying.position)}</span>
               <span>{fmt(nowPlaying.duration)}</span>
@@ -358,24 +390,24 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
         )}
 
         {/* Playback controls */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
           {/* Stop */}
           <ControlBtn onClick={() => { actions.stop(); reset() }} label="Stop">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <rect x="2" y="2" width="10" height="10" rx="1.5" />
+              <rect x="2" y="2" width="10" height="10" rx="2" />
             </svg>
           </ControlBtn>
 
-          {/* Play / Pause */}
+          {/* Play / Pause — larger primary */}
           <ControlBtn
             onClick={() => { nowPlaying.paused ? actions.resume() : actions.pause(); reset() }}
             label={nowPlaying.paused ? 'Play' : 'Pause'}
             primary
-            size={52}
+            size={56}
           >
             {nowPlaying.paused
-              ? <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l13 7-13 7V2z" /></svg>
-              : <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2.5" y="1" width="4" height="14" rx="1.2" /><rect x="9.5" y="1" width="4" height="14" rx="1.2" /></svg>
+              ? <svg width="20" height="20" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l13 7-13 7V2z" /></svg>
+              : <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><rect x="2.5" y="1" width="4" height="14" rx="1.5" /><rect x="9.5" y="1" width="4" height="14" rx="1.5" /></svg>
             }
           </ControlBtn>
 

@@ -201,8 +201,8 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
     return result
   }, [featureGroups, isLight])
 
-  // Animate pixels: thinking = fast shimmer, idle/listening = gentle breathing
-  const needsBreathing = isIdle || isListening
+  // Animate pixels: thinking = slow shimmer, listening = snappy spring, idle = gentle breathing
+  const needsBreathing = isIdle
   const shimmerDelay = isThinking
 
   const accent = 'var(--personality-accent)'
@@ -242,7 +242,7 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
       />
 
       {/* Pixel grid SVG — facial expressions ARE the state indicator */}
-      {/* Gentle vertical float in idle — the face "breathes" spatially */}
+      {/* State-dependent spatial movement: idle floats, speaking bobs, listening perks up */}
       <motion.svg
         viewBox="0 0 32 32"
         width={size}
@@ -252,8 +252,28 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
           // On light backgrounds, add a subtle drop shadow for pixel contrast
           filter: isLight ? `drop-shadow(0 0 0.8px rgba(0,0,0,0.3))` : 'none',
         }}
-        animate={isIdle ? { y: [0, -2, 0, 1, 0] } : { y: 0 }}
-        transition={isIdle ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
+        animate={
+          isIdle
+            ? { y: [0, -2, 0, 1, 0], rotate: 0 }
+            : isSpeaking
+              ? { y: [0, -1.5, 0.5, -0.8, 0], rotate: [0, 0.5, 0, -0.5, 0] }
+              : isListening
+                ? { y: -1, rotate: 0 }
+                : isThinking
+                  ? { y: [0, 0.5, 0], rotate: [0, -1, 0] }
+                  : { y: 0, rotate: 0 }
+        }
+        transition={
+          isIdle
+            ? { duration: 4, repeat: Infinity, ease: 'easeInOut' }
+            : isSpeaking
+              ? { duration: 0.8, repeat: Infinity, ease: 'easeInOut' }
+              : isListening
+                ? { type: 'spring', stiffness: 400, damping: 15 }
+                : isThinking
+                  ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' }
+                  : { duration: 0.3 }
+        }
       >
         <AnimatePresence mode="popLayout">
           {allPixels.map((pixel, index) => (
@@ -275,8 +295,9 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
               exit={{ opacity: 0, scale: 0 }}
               transition={shimmerDelay
                 ? {
-                    x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.015 },
-                    y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.015 },
+                    // Thinking: slow, deliberate pixel migration with shimmer
+                    x: { type: 'spring', stiffness: 120, damping: 18, delay: index * 0.02 },
+                    y: { type: 'spring', stiffness: 120, damping: 18, delay: index * 0.02 },
                     opacity: {
                       duration: 1.2,
                       repeat: Infinity,
@@ -284,22 +305,41 @@ export function AvatarPixel({ size, state, mood }: AvatarPixelProps) {
                       delay: (index % 8) * 0.15,
                     },
                   }
-                : needsBreathing
+                : isListening
                   ? {
-                      x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
-                      y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                      // Listening: fast, snappy spring — "perking up" effect
+                      x: { type: 'spring', stiffness: 400, damping: 15, delay: index * 0.008 },
+                      y: { type: 'spring', stiffness: 400, damping: 15, delay: index * 0.008 },
                       opacity: {
-                        duration: 3,
+                        duration: 2.5,
                         repeat: Infinity,
                         ease: 'easeInOut' as const,
-                        delay: (index % 6) * 0.3,
+                        delay: (index % 6) * 0.25,
                       },
                     }
-                  : {
-                      x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
-                      y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
-                      opacity: { duration: 0.3, delay: index * 0.02 },
-                    }}
+                  : needsBreathing
+                    ? {
+                        x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                        y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                        opacity: {
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: 'easeInOut' as const,
+                          delay: (index % 6) * 0.3,
+                        },
+                      }
+                    : isSpeaking
+                      ? {
+                          // Speaking: quick pixel snaps for mouth animation
+                          x: { type: 'spring', stiffness: 300, damping: 20, delay: index * 0.005 },
+                          y: { type: 'spring', stiffness: 300, damping: 20, delay: index * 0.005 },
+                          opacity: { duration: 0.15, delay: index * 0.005 },
+                        }
+                      : {
+                          x: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                          y: { type: 'spring', stiffness: 200, damping: 20, delay: index * 0.02 },
+                          opacity: { duration: 0.3, delay: index * 0.02 },
+                        }}
             />
           ))}
         </AnimatePresence>

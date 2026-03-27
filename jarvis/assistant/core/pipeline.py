@@ -74,7 +74,8 @@ INTENT_LABELS = {
 log = get_logger("pipeline")
 
 
-def process_input(assistant: dict, user_input: str, interrupt_event=None):
+def process_input(assistant: dict, user_input: str, interrupt_event=None,
+                   cancel_event=None):
     """
     Process a single user input: classify → execute → respond → log.
 
@@ -87,6 +88,11 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
         interrupt_event: Optional threading.Event. If set during TTS playback,
             audio stops immediately (wake word barge-in). The caller is
             responsible for handling the interrupted state.
+        cancel_event: Optional threading.Event. If set at any point, the
+            pipeline aborts at the next checkpoint. Used when a new wake word
+            detection supersedes the current pipeline. Unlike interrupt_event
+            (which only stops TTS), cancel_event halts the entire pipeline —
+            classification, intent execution, TTS, everything.
 
     Returns:
         (response_text, was_interrupted) — the response string and whether
@@ -98,6 +104,10 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
     brain = assistant["brain"]
     face_ui = assistant.get("face_ui")
 
+    # ── Cancellation checkpoint helper ───────────────────────────
+    def _cancelled() -> bool:
+        return cancel_event is not None and cancel_event.is_set()
+
     # Show user's input on the face UI
     if face_ui:
         face_ui.show_transcript(user_input, role="user")
@@ -108,7 +118,16 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
 
     # Fall through to LLM for ambiguous inputs
     if intents is None:
+        # ── Checkpoint: before LLM classification (~8-11s on CPU) ──
+        if _cancelled():
+            log.info("Pipeline cancelled before classification.")
+            return "", False
         intents = brain.classify_intent(user_input)
+
+    # ── Checkpoint: after classification, before execution ──────
+    if _cancelled():
+        log.info("Pipeline cancelled after classification.")
+        return "", False
 
     # Attach original user input to each intent's meta so handlers can
     # use it instead of the classified params (important for chat — see handler)
@@ -140,6 +159,17 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
     if face_ui and intent_payloads:
         face_ui.send_intents(intent_payloads)
 
+    # ── Checkpoint: before intent execution ─────────────────────
+    if _cancelled():
+        log.info("Pipeline cancelled before intent execution.")
+        # Mark queued intents as cancelled on the dashboard
+        if face_ui:
+            for intent in intents:
+                iid = intent.meta.get("dashboard_id")
+                if iid:
+                    face_ui.update_intent(iid, "failed", "Cancelled")
+        return "", False
+
     # Execute intents in parallel with per-type timeouts.
     # The entire pipeline runs in a background thread (see main.py), so
     # blocking here is fine — the user can still interact via wake word.
@@ -149,6 +179,13 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
 
     def _execute_one(intent):
         """Run a single intent in a worker thread."""
+        # Check cancellation before starting this intent
+        if _cancelled():
+            iid = intent.meta.get("dashboard_id")
+            if face_ui and iid:
+                face_ui.update_intent(iid, "failed", "Cancelled")
+            return ""
+
         iid = intent.meta.get("dashboard_id")
         if face_ui and iid:
             face_ui.update_intent(iid, "processing")
@@ -193,9 +230,17 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
             if face_ui and iid:
                 face_ui.update_intent(iid, "failed", str(exc)[:120])
 
+    # ── Checkpoint: after execution, before speaking ────────────
+    if _cancelled():
+        log.info("Pipeline cancelled after intent execution.")
+        return "", False
+
     # Use active personality's display name (may have changed mid-loop)
     p = personality_manager.active
-    response_text = " ".join(responses)
+    response_text = " ".join(r for r in responses if r).strip()
+    if not response_text:
+        return "", False
+
     print(f"{p.display_name}: {response_text}\n")
 
     # Update face UI with personality (may have changed) and response
@@ -204,7 +249,8 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
         face_ui.show_transcript(response_text, role="assistant")
         face_ui.set_state("speaking")
 
-    # Log this interaction to memory
+    # Log this interaction to memory (do this even if TTS gets cancelled —
+    # the action already happened, we want it in the log)
     memory = assistant.get("memory")
     if memory:
         try:
@@ -218,6 +264,13 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
             memory.log_interaction(interaction)
         except Exception as e:
             log.warning("Failed to log interaction to memory: %s", e)
+
+    # ── Checkpoint: before TTS ────────────────────────────────
+    if _cancelled():
+        log.info("Pipeline cancelled before TTS.")
+        if face_ui:
+            face_ui.set_state("idle")
+        return response_text, False
 
     # Speak the response aloud via the voice router
     was_interrupted = False
