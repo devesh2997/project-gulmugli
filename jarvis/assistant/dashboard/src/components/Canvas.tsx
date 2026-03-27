@@ -86,21 +86,30 @@ function GradientBackground() {
         ].join(', '),
       }}
     >
-      {/* Personality ambient tint -- centred warm radial */}
+      {/* Personality ambient tint -- centred warm radial, generous glow */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 50%, rgba(var(--personality-accent-rgb), 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at 50% 45%, rgba(var(--personality-accent-rgb), 0.18) 0%, transparent 65%)',
           transition: 'background 1.2s ease',
         }}
       />
-      {/* Secondary warmth layer -- bottom edge glow from personality */}
+      {/* Secondary warmth layer -- bottom edge glow */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 100%, rgba(var(--personality-accent-rgb), 0.06) 0%, transparent 50%)',
+          background: 'radial-gradient(ellipse at 50% 100%, rgba(var(--personality-accent-rgb), 0.1) 0%, transparent 45%)',
+          transition: 'background 1.2s ease',
+        }}
+      />
+      {/* Top-left subtle ambient wash for depth */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse at 20% 20%, rgba(var(--personality-accent-rgb), 0.06) 0%, transparent 50%)',
           transition: 'background 1.2s ease',
         }}
       />

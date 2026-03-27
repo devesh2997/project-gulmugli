@@ -43,28 +43,28 @@ interface TimePalette {
 
 const WARM_PALETTES: Record<PaletteName, TimePalette> = {
   morning: {
-    canvas_gradient_start: '#2c2824', // warm medium grey — noticeably lighter than night
-    canvas_gradient_end:   '#35302a', // warm taupe
-    accent_primary:        '#e8c4a0', // soft warm cream
-    accent_glow:           '#d4a878', // muted gold
+    canvas_gradient_start: '#0f0f12', // deep near-black with cool warmth
+    canvas_gradient_end:   '#16141a', // slightly lighter, subtle depth
+    accent_primary:        '#f0c896', // warm peach-gold — VIBRANT
+    accent_glow:           '#e0a870', // rich amber glow
     text_primary_opacity:  0.85,
     orb_breathe_duration:  '4s',
     brightness:            0.85,
   },
   afternoon: {
-    canvas_gradient_start: '#363230', // warm grey — the BRIGHTEST mode
-    canvas_gradient_end:   '#3e3a36', // light warm charcoal
-    accent_primary:        '#c9a87c', // warm gold
-    accent_glow:           '#b89468', // amber
+    canvas_gradient_start: '#0e0e11', // deep charcoal — NOT grey, not brown
+    canvas_gradient_end:   '#141218', // rich dark with subtle warmth
+    accent_primary:        '#e8b880', // warm gold — bright and alive
+    accent_glow:           '#d4a060', // rich golden glow
     text_primary_opacity:  0.9,
     orb_breathe_duration:  '4s',
     brightness:            1.0,
   },
   night: {
-    canvas_gradient_start: '#121420', // deep midnight blue — the DARKEST mode
-    canvas_gradient_end:   '#181a28', // dark slate with blue undertone
-    accent_primary:        '#8b7db5', // muted lavender
-    accent_glow:           '#6b5d99', // deep purple
+    canvas_gradient_start: '#08080e', // very deep blue-black
+    canvas_gradient_end:   '#0e0e18', // midnight blue
+    accent_primary:        '#9088c8', // soft lavender — still visible
+    accent_glow:           '#6b60a0', // deep purple glow
     text_primary_opacity:  0.5,
     orb_breathe_duration:  '6s',
     brightness:            0.4,

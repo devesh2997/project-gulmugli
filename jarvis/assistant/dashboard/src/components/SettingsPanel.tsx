@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { AssistantStore } from '../types/assistant'
 import { SettingControl } from './settings/SettingControl'
 import { PersonalityPicker } from './settings/PersonalityPicker'
+import { BrightnessControl } from './BrightnessControl'
 
 interface Props {
   store: AssistantStore
@@ -224,6 +225,9 @@ export function SettingsPanel({ store }: Props) {
           onSwitch={actions.switchPersonality}
         />
       )}
+
+      {/* Ambient Brightness */}
+      <BrightnessControl />
 
       {/* Setting Categories */}
       {orderedCategories.map(cat => (
