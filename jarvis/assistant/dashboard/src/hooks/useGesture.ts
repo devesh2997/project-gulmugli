@@ -16,18 +16,21 @@ type GestureCallback = (direction: GestureDirection) => void
  */
 function isInsideInteractive(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
-  // Walk up the DOM tree looking for elements that handle their own drag
   let el: HTMLElement | null = target
   while (el) {
-    // Framer-motion draggable elements get this attribute
-    if (el.getAttribute('data-framer-drag') !== null) return true
-    // Our explicit marker for interactive areas (sliders, widgets, etc.)
+    // Our explicit marker for interactive areas (widgets, sliders, etc.)
     if (el.dataset.gestureIgnore === 'true') return true
     // Elements inside slide panels shouldn't trigger new panel gestures
-    if (el.getAttribute('data-panel') === 'true') return true
+    if (el.dataset.panel === 'true') return true
+    // Framer-motion draggable: check for style transform or drag cursor
+    if (el.style.cursor === 'grab' || el.style.cursor === 'grabbing') return true
+    // Check for draggable attribute (HTML5 drag or framer)
+    if (el.draggable) return true
     // Any button, input, or interactive control
     const tag = el.tagName
     if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true
+    // Check classes/attributes that suggest interactivity
+    if (el.getAttribute('role') === 'slider') return true
     el = el.parentElement
   }
   return false

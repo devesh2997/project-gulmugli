@@ -43,26 +43,26 @@ interface TimePalette {
 
 const WARM_PALETTES: Record<PaletteName, TimePalette> = {
   morning: {
-    canvas_gradient_start: '#2d2118', // warm cocoa brown
-    canvas_gradient_end:   '#3a2a1e', // slightly lighter, peach undertone
-    accent_primary:        '#e8b88a', // soft peach
-    accent_glow:           '#d4956a', // warm coral
-    text_primary_opacity:  0.75,
+    canvas_gradient_start: '#1e1a16', // very dark warm charcoal (not brown)
+    canvas_gradient_end:   '#252019', // slightly warmer, hint of amber
+    accent_primary:        '#e8c4a0', // soft warm cream
+    accent_glow:           '#d4a878', // muted gold
+    text_primary_opacity:  0.8,
     orb_breathe_duration:  '4s',
-    brightness:            0.75,
+    brightness:            0.8,
   },
   afternoon: {
-    canvas_gradient_start: '#2a1f14', // warm dark amber
-    canvas_gradient_end:   '#33261a', // golden brown
-    accent_primary:        '#d4a574', // warm gold
-    accent_glow:           '#c9956a', // amber
+    canvas_gradient_start: '#1c1816', // deep charcoal with warmth
+    canvas_gradient_end:   '#221e1a', // slightly lighter, warm undertone
+    accent_primary:        '#c9a87c', // warm gold (less saturated)
+    accent_glow:           '#b89468', // amber
     text_primary_opacity:  0.85,
     orb_breathe_duration:  '4s',
     brightness:            1.0,
   },
   night: {
-    canvas_gradient_start: '#141828', // deep navy (NOT black)
-    canvas_gradient_end:   '#1a1e30', // dark indigo
+    canvas_gradient_start: '#121420', // deep midnight blue
+    canvas_gradient_end:   '#181a28', // dark slate with blue undertone
     accent_primary:        '#8b7db5', // muted lavender
     accent_glow:           '#6b5d99', // deep purple
     text_primary_opacity:  0.45,

@@ -133,12 +133,28 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
     return () => { if (timer.current) clearTimeout(timer.current) }
   }, [reset])
 
-  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+  const seekFromEvent = useCallback((clientX: number) => {
     if (!nowPlaying.duration || !barRef.current) return
     const r = barRef.current.getBoundingClientRect()
-    actions.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * nowPlaying.duration)
+    const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
+    actions.seek(ratio * nowPlaying.duration)
     reset()
-  }
+  }, [nowPlaying.duration, actions, reset])
+
+  const handleSeekPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation() // prevent sheet drag
+    const target = e.currentTarget
+    target.setPointerCapture(e.pointerId)
+    seekFromEvent(e.clientX)
+
+    const onMove = (ev: PointerEvent) => seekFromEvent(ev.clientX)
+    const onUp = () => {
+      target.removeEventListener('pointermove', onMove)
+      target.removeEventListener('pointerup', onUp)
+    }
+    target.addEventListener('pointermove', onMove)
+    target.addEventListener('pointerup', onUp)
+  }, [seekFromEvent])
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.y > 60) {
@@ -167,6 +183,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
       {/* Bottom sheet */}
       <motion.div
         layoutId="now-playing"
+        data-gesture-ignore="true"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -283,18 +300,21 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
           <div>
             <div
               ref={barRef}
-              onClick={seek}
+              onPointerDown={handleSeekPointerDown}
               role="slider"
               aria-label="Seek"
               aria-valuenow={nowPlaying.position}
               aria-valuemax={nowPlaying.duration}
               style={{
                 width: '100%',
-                height: 4,
+                height: 12,  /* larger hit target for touch */
                 borderRadius: 9999,
                 background: 'rgba(255, 255, 255, 0.08)',
                 cursor: 'pointer',
                 position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                touchAction: 'none',
               }}
             >
               <motion.div

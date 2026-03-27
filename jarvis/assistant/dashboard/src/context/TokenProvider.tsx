@@ -153,28 +153,28 @@ interface WarmPalette {
 
 const WARM_PERSONALITY_PALETTES: Record<string, WarmPalette> = {
   jarvis: {
-    accent:          '#d4a574', // warm gold
-    glow_color:      '#d4a57425',
-    background_tint: '#3a2d1e', // warm amber base
-    glow_soft:       '#c9956830', // soft golden glow
+    accent:          '#e0b87a', // warm gold — bright enough to pop
+    glow_color:      '#e0b87a30',
+    background_tint: '#1e1c18', // very subtle warm tint
+    glow_soft:       '#d4a06835', // soft golden glow
   },
   devesh: {
-    accent:          '#7fb5a6', // sage teal
-    glow_color:      '#7fb5a625',
-    background_tint: '#1e3029', // warm sage green base
-    glow_soft:       '#7fb5a630', // soft teal glow
+    accent:          '#6ec2aa', // fresh teal — vibrant but not neon
+    glow_color:      '#6ec2aa30',
+    background_tint: '#181e1c', // barely-there green tint
+    glow_soft:       '#6ec2aa35', // fresh teal glow
   },
   girlfriend: {
-    accent:          '#d4918e', // dusty rose
-    glow_color:      '#d4918e25',
-    background_tint: '#352428', // cream with rose warmth
-    glow_soft:       '#d4918e30', // soft pink glow
+    accent:          '#e8a0a0', // soft warm pink — visible, not muddy
+    glow_color:      '#e8a0a030',
+    background_tint: '#1e1818', // very subtle rose warmth
+    glow_soft:       '#e8a0a035', // gentle rose glow
   },
   chandler: {
-    accent:          '#a88bc7', // warm lavender
-    glow_color:      '#a88bc725',
-    background_tint: '#28223a', // soft violet base
-    glow_soft:       '#a88bc730', // muted purple glow
+    accent:          '#b89fd8', // clear lavender — readable
+    glow_color:      '#b89fd830',
+    background_tint: '#1a181e', // barely-there violet
+    glow_soft:       '#b89fd835', // soft purple glow
   },
 }
 
