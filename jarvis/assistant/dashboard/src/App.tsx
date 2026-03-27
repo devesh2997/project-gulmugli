@@ -83,11 +83,15 @@ function AppContent() {
 
       {/* Center column: avatar + pills + clock */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        <TransitionDissolver personality={assistant.personality}>
-          <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
-        </TransitionDissolver>
-
-        <PillCluster intents={assistant.intents} />
+        {/* Pills emerge above the avatar */}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'absolute', bottom: '100%', marginBottom: 8 }}>
+            <PillCluster intents={assistant.intents} />
+          </div>
+          <TransitionDissolver personality={assistant.personality}>
+            <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />
+          </TransitionDissolver>
+        </div>
 
         <Clock />
       </div>

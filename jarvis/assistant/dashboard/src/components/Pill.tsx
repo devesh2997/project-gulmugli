@@ -54,7 +54,7 @@ function getPillTransition(status?: IntentStatus) {
 }
 
 export function Pill({ icon, label, status, detail, accentColor, onClick, children }: PillProps) {
-  const accent = accentColor ?? 'var(--personality-accent, var(--accent-primary))'
+  const accent = accentColor ?? 'var(--personality-accent)'
   const tintRgb = icon ? ICON_TINTS[icon] ?? ICON_TINTS.general : null
   const isFailed = status === 'failed'
   const isDone = status === 'done'
@@ -87,7 +87,7 @@ export function Pill({ icon, label, status, detail, accentColor, onClick, childr
         gap: showLabel ? 6 : 0,
         height: 36,
         padding: showLabel ? '6px 12px' : '6px 10px',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 16,
         background: bgColor,
         border: `1px solid ${borderColor}`,
         backdropFilter: 'blur(8px)',
@@ -95,7 +95,7 @@ export function Pill({ icon, label, status, detail, accentColor, onClick, childr
         cursor: onClick ? 'pointer' : 'default',
         userSelect: 'none',
         flexShrink: 0,
-        color: isFailed ? 'var(--accent-error)' : accent,
+        color: isFailed ? '#ef4444' : accent,
         boxShadow: status === 'processing' && tintRgb
           ? `0 0 12px rgba(${tintRgb}, 0.2)`
           : isDone && tintRgb

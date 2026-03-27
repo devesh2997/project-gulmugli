@@ -22,7 +22,7 @@ export function NowPlayingPill({ nowPlaying, onExpand }: NowPlayingPillProps) {
           ? <img src={nowPlaying.artUrl} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
           : <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.65rem' }}>♫</span>
         }
-        <span style={{ fontSize: '0.72rem', color: 'var(--personality-accent, var(--accent-primary))', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--personality-accent)', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
           {nowPlaying.title}
         </span>
       </Pill>

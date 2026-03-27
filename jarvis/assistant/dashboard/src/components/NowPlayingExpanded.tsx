@@ -38,7 +38,7 @@ function Btn({ onClick, label, active = false, size = 36, accent, children }: {
 export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayingExpandedProps) {
   const barRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const accent = 'var(--personality-accent, var(--accent-primary))'
+  const accent = 'var(--personality-accent)'
 
   const reset = useCallback(() => {
     if (timer.current) clearTimeout(timer.current)
@@ -58,10 +58,10 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
 
   return (
     <motion.div layoutId="now-playing" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }} transition={{ duration: 0.3 }}
-      style={{ position: 'fixed', top: '50%', left: '50%', translateX: '-50%', translateY: '-50%', zIndex: 60, width: 320, padding: 24, borderRadius: 'var(--radius-xl)', background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      style={{ position: 'fixed', top: '50%', left: '50%', translateX: '-50%', translateY: '-50%', zIndex: 60, width: 320, padding: 24, borderRadius: 16, background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* Close */}
-      <button onClick={onCollapse} aria-label="Collapse" style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1, padding: 4 }}>×</button>
+      <button onClick={onCollapse} aria-label="Collapse" style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', fontSize: '1.1rem', lineHeight: 1, padding: 4 }}>×</button>
 
       {/* Art + info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -70,9 +70,9 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
           : <div style={{ width: 64, height: 64, borderRadius: 8, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', flexShrink: 0 }}>♫</div>
         }
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.title}</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.artist}</div>
-          {nowPlaying.album && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.album}</div>}
+          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.title}</div>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.artist}</div>
+          {nowPlaying.album && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.album}</div>}
         </div>
       </div>
 
@@ -80,10 +80,10 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
       {nowPlaying.duration > 0 && (
         <div>
           <div ref={barRef} onClick={seek} role="slider" aria-label="Seek" aria-valuenow={nowPlaying.position} aria-valuemax={nowPlaying.duration}
-            style={{ width: '100%', height: 4, borderRadius: 'var(--radius-full)', background: 'var(--border-default)', cursor: 'pointer' }}>
-            <motion.div style={{ height: '100%', borderRadius: 'var(--radius-full)', background: accent, width: `${pct}%` }} transition={{ duration: 0.5 }} />
+            style={{ width: '100%', height: 4, borderRadius: 9999, background: 'rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+            <motion.div style={{ height: '100%', borderRadius: 9999, background: accent, width: `${pct}%` }} transition={{ duration: 0.5 }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace, "SF Mono", "Cascadia Mono", monospace' }}>
             <span>{fmt(nowPlaying.position)}</span><span>{fmt(nowPlaying.duration)}</span>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse }: NowPlayi
 
       {/* Volume */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>
           <path d="M1 4h2.5L6.5 1.5v9L3.5 8H1V4z"/>
         </svg>
         <input type="range" min={0} max={100} defaultValue={50} onChange={e => { actions.setVolume(Number(e.target.value)); reset() }}

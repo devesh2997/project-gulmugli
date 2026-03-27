@@ -32,7 +32,7 @@ export default function Transcript({ messages = [] }: TranscriptProps) {
           height: '100%',
         }}
       >
-        <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 14 }}>
+        <p style={{ color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', fontSize: 14 }}>
           Say something to get started...
         </p>
       </div>
