@@ -157,9 +157,11 @@ def build_assistant() -> dict:
         wake_words = {}
 
         # First: personality-specific wake words
+        # Until custom wake word models are trained, all wake words just activate
+        # without switching personality. The user switches personality via voice command.
         for p in personality_manager.list():
             if p.wake_word:
-                wake_words[p.wake_word.lower()] = p.id
+                wake_words[p.wake_word.lower()] = ""  # "" = don't switch personality
 
         # Then: system wake word (only if not already claimed by a personality)
         system_ww = config.get("assistant", {}).get("wake_word", "")
