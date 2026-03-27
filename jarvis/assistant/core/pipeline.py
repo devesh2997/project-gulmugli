@@ -13,6 +13,7 @@ Why extracted from main.py?
 
 import json
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from core.config import config
 from core.logger import get_logger
@@ -20,6 +21,25 @@ from core.personality import personality_manager
 from core.interfaces import Interaction
 from core.prefilter import prefilter_intent
 from core.intent_handler import handle_intent
+
+# Shared thread pool for intent execution — avoids creating threads per request.
+# max_workers=4 is plenty for I/O-bound intent handlers (Tuya, YouTube, Ollama).
+_intent_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="intent")
+
+# Per-intent-type timeout in seconds. Device control (lights) gets a short
+# timeout so a missing device doesn't block everything.
+INTENT_TIMEOUTS = {
+    "light_control": 5.0,
+    "music_play": 15.0,       # YouTube search + mpv startup can be slow
+    "music_control": 5.0,
+    "volume": 3.0,
+    "switch_personality": 2.0,
+    "chat": 30.0,             # LLM generation can take a while
+    "knowledge_search": 20.0, # web search + LLM summarization
+    "system": 2.0,
+    "memory_recall": 15.0,
+    "memory_stats": 5.0,
+}
 
 
 # Maps intent type names to icon identifiers shown by the dashboard.
@@ -119,23 +139,53 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None):
     if face_ui and intent_payloads:
         face_ui.send_intents(intent_payloads)
 
-    # Execute each intent in order
-    responses = []
-    for intent in intents:
+    # Execute intents in parallel — each gets its own thread with a timeout.
+    # This prevents a failing device (e.g., unreachable light) from blocking
+    # the entire pipeline. The UI sees each intent resolve independently.
+
+    def _execute_one(intent):
+        """Run a single intent in a worker thread."""
         iid = intent.meta.get("dashboard_id")
         if face_ui and iid:
             face_ui.update_intent(iid, "processing")
-
         try:
             response = handle_intent(assistant, intent)
-            responses.append(response)
             if face_ui and iid:
-                # Truncate detail to keep the WebSocket message small
                 detail = response[:120] if response else None
                 face_ui.update_intent(iid, "done", detail)
+            return response
         except Exception as exc:
             log.error("Intent %s failed: %s", intent.name, exc)
-            responses.append(f"Something went wrong with {intent.name}.")
+            if face_ui and iid:
+                face_ui.update_intent(iid, "failed", str(exc)[:120])
+            return f"Something went wrong with {intent.name}."
+
+    # Submit all intents to the thread pool
+    futures = {}
+    for intent in intents:
+        timeout = INTENT_TIMEOUTS.get(intent.name, 10.0)
+        future = _intent_executor.submit(_execute_one, intent)
+        futures[future] = (intent, timeout)
+
+    # Collect results in original order, respecting per-intent timeouts
+    responses = [""] * len(intents)
+    intent_order = {id(intent): idx for idx, intent in enumerate(intents)}
+
+    for future in as_completed(futures):
+        intent, timeout = futures[future]
+        idx = intent_order[id(intent)]
+        try:
+            responses[idx] = future.result(timeout=timeout)
+        except TimeoutError:
+            iid = intent.meta.get("dashboard_id")
+            log.warning("Intent %s timed out after %.1fs", intent.name, timeout)
+            responses[idx] = f"{intent.name.replace('_', ' ').title()} timed out."
+            if face_ui and iid:
+                face_ui.update_intent(iid, "failed", f"Timed out after {timeout:.0f}s")
+        except Exception as exc:
+            iid = intent.meta.get("dashboard_id")
+            log.error("Intent %s unexpected error: %s", intent.name, exc)
+            responses[idx] = f"Something went wrong with {intent.name}."
             if face_ui and iid:
                 face_ui.update_intent(iid, "failed", str(exc)[:120])
 
