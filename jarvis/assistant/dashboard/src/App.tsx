@@ -111,8 +111,16 @@ function AppContent() {
 
       {/* Center column: avatar → clock, stacked vertically */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ gap: 0 }}>
-        {/* Avatar — overflow: visible so glow extends but doesn't push layout */}
-        <div ref={avatarRef} style={{ width: avatarSize, height: avatarSize, position: 'relative', overflow: 'visible', flexShrink: 0 }}>
+        {/* Avatar — tap to activate (same as wake word) */}
+        <div
+          ref={avatarRef}
+          onClick={() => assistant.actions.sendText('__wake__')}
+          style={{
+            width: avatarSize, height: avatarSize,
+            position: 'relative', overflow: 'visible', flexShrink: 0,
+            cursor: 'pointer',
+          }}
+        >
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
             <TransitionDissolver personality={assistant.personality}>
               <Avatar size={avatarSize} state={assistant.state} mood={assistant.mood} />

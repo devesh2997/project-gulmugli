@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLightMode } from '../hooks/useLightMode'
 import type { ReactNode } from 'react'
 
 interface SlidePanelProps {
@@ -52,6 +53,7 @@ function DragHandle({ direction }: { direction: 'left' | 'right' | 'bottom' }) {
 
 export default function SlidePanel({ isOpen, onClose, direction, children }: SlidePanelProps) {
   const isBottom = direction === 'bottom'
+  const isLight = useLightMode()
 
   // Listen for brightness adjustment — panel becomes semi-transparent
   const [panelOpacity, setPanelOpacity] = useState(1)
@@ -70,8 +72,9 @@ export default function SlidePanel({ isOpen, onClose, direction, children }: Sli
     zIndex: 200,
     backdropFilter: 'blur(24px)',
     WebkitBackdropFilter: 'blur(24px)',
-    background: 'rgba(20, 18, 25, 0.85)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: isLight ? 'rgba(245, 240, 235, 0.92)' : 'rgba(20, 18, 25, 0.85)',
+    border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.08)',
+    transition: 'background 0.6s ease, border 0.6s ease',
     overflowY: 'auto',
     ...(isBottom
       ? { bottom: 0, left: 0, right: 0, height: '70%', borderRadius: '16px 16px 0 0' }
@@ -98,7 +101,7 @@ export default function SlidePanel({ isOpen, onClose, direction, children }: Sli
             onClick={onClose}
             style={{
               position: 'fixed', inset: 0,
-              background: 'rgba(0,0,0,0.4)',
+              background: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)',
               zIndex: 199,
             }}
           />

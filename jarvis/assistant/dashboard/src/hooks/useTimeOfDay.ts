@@ -287,6 +287,16 @@ export function useTimeOfDay(): void {
       // Expose the current phase and blend factor so Canvas can use them
       root.setProperty('--time-current-phase', phase)
       root.setProperty('--time-current-blend_t', String(t))
+
+      // Global text colours that auto-flip for light/dark mode.
+      // Components should use these instead of hard-coded rgba(255,255,255,...).
+      const lightMode = getComputedStyle(document.documentElement)
+        .getPropertyValue('--ui-is-light-mode').trim() === '1'
+      root.setProperty('--text-primary', lightMode ? 'rgba(30, 20, 10, 0.85)' : 'rgba(255, 255, 255, 0.8)')
+      root.setProperty('--text-secondary', lightMode ? 'rgba(30, 20, 10, 0.5)' : 'rgba(255, 255, 255, 0.4)')
+      root.setProperty('--text-tertiary', lightMode ? 'rgba(30, 20, 10, 0.3)' : 'rgba(255, 255, 255, 0.2)')
+      root.setProperty('--surface-subtle', lightMode ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)')
+      root.setProperty('--border-subtle', lightMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.06)')
     }
 
     update()
