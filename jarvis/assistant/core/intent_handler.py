@@ -264,12 +264,13 @@ def handle_intent(assistant: dict, intent) -> str:
         face_ui = assistant.get("face_ui")
         music = assistant.get("music")
         lights = assistant.get("lights")
+        sleep_cfg = config.get("sleep_mode", {})
 
         if action == "sleep":
             _sleep_mode = True
 
-            # Turn lights OFF completely
-            if lights:
+            # Turn lights OFF completely (if configured)
+            if lights and sleep_cfg.get("turn_off_lights", True):
                 try:
                     lights.turn_off()
                 except Exception as e:
@@ -282,20 +283,35 @@ def handle_intent(assistant: dict, intent) -> str:
                 except Exception:
                     _pre_sleep_volume = 100
 
-                # Search for and play soothing sleep music at low volume
-                try:
-                    from core.interfaces import SongResult
-                    sleep_query = "soothing relaxing sleep music ambient"
-                    results = music.search(sleep_query, sleep_query)
-                    if results:
-                        music.play(results[0])
-                        log.info("Playing sleep music: %s", results[0].title)
-                    music.set_volume(10)
-                except Exception as e:
-                    log.warning("Could not start sleep music: %s", e)
-                    # At least duck existing music
+                sleep_volume = sleep_cfg.get("sleep_music_volume", 10)
+
+                if sleep_cfg.get("play_sleep_music", True):
+                    # Search for and play soothing sleep music at low volume
                     try:
-                        music.set_volume(10)
+                        from core.interfaces import SongResult
+                        sleep_query = sleep_cfg.get("sleep_music_query", "soothing relaxing sleep music ambient")
+                        results = music.search(sleep_query, sleep_query)
+                        if results:
+                            music.play(results[0])
+                            log.info("Playing sleep music: %s", results[0].title)
+                        music.set_volume(sleep_volume)
+                    except Exception as e:
+                        log.warning("Could not start sleep music: %s", e)
+                        # At least duck existing music
+                        try:
+                            music.set_volume(sleep_volume)
+                        except Exception:
+                            pass
+                elif sleep_cfg.get("duck_existing_music", True):
+                    # No sleep music requested, but duck existing music
+                    try:
+                        music.set_volume(sleep_volume)
+                    except Exception:
+                        pass
+                else:
+                    # No ducking — stop existing music entirely
+                    try:
+                        music.stop()
                     except Exception:
                         pass
 
@@ -310,19 +326,19 @@ def handle_intent(assistant: dict, intent) -> str:
         elif action == "wake":
             _sleep_mode = False
 
-            # Restore music volume
-            if music and _pre_sleep_volume is not None:
+            # Restore music volume (if configured)
+            if music and _pre_sleep_volume is not None and sleep_cfg.get("restore_volume_on_wake", True):
                 try:
                     music.set_volume(_pre_sleep_volume)
                 except Exception as e:
                     log.warning("Could not restore music volume: %s", e)
-                _pre_sleep_volume = None
+            _pre_sleep_volume = None
 
-            # Restore lights
-            if lights:
+            # Restore lights (if configured)
+            if lights and sleep_cfg.get("restore_lights_on_wake", True):
                 try:
                     lights.turn_on()
-                    lights.set_brightness(50)
+                    lights.set_brightness(sleep_cfg.get("wake_lights_brightness", 50))
                 except Exception as e:
                     log.warning("Could not restore lights: %s", e)
 

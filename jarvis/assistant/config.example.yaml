@@ -289,6 +289,18 @@ ui:
   # The face auto-connects and shows: idle, listening, thinking, speaking states
   # Each personality has its own face style, colors, and animations
 
+# --- Sleep Mode ---
+# Controls what happens when you say "goodnight" / "go to sleep" / "wake up".
+sleep_mode:
+  turn_off_lights: true          # Turn off lights when sleeping
+  play_sleep_music: true         # Play soothing music when sleeping
+  sleep_music_query: "soothing relaxing sleep music ambient"
+  sleep_music_volume: 10         # Volume for sleep music (0-100)
+  duck_existing_music: true      # Duck currently playing music instead of replacing
+  restore_lights_on_wake: true   # Turn lights back on when waking
+  restore_volume_on_wake: true   # Restore music volume when waking
+  wake_lights_brightness: 50     # Brightness when waking up (0-100)
+
 # --- Logging & Debug ---
 debug:
   log_level: "DEBUG" # DEBUG, INFO, WARNING, ERROR

@@ -148,6 +148,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   wake_word: 'Wake Word',
   memory: 'Memory',
   ui: 'Interface',
+  sleep_mode: 'Sleep Mode',
   debug: 'Debug',
   personalities: 'Personalities',
 }
@@ -209,6 +210,11 @@ const CATEGORY_ICONS: Record<string, (color: string) => React.ReactElement> = {
       <rect x="3" y="14" width="7" height="7" />
     </svg>
   ),
+  sleep_mode: (c) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  ),
   debug: (c) => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 16V8l-8-4-8 4v8l8 4 8-4z" />
@@ -220,7 +226,7 @@ const CATEGORY_ICONS: Record<string, (color: string) => React.ReactElement> = {
 
 const CATEGORY_ORDER = [
   'brain', 'voice', 'ears', 'music',
-  'knowledge', 'wake_word', 'memory', 'ui', 'debug',
+  'knowledge', 'wake_word', 'memory', 'ui', 'sleep_mode', 'debug',
 ]
 
 function CategorySection({ cat, children }: { cat: string; children: React.ReactNode }) {
