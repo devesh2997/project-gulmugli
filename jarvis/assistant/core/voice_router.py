@@ -311,9 +311,16 @@ class VoiceRouter:
             if wav_bytes is None:
                 break  # all sentences done
 
-            if not _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event):
+            try:
+                if not _play_wav_bytes(wav_bytes, interrupt_event=interrupt_event):
+                    completed = False
+                    break  # interrupted
+            except Exception as e:
+                # PortAudio can fail if the audio device is busy (e.g., mpv playing music).
+                # Log and skip this sentence rather than crashing the entire pipeline.
+                log.warning("Audio playback failed (device busy?): %s", e)
                 completed = False
-                break  # interrupted
+                break
 
         synth_thread.join(timeout=2.0)
 
@@ -328,9 +335,13 @@ class VoiceRouter:
     def _speak_single(self, provider, voice_model, text, interrupt_event, start) -> bool:
         """Speak a single sentence — no threading overhead."""
         try:
-            completed = provider.speak_to_device(
-                text, voice_model=voice_model, interrupt_event=interrupt_event,
-            )
+            try:
+                completed = provider.speak_to_device(
+                    text, voice_model=voice_model, interrupt_event=interrupt_event,
+                )
+            except Exception as audio_err:
+                log.warning("Audio playback failed (device busy?): %s", audio_err)
+                return False
             elapsed = time.monotonic() - start
             if completed:
                 log.debug(

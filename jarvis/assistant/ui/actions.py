@@ -34,15 +34,29 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
     params = action_data.get("params", {})
 
     if action == "text_input":
-        # Full text input from the dashboard — process as if typed
         text = params.get("text", "").strip()
-        if text:
-            # Run in a separate thread to avoid blocking the WS event loop
-            t = threading.Thread(
-                target=process_input, args=(assistant, text),
-                name="ui-text-input", daemon=True,
-            )
-            t.start()
+        if not text:
+            return
+
+        # Special: __wake__ = tap-to-activate (visual feedback only for now)
+        if text == "__wake__":
+            face_ui = assistant.get("face_ui")
+            if face_ui:
+                face_ui.set_state("listening")
+                import time
+                def _flash():
+                    time.sleep(2.0)
+                    if face_ui:
+                        face_ui.set_state("idle")
+                threading.Thread(target=_flash, daemon=True).start()
+            return
+
+        # Full text input — process as if typed/spoken
+        t = threading.Thread(
+            target=process_input, args=(assistant, text),
+            name="ui-text-input", daemon=True,
+        )
+        t.start()
         return
 
     # Map browser actions to Intent objects and execute directly

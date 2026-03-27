@@ -117,7 +117,10 @@ class SQLiteMemoryProvider(MemoryProvider):
         (future), we'd use a connection pool instead.
         """
         if self._conn is None:
-            self._conn = sqlite3.connect(str(self.db_path), timeout=5.0)
+            # check_same_thread=False: the async pipeline runs process_input
+            # in background threads, so memory logging must work cross-thread.
+            # WAL mode (set in _init_schema) makes this safe for concurrent access.
+            self._conn = sqlite3.connect(str(self.db_path), timeout=5.0, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
         return self._conn
 
