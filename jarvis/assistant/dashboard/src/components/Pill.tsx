@@ -1,43 +1,14 @@
 /**
- * Pill — generic reusable capsule badge.
- * Icon (left) · label (center) · status indicator (right).
+ * Pill — contextual animated capsule badge.
+ * Each intent type has its own rich icon animation (music bounces,
+ * bulb flickers then glows, search scans, brain thinks, etc.).
+ * Icon IS the communication — text labels only appear briefly for
+ * done status with a detail message.
  */
 
 import { motion } from 'framer-motion'
 import type { IntentIcon, IntentStatus } from '../types/assistant'
-
-// Minimal SVG icons — each ≤5 path elements
-const ICONS: Record<string, React.ReactNode> = {
-  music:       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M5 10.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M5 10.5V3l7-1.5v7"/><path d="M12 8.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg>,
-  bulb:        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1a4 4 0 0 1 2.5 7.1V10H4.5V8.1A4 4 0 0 1 7 1z"/><rect x="4.5" y="10.5" width="5" height="1.5" rx=".5"/></svg>,
-  brain:       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M5 2C3.3 2 2 3.3 2 5c0 1 .5 1.9 1.2 2.4C2.5 8 2 9 2 10c0 1.1.9 2 2 2h2V2H5z"/><path d="M9 2c1.7 0 3 1.3 3 3 0 1-.5 1.9-1.2 2.4.7.6 1.2 1.6 1.2 2.6 0 1.1-.9 2-2 2H8V2h1z"/></svg>,
-  volume:      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M2 5h2.5L8 2v10L4.5 9H2V5z"/><path d="M10 4.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" strokeWidth="1.2" fill="none"/></svg>,
-  personality: <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="4.5" r="2.5"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>,
-  timer:       <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="8" r="5" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="M7 5v3l2 1.5" stroke="currentColor" strokeWidth="1.2" fill="none"/></svg>,
-  search:      <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4" fill="none" stroke="currentColor" strokeWidth="1.4"/><path d="M9 9l3 3" stroke="currentColor" strokeWidth="1.4" fill="none"/></svg>,
-  general:     <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.4" fill="none"/></svg>,
-}
-
-function StatusDot({ status }: { status?: IntentStatus }) {
-  if (!status) return null
-  if (status === 'queued')
-    return <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0, display: 'inline-block' }} />
-  if (status === 'processing')
-    return <span style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid transparent', borderTopColor: 'var(--personality-accent, var(--accent-primary))', flexShrink: 0, display: 'inline-block', animation: 'pill-spin .7s linear infinite' }} />
-  if (status === 'done')
-    return <motion.svg width="12" height="12" viewBox="0 0 12 12" fill="none" initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ flexShrink: 0, color: 'var(--accent-success)' }}><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></motion.svg>
-  if (status === 'failed')
-    return <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: 'var(--accent-error)' }}><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-  return null
-}
-
-// Inject spin keyframe once at module load
-if (typeof document !== 'undefined' && !document.getElementById('pill-spin-kf')) {
-  const s = document.createElement('style')
-  s.id = 'pill-spin-kf'
-  s.textContent = '@keyframes pill-spin{to{transform:rotate(360deg)}}'
-  document.head.appendChild(s)
-}
+import { AnimatedIcon } from './PillIcons'
 
 export interface PillProps {
   icon?: IntentIcon | string
@@ -49,31 +20,116 @@ export interface PillProps {
   children?: React.ReactNode
 }
 
-export function Pill({ icon, label, status, accentColor, onClick, children }: PillProps) {
+/* Color tints per icon for the subtle background glow */
+const ICON_TINTS: Record<string, string> = {
+  music:       '168, 85, 247',   // purple
+  bulb:        '250, 204, 21',   // warm yellow
+  volume:      '59, 130, 246',   // blue
+  brain:       '129, 140, 248',  // indigo
+  personality: '236, 72, 153',   // pink
+  search:      '34, 197, 94',    // green
+  general:     '148, 163, 184',  // slate
+  timer:       '251, 146, 60',   // orange
+}
+
+/* Resolve the animate value based on status */
+function getPillAnimate(status?: IntentStatus): Record<string, unknown> {
+  if (status === 'processing') {
+    return { scale: [1, 1.02, 1], opacity: 1 }
+  }
+  if (status === 'failed') {
+    return { x: [0, -4, 4, -3, 3, 0], scale: 1, opacity: 1 }
+  }
+  return { scale: 1, opacity: 1 }
+}
+
+function getPillTransition(status?: IntentStatus) {
+  if (status === 'processing') {
+    return { duration: 1.8, repeat: Infinity, ease: 'easeInOut' as const }
+  }
+  if (status === 'failed') {
+    return { duration: 0.4 }
+  }
+  return { duration: 0.3 }
+}
+
+export function Pill({ icon, label, status, detail, accentColor, onClick, children }: PillProps) {
   const accent = accentColor ?? 'var(--personality-accent, var(--accent-primary))'
+  const tintRgb = icon ? ICON_TINTS[icon] ?? ICON_TINTS.general : null
+  const isFailed = status === 'failed'
+  const isDone = status === 'done'
+  const showLabel = !icon || (isDone && detail) || children
+
+  /* Background glow based on icon + status */
+  const bgColor = isFailed
+    ? 'rgba(239, 68, 68, 0.12)'
+    : tintRgb
+      ? `rgba(${tintRgb}, ${status === 'processing' ? 0.15 : 0.08})`
+      : 'rgba(255, 255, 255, 0.05)'
+
+  const borderColor = isFailed
+    ? 'rgba(239, 68, 68, 0.25)'
+    : tintRgb
+      ? `rgba(${tintRgb}, ${status === 'processing' ? 0.25 : 0.1})`
+      : 'rgba(255, 255, 255, 0.08)'
+
   return (
     <motion.div
       layout
       initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      animate={getPillAnimate(status)}
+      exit={{ scale: 0.7, opacity: 0 }}
+      transition={getPillTransition(status)}
       onClick={onClick}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        height: 32, padding: '6px 12px', borderRadius: 'var(--radius-lg)',
-        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        cursor: onClick ? 'pointer' : 'default', userSelect: 'none', flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: showLabel ? 6 : 0,
+        height: 36,
+        padding: showLabel ? '6px 12px' : '6px 10px',
+        borderRadius: 'var(--radius-lg)',
+        background: bgColor,
+        border: `1px solid ${borderColor}`,
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        cursor: onClick ? 'pointer' : 'default',
+        userSelect: 'none',
+        flexShrink: 0,
+        color: isFailed ? 'var(--accent-error)' : accent,
+        boxShadow: status === 'processing' && tintRgb
+          ? `0 0 12px rgba(${tintRgb}, 0.2)`
+          : isDone && tintRgb
+            ? `0 0 8px rgba(${tintRgb}, 0.15)`
+            : 'none',
+        transition: 'box-shadow 0.3s, background 0.3s, border-color 0.3s',
       }}
     >
-      {icon && <span style={{ color: accent, opacity: 0.7, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{ICONS[icon] ?? ICONS.general}</span>}
-      {children ?? (
-        <span style={{ fontSize: '0.72rem', color: accent, opacity: 0.7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
-          {label}
+      {/* Animated icon */}
+      {icon && (
+        <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isFailed ? 1 : 0.85 }}>
+          <AnimatedIcon icon={icon} status={status} />
         </span>
       )}
-      <StatusDot status={status} />
+
+      {/* children (NowPlayingPill) or detail text on done */}
+      {children
+        ? children
+        : showLabel && (
+            <motion.span
+              initial={isDone ? { opacity: 0, x: -4 } : {}}
+              animate={{ opacity: 0.85, x: 0 }}
+              style={{
+                fontSize: '0.72rem',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: 140,
+              }}
+            >
+              {isDone && detail ? detail : label}
+            </motion.span>
+          )
+      }
     </motion.div>
   )
 }
