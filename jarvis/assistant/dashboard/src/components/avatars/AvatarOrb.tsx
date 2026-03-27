@@ -31,6 +31,10 @@ interface StateConfig {
   glowScale: number
   /** Multiplier applied to the CSS var base breathe duration */
   breatheMultiplier: number
+  /** Border glow intensity (box-shadow spread) — multiplied by size */
+  borderGlow: number
+  /** Optional warm color shift (0 = accent color, 1 = full warm/orange) */
+  warmShift: number
 }
 
 const STATE_CONFIGS: Record<AssistantState, StateConfig> = {
@@ -40,34 +44,44 @@ const STATE_CONFIGS: Record<AssistantState, StateConfig> = {
     glowOpacity: 0.2,
     glowScale: 1,
     breatheMultiplier: 1,
+    borderGlow: 0.12,
+    warmShift: 0,
   },
   listening: {
-    scale: 1.08,
-    opacity: 0.85,
-    glowOpacity: 0.4,
-    glowScale: 1.2,
-    breatheMultiplier: 0.5,
+    scale: 1.15,
+    opacity: 0.95,
+    glowOpacity: 0.65,
+    glowScale: 1.5,
+    breatheMultiplier: 0.35,
+    borderGlow: 0.35,
+    warmShift: 0,
   },
   thinking: {
-    scale: 0.95,
-    opacity: 0.7,
-    glowOpacity: 0.3,
-    glowScale: 1.1,
-    breatheMultiplier: 0.3,
+    scale: 0.92,
+    opacity: 0.8,
+    glowOpacity: 0.45,
+    glowScale: 1.3,
+    breatheMultiplier: 0.25,
+    borderGlow: 0.2,
+    warmShift: 0.6,
   },
   speaking: {
-    scale: 1.05,
-    opacity: 0.9,
-    glowOpacity: 0.5,
-    glowScale: 1.3,
-    breatheMultiplier: 0.15,
+    scale: 1.12,
+    opacity: 1,
+    glowOpacity: 0.7,
+    glowScale: 1.6,
+    breatheMultiplier: 0.12,
+    borderGlow: 0.4,
+    warmShift: 0,
   },
   sleeping: {
-    scale: 0.9,
-    opacity: 0.2,
-    glowOpacity: 0.05,
-    glowScale: 0.85,
-    breatheMultiplier: 2,
+    scale: 0.85,
+    opacity: 0.15,
+    glowOpacity: 0.03,
+    glowScale: 0.8,
+    breatheMultiplier: 2.5,
+    borderGlow: 0.02,
+    warmShift: 0,
   },
 }
 
@@ -112,45 +126,104 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
   const opacity = config.opacity * brightness
   const glowOpacity = config.glowOpacity * brightness
 
+  // Use rgb variant for rgba() — CSS vars can't have hex alpha appended
+  const accentRgb = 'var(--personality-accent-rgb)'
+  const a = (op: number) => `rgba(${accentRgb}, ${op})`
+
+  // Warm color for thinking state (orange-shifted)
+  const warmRgb = '255, 160, 60'
+  const w = (op: number) => `rgba(${warmRgb}, ${op})`
+
+  // Blend between accent and warm based on warmShift
+  const shift = config.warmShift
+  const c = (op: number) =>
+    shift > 0
+      ? `color-mix(in srgb, ${a(op)} ${Math.round((1 - shift) * 100)}%, ${w(op)})`
+      : a(op)
+
   const orbVariants = useMemo(() => ({
     animate: {
-      scale: [config.scale, config.scale * 1.04, config.scale],
-      opacity: [opacity, opacity * 0.9, opacity],
+      scale: [config.scale, config.scale * 1.06, config.scale],
+      opacity: [opacity, opacity * 0.85, opacity],
       transition: {
         duration: breatheDuration,
         repeat: Infinity,
         ease: 'easeInOut' as const,
       },
     },
-  }), [config, breatheDuration, opacity])
+  }), [config.scale, breatheDuration, opacity])
+
+  // Speaking: sharp rhythmic pulse (speech cadence) instead of smooth breathing
+  const speakingVariants = useMemo(() => ({
+    animate: {
+      scale: [config.scale, config.scale * 1.1, config.scale * 0.97, config.scale],
+      opacity: [opacity, opacity * 1.05, opacity * 0.8, opacity],
+      transition: {
+        duration: 0.6,
+        repeat: Infinity,
+        ease: [0.4, 0, 0.2, 1],
+        times: [0, 0.2, 0.5, 1],
+      },
+    },
+  }), [config.scale, opacity])
 
   const glowVariants = useMemo(() => ({
     animate: {
-      scale: [config.glowScale, config.glowScale * 1.15, config.glowScale],
-      opacity: [glowOpacity, glowOpacity * 0.6, glowOpacity],
+      scale: [config.glowScale, config.glowScale * 1.25, config.glowScale],
+      opacity: [glowOpacity, glowOpacity * 0.5, glowOpacity],
       transition: {
         duration: breatheDuration * 1.2,
         repeat: Infinity,
         ease: 'easeInOut' as const,
       },
     },
-  }), [config, breatheDuration, glowOpacity])
+  }), [config.glowScale, breatheDuration, glowOpacity])
 
-  // Thinking state: slow rotation to convey processing
+  // Thinking state: visible rotation to convey processing
   const thinkingRotation = state === 'thinking'
     ? {
         rotate: [0, 360],
         transition: {
-          duration: 3,
+          duration: 2,
           repeat: Infinity,
           ease: 'linear' as const,
         },
       }
     : {}
 
-  // Use rgb variant for rgba() — CSS vars can't have hex alpha appended
-  const accentRgb = 'var(--personality-accent-rgb)'
-  const a = (opacity: number) => `rgba(${accentRgb}, ${opacity})`
+  // Thinking: pulsing glow that expands and contracts faster
+  const thinkingGlowVariants = useMemo(() => ({
+    animate: {
+      scale: [config.glowScale, config.glowScale * 1.5, config.glowScale],
+      opacity: [glowOpacity, glowOpacity * 0.3, glowOpacity],
+      transition: {
+        duration: 1.2,
+        repeat: Infinity,
+        ease: 'easeInOut' as const,
+      },
+    },
+  }), [config.glowScale, glowOpacity])
+
+  // Pick orb animation based on state
+  const activeOrbVariants = state === 'speaking' ? speakingVariants : orbVariants
+  const activeGlowVariants = state === 'thinking' ? thinkingGlowVariants : glowVariants
+
+  // For thinking state, use warm-shifted gradient
+  const orbBg = shift > 0
+    ? `radial-gradient(circle at 35% 35%,
+        ${w(0.3)} 0%,
+        ${a(0.12)} 40%,
+        ${a(0.04)} 70%,
+        transparent 100%)`
+    : `radial-gradient(circle at 35% 35%,
+        ${a(0.25)} 0%,
+        ${a(0.12)} 40%,
+        ${a(0.04)} 70%,
+        transparent 100%)`
+
+  const borderColor = shift > 0 ? w(0.3) : a(0.18)
+  const shadowInner = shift > 0 ? w(0.15) : a(0.08)
+  const shadowOuter = shift > 0 ? w(0.2) : a(0.12)
 
   return (
     <div
@@ -163,10 +236,10 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         style={{
           width: size * 1.8,
           height: size * 1.8,
-          background: `radial-gradient(circle, ${a(0.12)} 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${c(0.18)} 0%, transparent 70%)`,
           filter: `blur(${size * 0.3}px)`,
         }}
-        variants={glowVariants}
+        variants={activeGlowVariants}
         animate="animate"
       />
 
@@ -176,12 +249,12 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         style={{
           width: size * 1.2,
           height: size * 1.2,
-          background: `radial-gradient(circle, ${a(0.08)} 0%, transparent 60%)`,
+          background: `radial-gradient(circle, ${c(0.12)} 0%, transparent 60%)`,
           filter: `blur(${size * 0.15}px)`,
         }}
         animate={{
-          scale: [1, 1.08, 1],
-          opacity: [glowOpacity * 0.5, glowOpacity * 0.3, glowOpacity * 0.5],
+          scale: [1, 1.12, 1],
+          opacity: [glowOpacity * 0.6, glowOpacity * 0.25, glowOpacity * 0.6],
           transition: {
             duration: breatheDuration * 0.8,
             repeat: Infinity,
@@ -191,48 +264,100 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
         }}
       />
 
+      {/* Sonar ping ring — listening only */}
+      {state === 'listening' && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            width: size,
+            height: size,
+            border: `2px solid ${a(0.4)}`,
+          }}
+          animate={{
+            scale: [1, 2.2],
+            opacity: [0.6, 0],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeOut',
+          }}
+        />
+      )}
+
+      {/* Second sonar ping (offset) — listening only */}
+      {state === 'listening' && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            width: size,
+            height: size,
+            border: `2px solid ${a(0.3)}`,
+          }}
+          animate={{
+            scale: [1, 2.2],
+            opacity: [0.4, 0],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeOut',
+            delay: 0.75,
+          }}
+        />
+      )}
+
       {/* Core orb */}
       <motion.div
         className="absolute rounded-full"
         style={{
           width: size,
           height: size,
-          background: `radial-gradient(circle at 35% 35%,
-            ${a(0.25)} 0%,
-            ${a(0.12)} 40%,
-            ${a(0.04)} 70%,
-            transparent 100%)`,
-          border: `1px solid ${a(0.18)}`,
+          background: orbBg,
+          border: `1.5px solid ${borderColor}`,
           boxShadow: `
-            inset 0 0 ${size * 0.3}px ${a(0.08)},
-            0 0 ${size * 0.2}px ${a(0.12)}
+            inset 0 0 ${size * 0.3}px ${shadowInner},
+            0 0 ${size * config.borderGlow * 3}px ${shadowOuter},
+            0 0 ${size * config.borderGlow * 6}px ${c(config.borderGlow * 0.5)}
           `,
         }}
-        variants={orbVariants}
+        variants={activeOrbVariants}
         animate={state === 'thinking'
-          ? { ...orbVariants.animate, ...thinkingRotation }
+          ? { ...activeOrbVariants.animate, ...thinkingRotation }
           : 'animate'}
       />
 
-      {/* Inner highlight — gives depth */}
+      {/* Inner highlight — gives depth, orbits more visibly when thinking */}
       <motion.div
         className="absolute rounded-full"
         style={{
           width: size * 0.4,
           height: size * 0.4,
-          top: `calc(50% - ${size * 0.28}px)`,
-          left: `calc(50% - ${size * 0.12}px)`,
-          background: `radial-gradient(circle, ${a(0.15)} 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${shift > 0 ? w(0.25) : a(0.2)} 0%, transparent 70%)`,
           filter: `blur(${size * 0.08}px)`,
         }}
-        animate={{
-          opacity: [0.6, 0.3, 0.6],
-          transition: {
-            duration: breatheDuration * 0.7,
-            repeat: Infinity,
-            ease: 'easeInOut' as const,
-          },
-        }}
+        animate={state === 'thinking'
+          ? {
+              // Orbit around center when thinking
+              x: [0, size * 0.2, 0, -size * 0.2, 0],
+              y: [-size * 0.15, 0, size * 0.15, 0, -size * 0.15],
+              opacity: [0.7, 0.5, 0.7, 0.5, 0.7],
+              transition: {
+                duration: 2,
+                repeat: Infinity,
+                ease: 'linear' as const,
+              },
+            }
+          : {
+              x: 0,
+              y: -size * 0.15,
+              opacity: [0.6, 0.3, 0.6],
+              transition: {
+                duration: breatheDuration * 0.7,
+                repeat: Infinity,
+                ease: 'easeInOut' as const,
+              },
+            }}
       />
     </div>
   )
