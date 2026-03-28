@@ -260,6 +260,33 @@ export function NowPlayingCompact({ nowPlaying, onExpand, videoId, onExpandVideo
             pointerEvents: 'none',
           }}
         />
+
+        {/* Progress line — thin bar at bottom filling left to right */}
+        {nowPlaying.duration > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              borderRadius: '0 0 20px 20px',
+              overflow: 'hidden',
+              pointerEvents: 'none',
+            }}
+          >
+            <motion.div
+              style={{
+                height: '100%',
+                background: 'var(--personality-accent)',
+                opacity: 0.6,
+                borderRadius: 'inherit',
+              }}
+              animate={{ width: `${(nowPlaying.position / nowPlaying.duration) * 100}%` }}
+              transition={{ duration: 1, ease: 'linear' }}
+            />
+          </div>
+        )}
       </motion.div>
     </>
   )
