@@ -13,6 +13,8 @@ import type {
   AssistantMood,
   AudioState,
   IntentBadge,
+  ReminderData,
+  TimerData,
   SettingSchema,
   TranscriptEntry,
   NowPlaying,
@@ -21,6 +23,7 @@ import type {
   ServerMessage,
   UIAction,
   QuizState,
+  WeatherData,
 } from '../types/assistant'
 
 interface InternalState {
@@ -38,6 +41,11 @@ interface InternalState {
   settings: SettingSchema[]
   sleepMode: boolean
   quiz: QuizState
+  reminders: ReminderData[]
+  firedReminder: ReminderData | null
+  timers: TimerData[]
+  firedTimer: TimerData | null
+  weather: WeatherData | null
   youtubeBrowseUrl: string | null
 }
 
@@ -56,6 +64,11 @@ const DEFAULT_STATE: InternalState = {
   settings: [],
   sleepMode: false,
   quiz: { active: false, question: null, lastResult: null, score: { correct: 0, total: 0 }, outcomes: [], showStats: false },
+  reminders: [],
+  firedReminder: null,
+  timers: [],
+  firedTimer: null,
+  weather: null,
   youtubeBrowseUrl: null,
 }
 
@@ -300,6 +313,33 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         }))
         break
 
+      case 'reminder_fired':
+        setState(prev => ({ ...prev, firedReminder: (msg as any).data }))
+        break
+
+      case 'reminders_updated':
+        setState(prev => ({ ...prev, reminders: (msg as any).reminders }))
+        break
+
+      case 'timers':
+        setState(prev => ({ ...prev, timers: (msg as any).timers }))
+        break
+
+      case 'timer_fired':
+        setState(prev => ({ ...prev, firedTimer: (msg as any).data }))
+        break
+
+      case 'timer_cancelled':
+        setState(prev => ({
+          ...prev,
+          timers: prev.timers.filter(t => t.id !== (msg as any).data?.id),
+        }))
+        break
+
+      case 'weather_show':
+        setState(prev => ({ ...prev, weather: msg.data }))
+        break
+
       case 'youtube_browse':
         setState(prev => ({ ...prev, youtubeBrowseUrl: msg.url }))
         break
@@ -467,6 +507,25 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'player_ended' }))
       }
+    },
+    // Reminder controls
+    snoozeReminder: (id: string, minutes: number) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'snooze_reminder', id, minutes }))
+      }
+    },
+    dismissReminder: () => {
+      setState(prev => ({ ...prev, firedReminder: null }))
+    },
+    // Timer controls
+    cancelTimer: (id: string) => {
+      sendAction({ action: 'timer_cancel', params: { id } })
+    },
+    snoozeTimer: (id: string, minutes = 5) => {
+      sendAction({ action: 'timer_snooze', params: { id, minutes } })
+    },
+    dismissTimer: () => {
+      setState(prev => ({ ...prev, firedTimer: null }))
     },
     // Quiz controls
     quizAnswer: (answer: string) => {

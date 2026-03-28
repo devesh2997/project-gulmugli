@@ -300,6 +300,30 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
             response="",
         )
 
+    elif action == "timer_cancel":
+        # Cancel a specific timer/alarm from the dashboard
+        entry_id = params.get("id", "") or action_data.get("id", "")
+        cancel_type = params.get("type", "timer")
+        intent = Intent(
+            name="timer",
+            params={"action": "cancel", "cancel_type": entry_id or cancel_type},
+            response="",
+        )
+
+    elif action == "timer_snooze":
+        # Snooze an alarm from the dashboard
+        entry_id = params.get("id", "") or action_data.get("id", "")
+        snooze_mins = int(params.get("minutes", 5))
+        timer_mgr = assistant.get("timer_manager")
+        if timer_mgr:
+            snoozed = timer_mgr.snooze(entry_id or "alarm", minutes=snooze_mins)
+            face_ui = assistant.get("face_ui")
+            if face_ui:
+                face_ui.set_timers(timer_mgr.list_active())
+            if snoozed:
+                log.info("Snoozed %s for %d minutes via dashboard", snoozed.label, snooze_mins)
+        return
+
     if intent:
         try:
             response = handle_intent(assistant, intent)

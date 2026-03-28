@@ -84,6 +84,12 @@ except Exception:
 # Quiz providers
 from providers.quiz.trivia import TriviaQuizProvider
 
+# Weather providers — optional (needs internet)
+try:
+    from providers.weather.openmeteo import OpenMeteoWeatherProvider
+except Exception:
+    pass  # urllib available everywhere, but import may fail for other reasons
+
 # As you add more providers, import them here:
 # from providers.music.spotify import SpotifyMusicProvider
 # from providers.brain.llamacpp import LlamaCppBrainProvider

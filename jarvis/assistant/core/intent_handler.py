@@ -75,6 +75,21 @@ def set_quiz_provider(quiz_provider) -> None:
 
 # ── Helpers ──────────────────────────────────────────────────────
 
+def _forecast_day_name(date_str: str) -> str:
+    """Convert YYYY-MM-DD to a friendly day name (Today, Tomorrow, or weekday)."""
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+        today = datetime.now().date()
+        if d == today:
+            return "Today"
+        from datetime import timedelta
+        if d == today + timedelta(days=1):
+            return "Tomorrow"
+        return d.strftime("%A")
+    except (ValueError, TypeError):
+        return date_str
+
+
 def _build_now_playing_data(song, video_id: str | None = None) -> dict:
     """Build a now-playing payload dict for the dashboard from a SongResult.
 
@@ -678,6 +693,95 @@ def handle_intent(assistant: dict, intent) -> str:
 
         return intent.response or "I'm not sure what to do with that quiz command."
 
+    elif intent.name == "reminder" and assistant.get("reminder"):
+        action = intent.params.get("action", "")
+        reminder_mgr = assistant["reminder"]
+        face_ui = assistant.get("face_ui")
+
+        if action == "add":
+            text = intent.params.get("text", "")
+            time_str = intent.params.get("time", "")
+            date_str = intent.params.get("date", "today")
+            repeat = intent.params.get("repeat", "none")
+
+            if not text:
+                return "What should I remind you about?"
+            if not time_str:
+                return "When should I remind you?"
+
+            from providers.reminder.manager import parse_reminder_time
+            remind_at = parse_reminder_time(time_str, date_str)
+            if not remind_at:
+                return f"I couldn't understand the time '{time_str}'. Try something like 'at 5pm' or 'in 2 hours'."
+
+            reminder = reminder_mgr.add(text, remind_at, repeat=repeat)
+
+            # Broadcast updated reminder list to dashboard
+            if face_ui:
+                face_ui.update_reminders(reminder_mgr.list_active())
+
+            time_display = remind_at.strftime("%I:%M %p")
+            if date_str in ("tomorrow", "kal") or remind_at.date() != datetime.now().date():
+                time_display = remind_at.strftime("%b %d at %I:%M %p")
+
+            repeat_str = f" ({repeat})" if repeat != "none" else ""
+            return intent.response or f"Reminder set: '{text}' at {time_display}{repeat_str}."
+
+        elif action == "list":
+            active = reminder_mgr.list_active()
+            if not active:
+                return "You don't have any active reminders."
+
+            lines = []
+            for r in active:
+                dt = datetime.fromisoformat(r["remind_at"])
+                time_str_fmt = dt.strftime("%b %d %I:%M %p")
+                repeat_tag = f" [{r['repeat']}]" if r.get("repeat", "none") != "none" else ""
+                lines.append(f"- {r['text']} at {time_str_fmt}{repeat_tag}")
+
+            summary = "\n".join(lines)
+            return f"You have {len(active)} reminder{'s' if len(active) != 1 else ''}:\n{summary}"
+
+        elif action == "cancel":
+            text = intent.params.get("text", "")
+            if text:
+                cancelled = reminder_mgr.cancel_by_text(text)
+                if cancelled:
+                    if face_ui:
+                        face_ui.update_reminders(reminder_mgr.list_active())
+                    return f"Cancelled reminder: '{cancelled['text']}'."
+                else:
+                    return f"I couldn't find an active reminder matching '{text}'."
+            else:
+                # Cancel the most recent active reminder
+                active = reminder_mgr.list_active()
+                if active:
+                    cancelled = reminder_mgr.cancel(active[0]["id"])
+                    if cancelled and face_ui:
+                        face_ui.update_reminders(reminder_mgr.list_active())
+                    return f"Cancelled reminder: '{active[0]['text']}'." if cancelled else "Could not cancel."
+                return "You don't have any active reminders to cancel."
+
+        elif action == "snooze":
+            # Snooze the most recently fired or next due reminder
+            minutes = 15
+            time_param = intent.params.get("time", "")
+            if time_param:
+                try:
+                    minutes = int(''.join(c for c in time_param if c.isdigit()) or "15")
+                except ValueError:
+                    minutes = 15
+
+            active = reminder_mgr.list_active()
+            if active:
+                snoozed = reminder_mgr.snooze(active[0]["id"], minutes=minutes)
+                if snoozed and face_ui:
+                    face_ui.update_reminders(reminder_mgr.list_active())
+                return f"Snoozed for {minutes} minutes." if snoozed else "Could not snooze."
+            return "No active reminders to snooze."
+
+        return intent.response or "I'm not sure what to do with that reminder command."
+
     elif intent.name == "youtube_search":
         query = intent.params.get("query", "")
         face_ui = assistant.get("face_ui")
@@ -693,6 +797,237 @@ def handle_intent(assistant: dict, intent) -> str:
         if face_ui:
             face_ui.video_control(action)
         return intent.response or ""
+
+    elif intent.name == "weather":
+        weather = assistant.get("weather")
+        face_ui = assistant.get("face_ui")
+        query = intent.params.get("query", "current")
+
+        if not weather:
+            return "Weather is not configured. Add a weather section to config.yaml."
+
+        if not weather.is_available():
+            return "I can't check the weather right now — no internet connection."
+
+        weather_cfg = config.get("weather", {})
+        location_name = weather_cfg.get("location", {}).get("name", "your area")
+        unit_symbol = "F" if weather_cfg.get("units") == "fahrenheit" else "C"
+
+        if query in ("current", "temperature", "rain"):
+            current = weather.get_current()
+            if not current:
+                return "I couldn't get the weather data right now."
+
+            # Build dashboard payload
+            dashboard_data = {
+                "temperature": current.temperature,
+                "feels_like": current.feels_like,
+                "humidity": current.humidity,
+                "wind_speed": current.wind_speed,
+                "condition": current.condition,
+                "description": current.description,
+                "icon": current.icon,
+                "sunrise": current.sunrise,
+                "sunset": current.sunset,
+                "location": location_name,
+                "unit": unit_symbol,
+            }
+
+            # Add forecast for dashboard expansion
+            forecast = weather.get_forecast(days=3)
+            if forecast:
+                dashboard_data["forecast"] = [
+                    {
+                        "date": f.date,
+                        "temp_min": f.temp_min,
+                        "temp_max": f.temp_max,
+                        "condition": f.condition,
+                        "description": f.description,
+                        "icon": f.icon,
+                        "precipitation_chance": f.precipitation_chance,
+                    }
+                    for f in forecast
+                ]
+
+            # Add hourly for dashboard expansion
+            hourly = weather.get_hourly(hours=12)
+            if hourly:
+                dashboard_data["hourly"] = [
+                    {
+                        "time": h.time,
+                        "temperature": h.temperature,
+                        "condition": h.condition,
+                        "icon": h.icon,
+                        "precipitation_chance": h.precipitation_chance,
+                    }
+                    for h in hourly
+                ]
+
+            # Broadcast to dashboard
+            if face_ui:
+                face_ui.show_weather(dashboard_data)
+
+            # Build spoken response
+            if query == "rain":
+                rain_conditions = ("rain", "thunderstorm")
+                if current.condition in rain_conditions:
+                    return (
+                        f"Yes, it's currently {current.description.lower()} in {location_name}. "
+                        f"Temperature is {current.temperature:.0f} degrees {unit_symbol}."
+                    )
+                # Check forecast for rain today
+                if forecast:
+                    today = forecast[0]
+                    if today.condition in rain_conditions or today.precipitation_chance > 50:
+                        return (
+                            f"Not right now, but there's a {today.precipitation_chance}% chance of rain today in {location_name}. "
+                            f"Currently {current.temperature:.0f} degrees {unit_symbol} and {current.description.lower()}."
+                        )
+                return (
+                    f"No rain expected in {location_name}. "
+                    f"It's {current.temperature:.0f} degrees {unit_symbol} and {current.description.lower()}."
+                )
+
+            if query == "temperature":
+                return (
+                    f"It's {current.temperature:.0f} degrees {unit_symbol} in {location_name}. "
+                    f"Feels like {current.feels_like:.0f}."
+                )
+
+            # Default: full current weather
+            return (
+                f"It's {current.temperature:.0f} degrees {unit_symbol} and {current.description.lower()} "
+                f"in {location_name}. Feels like {current.feels_like:.0f} with "
+                f"{current.humidity}% humidity."
+            )
+
+        elif query == "forecast":
+            forecast = weather.get_forecast(days=3)
+            if not forecast:
+                return "I couldn't get the forecast right now."
+
+            # Broadcast to dashboard
+            if face_ui:
+                dashboard_data = {
+                    "forecast": [
+                        {
+                            "date": f.date,
+                            "temp_min": f.temp_min,
+                            "temp_max": f.temp_max,
+                            "condition": f.condition,
+                            "description": f.description,
+                            "icon": f.icon,
+                            "precipitation_chance": f.precipitation_chance,
+                        }
+                        for f in forecast
+                    ],
+                    "location": location_name,
+                    "unit": unit_symbol,
+                }
+                # Also get current for the widget
+                current = weather.get_current()
+                if current:
+                    dashboard_data.update({
+                        "temperature": current.temperature,
+                        "feels_like": current.feels_like,
+                        "humidity": current.humidity,
+                        "condition": current.condition,
+                        "description": current.description,
+                        "icon": current.icon,
+                    })
+                face_ui.show_weather(dashboard_data)
+
+            # Build spoken response (keep short for voice)
+            lines = []
+            for f in forecast[:3]:
+                day_name = _forecast_day_name(f.date)
+                lines.append(
+                    f"{day_name}: {f.temp_min:.0f} to {f.temp_max:.0f} degrees, {f.description.lower()}"
+                )
+            return f"Here's the forecast for {location_name}. " + ". ".join(lines) + "."
+
+        return intent.response or "I'm not sure what weather info you need."
+
+    elif intent.name == "timer" and assistant.get("timer_manager"):
+        action = intent.params.get("action", "")
+        timer_mgr = assistant["timer_manager"]
+        face_ui = assistant.get("face_ui")
+
+        if action == "set_timer":
+            duration = int(intent.params.get("duration", 300))
+            label = intent.params.get("label", "")
+            entry = timer_mgr.set_timer(duration, label=label)
+
+            # Broadcast updated timer list
+            if face_ui:
+                face_ui.set_timers(timer_mgr.list_active())
+
+            # Format duration for speech
+            mins, secs = divmod(duration, 60)
+            hours, mins = divmod(mins, 60)
+            parts = []
+            if hours:
+                parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            if mins:
+                parts.append(f"{mins} minute{'s' if mins != 1 else ''}")
+            if secs and not hours:
+                parts.append(f"{secs} second{'s' if secs != 1 else ''}")
+            duration_str = " and ".join(parts) if parts else "0 seconds"
+            label_str = f" for {label}" if label else ""
+            return intent.response or f"Timer set for {duration_str}{label_str}."
+
+        elif action == "set_alarm":
+            time_str = intent.params.get("time", "07:00")
+            label = intent.params.get("label", "")
+            repeat = intent.params.get("repeat", "none")
+            entry = timer_mgr.set_alarm(time_str, label=label, repeat=repeat)
+
+            if face_ui:
+                face_ui.set_timers(timer_mgr.list_active())
+
+            repeat_str = f" ({repeat})" if repeat != "none" else ""
+            return intent.response or f"Alarm set for {time_str}{repeat_str}."
+
+        elif action == "cancel":
+            cancel_type = intent.params.get("cancel_type", "timer")
+            cancelled = timer_mgr.cancel(cancel_type)
+
+            if face_ui:
+                if cancelled:
+                    face_ui.timer_cancelled(cancelled.to_dict())
+                face_ui.set_timers(timer_mgr.list_active())
+
+            if cancelled:
+                return intent.response or f"{cancelled.type.title()} '{cancelled.label}' cancelled."
+            return "No active timer or alarm to cancel."
+
+        elif action == "snooze":
+            snooze_mins = int(intent.params.get("duration", 300)) // 60 if intent.params.get("duration") else 5
+            snoozed = timer_mgr.snooze("alarm", minutes=snooze_mins)
+
+            if face_ui:
+                face_ui.set_timers(timer_mgr.list_active())
+
+            if snoozed:
+                return intent.response or f"Snoozed {snoozed.label} for {snooze_mins} minutes."
+            return "No alarm to snooze."
+
+        elif action == "list":
+            active = timer_mgr.list_active()
+            if not active:
+                return "No active timers or alarms."
+            lines = []
+            for t_entry in active:
+                remaining = int(t_entry["remaining_seconds"])
+                if t_entry["type"] == "timer":
+                    m, s = divmod(remaining, 60)
+                    lines.append(f"Timer '{t_entry['label']}': {m}m {s}s remaining")
+                else:
+                    target_dt = datetime.fromtimestamp(t_entry["target_time"])
+                    lines.append(f"Alarm '{t_entry['label']}' at {target_dt.strftime('%I:%M %p')}")
+            return ". ".join(lines) + "."
+
+        return intent.response or "I'm not sure what to do with that timer command."
 
     elif intent.name == "system":
         action = intent.params.get("action", "")

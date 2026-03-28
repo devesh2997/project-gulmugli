@@ -223,6 +223,54 @@ export interface BluetoothPairMessage {
   name?: string
 }
 
+// ─── Reminders ──────────────────────────────────────────────────
+export interface ReminderData {
+  id: string
+  text: string
+  remind_at: string   // ISO datetime
+  repeat: 'none' | 'daily' | 'weekly' | 'monthly'
+  created_at: string
+  active: boolean
+}
+
+export interface ReminderFiredMessage {
+  type: 'reminder_fired'
+  data: ReminderData
+}
+
+export interface RemindersUpdatedMessage {
+  type: 'reminders_updated'
+  reminders: ReminderData[]
+}
+
+// ─── Timers & Alarms ─────────────────────────────────────────────
+export interface TimerData {
+  id: string
+  type: 'timer' | 'alarm'
+  target_time: number     // unix timestamp
+  label: string
+  repeat: 'none' | 'daily' | 'weekdays'
+  active: boolean
+  remaining_seconds: number
+  original_time_str?: string
+  created_at: number
+}
+
+export interface TimersMessage {
+  type: 'timers'
+  timers: TimerData[]
+}
+
+export interface TimerFiredMessage {
+  type: 'timer_fired'
+  data: TimerData
+}
+
+export interface TimerCancelledMessage {
+  type: 'timer_cancelled'
+  data: TimerData
+}
+
 // ─── Quiz / Trivia ──────────────────────────────────────────────
 export interface QuizShowMessage {
   type: 'quiz_show'
@@ -280,6 +328,70 @@ export interface QuizState {
   showStats: boolean
 }
 
+// ─── Weather ─────────────────────────────────────────────────────
+export type WeatherCondition =
+  | 'sunny'
+  | 'partly_cloudy'
+  | 'cloudy'
+  | 'rain'
+  | 'thunderstorm'
+  | 'snow'
+  | 'fog'
+  | 'clear_night'
+
+export interface WeatherCurrent {
+  temperature: number
+  feels_like: number
+  humidity: number
+  wind_speed: number
+  condition: WeatherCondition
+  description: string
+  icon: WeatherCondition
+  sunrise?: string
+  sunset?: string
+  location: string
+  unit: string  // "C" or "F"
+}
+
+export interface WeatherForecastDay {
+  date: string
+  temp_min: number
+  temp_max: number
+  condition: WeatherCondition
+  description: string
+  icon: WeatherCondition
+  precipitation_chance: number
+}
+
+export interface WeatherHourly {
+  time: string
+  temperature: number
+  condition: WeatherCondition
+  icon: WeatherCondition
+  precipitation_chance: number
+}
+
+export interface WeatherData {
+  temperature?: number
+  feels_like?: number
+  humidity?: number
+  wind_speed?: number
+  condition?: WeatherCondition
+  description?: string
+  icon?: WeatherCondition
+  sunrise?: string
+  sunset?: string
+  location: string
+  unit: string
+  forecast?: WeatherForecastDay[]
+  hourly?: WeatherHourly[]
+}
+
+export interface WeatherShowMessage {
+  type: 'weather_show'
+  data: WeatherData
+}
+
 export type ServerMessage =
   | StateMessage
   | PersonalityMessage
@@ -300,12 +412,18 @@ export type ServerMessage =
   | AudioOutputsMessage
   | BluetoothScanMessage
   | BluetoothPairMessage
+  | ReminderFiredMessage
+  | RemindersUpdatedMessage
+  | TimersMessage
+  | TimerFiredMessage
+  | TimerCancelledMessage
   | QuizShowMessage
   | QuizUpdateMessage
   | QuizCloseMessage
   | YouTubeBrowseMessage
   | PlaySongMessage
   | PlayerCommandMessage
+  | WeatherShowMessage
   | { type: 'video_control'; action: string }
   | { type: 'playback_position'; position: number; duration: number }
 
@@ -375,6 +493,11 @@ export interface AssistantStore {
   settings: SettingSchema[]
   sleepMode: boolean
   quiz: QuizState
+  reminders: ReminderData[]
+  firedReminder: ReminderData | null
+  timers: TimerData[]
+  firedTimer: TimerData | null
+  weather: WeatherData | null
   youtubeBrowseUrl: string | null
   actions: AssistantActions
   sendAction: (action: UIAction) => void
@@ -405,6 +528,13 @@ export interface AssistantActions {
   // Player position reporting
   reportPosition: (position: number, duration: number) => void
   reportPlayerEnded: () => void
+  // Reminder controls
+  snoozeReminder: (id: string, minutes: number) => void
+  dismissReminder: () => void
+  // Timer controls
+  cancelTimer: (id: string) => void
+  snoozeTimer: (id: string, minutes?: number) => void
+  dismissTimer: () => void
   // Quiz controls
   quizAnswer: (answer: string) => void
   quizHint: () => void

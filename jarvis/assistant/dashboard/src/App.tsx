@@ -21,6 +21,9 @@ import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
 import { MusicPlayer } from './components/MusicPlayer'
 import { QuizCard } from './components/QuizCard'
+import { ReminderNotification } from './components/ReminderNotification'
+import { TimerWidget } from './components/TimerWidget'
+import { WeatherWidget } from './components/WeatherWidget'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -47,6 +50,15 @@ function AppContent() {
 
   // -- Panel state --
   const [openPanel, setOpenPanel] = useState<PanelId>(null)
+
+  // -- Weather dismiss state --
+  const [weatherDismissed, setWeatherDismissed] = useState(false)
+  const lastWeatherRef = useRef(assistant.weather)
+  // Reset dismissed flag when new weather data arrives
+  if (assistant.weather !== lastWeatherRef.current) {
+    lastWeatherRef.current = assistant.weather
+    if (assistant.weather) setWeatherDismissed(false)
+  }
 
   // Stable gesture callback
   const openPanelRef = useRef(openPanel)
@@ -174,6 +186,29 @@ function AppContent() {
           <QuizCard quiz={assistant.quiz} actions={assistant.actions} />
         )}
       </AnimatePresence>
+
+      {/* Weather widget — appears when weather is queried, auto-fades */}
+      <AnimatePresence>
+        {assistant.weather && !weatherDismissed && (
+          <WeatherWidget
+            data={assistant.weather}
+            onDismiss={() => setWeatherDismissed(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Reminder notification — slides in from top when a reminder fires */}
+      <ReminderNotification
+        reminder={assistant.firedReminder}
+        actions={assistant.actions}
+      />
+
+      {/* Timer/alarm pills — floating in top-right when active */}
+      <TimerWidget
+        timers={assistant.timers}
+        firedTimer={assistant.firedTimer}
+        actions={assistant.actions}
+      />
 
       {/* Sleep mode tap-to-wake overlay */}
       <AnimatePresence>

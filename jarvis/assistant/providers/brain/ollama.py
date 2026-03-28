@@ -167,8 +167,17 @@ Respond with valid JSON only. No explanation. No markdown.
    Do NOT generate a story, answer, or any content in the message param — just echo what they said.
    The actual response will be generated separately by a different system.
 
-7. "system" — System info (time, date, weather, alarms)
-   Params: {{"action": "time|date|weather|alarm|reminder"}}
+7. "system" — System info (time, date, alarms)
+   Params: {{"action": "time|date|alarm|reminder"}}
+
+14. "weather" — Weather queries (current conditions, forecast, rain check)
+   Params: {{"query": "current|forecast|rain|temperature", "location": "optional city name"}}
+   "what's the weather" → weather {{"query": "current"}}
+   "will it rain today" → weather {{"query": "rain"}}
+   "weather forecast" → weather {{"query": "forecast"}}
+   "temperature kya hai" → weather {{"query": "temperature"}}
+   "mausam kaisa hai" → weather {{"query": "current"}}
+   "Delhi ka mausam" → weather {{"query": "current", "location": "Delhi"}}
 
 8. "memory_recall" — User asks about past interactions or what they/you did before
    Params: {{"query": "what the user wants to recall"}}
@@ -223,6 +232,42 @@ Respond with valid JSON only. No explanation. No markdown.
    "YouTube pe Sajni dhundho" → youtube_search {{"query": "Sajni"}}
    "find cooking videos on YouTube" → youtube_search {{"query": "cooking videos"}}
    "YouTube search Coldplay concerts" → youtube_search {{"query": "Coldplay concerts"}}
+
+14. "reminder" — Set, list, cancel, or snooze reminders
+   Params: {{"action": "add|cancel|list|snooze", "text": "description", "time": "HH:MM or relative", "date": "today|tomorrow|YYYY-MM-DD", "repeat": "none|daily|weekly|monthly"}}
+   Add: "remind me to call mom at 5pm" → action: "add", text: "call mom", time: "5pm", date: "today"
+   "remind me to take medicine at 10pm every day" → action: "add", text: "take medicine", time: "10pm", repeat: "daily"
+   "set a reminder for tomorrow at 9am to buy groceries" → action: "add", text: "buy groceries", time: "9am", date: "tomorrow"
+   "remind me in 2 hours to check the oven" → action: "add", text: "check the oven", time: "in 2 hours"
+   "yaad dilana ki 5 baje call karna hai" → action: "add", text: "call karna hai", time: "5:00"
+   "reminder set karo 10 baje medicine leni hai" → action: "add", text: "medicine leni hai", time: "10:00"
+   List: "what reminders do I have" → action: "list"
+   "list reminders" → action: "list"
+   Cancel: "cancel my reminder to call mom" → action: "cancel", text: "call mom"
+   "cancel reminder" → action: "cancel"
+   Snooze: "snooze reminder" → action: "snooze"
+   "snooze for 30 minutes" → action: "snooze", time: "30"
+   Default date is "today", default repeat is "none"
+
+15. "timer" — Set, cancel, or manage timers and alarms
+   Params: {{"action": "set_timer|set_alarm|cancel|snooze|list", "duration": seconds, "time": "HH:MM", "label": "string", "repeat": "none|daily|weekdays"}}
+   Set timer: "set a timer for 5 minutes" → action: "set_timer", duration: 300
+   "timer lagao 10 minute" → action: "set_timer", duration: 600
+   "set a 30 second timer" → action: "set_timer", duration: 30
+   "timer for 2 hours" → action: "set_timer", duration: 7200
+   "set a timer for 5 minutes for pasta" → action: "set_timer", duration: 300, label: "pasta"
+   Set alarm: "set alarm for 7am" → action: "set_alarm", time: "07:00"
+   "alarm at 7:30pm" → action: "set_alarm", time: "19:30"
+   "wake me up at 6" → action: "set_alarm", time: "06:00"
+   "alarm set karo 7 baje" → action: "set_alarm", time: "07:00"
+   "set a daily alarm for 7am" → action: "set_alarm", time: "07:00", repeat: "daily"
+   "weekday alarm at 6:30" → action: "set_alarm", time: "06:30", repeat: "weekdays"
+   Cancel: "cancel timer" → action: "cancel"
+   Snooze: "snooze" → action: "snooze"
+   "snooze for 10 minutes" → action: "snooze", duration: 600
+   List: "what timers are active" → action: "list"
+   IMPORTANT: Timers use "duration" (in seconds). Alarms use "time" (HH:MM format).
+   Convert minutes/hours to seconds for duration. Convert 12h to 24h for time.
 
 ## Format
 Always return an "intents" array, even for a single command.
@@ -309,6 +354,18 @@ User: "reading mode"
 User: "what time is it"
 {{"intents": [{{"intent": "system", "params": {{"action": "time"}}}}], "response": ""}}
 
+User: "what's the weather"
+{{"intents": [{{"intent": "weather", "params": {{"query": "current"}}}}], "response": ""}}
+
+User: "will it rain today"
+{{"intents": [{{"intent": "weather", "params": {{"query": "rain"}}}}], "response": ""}}
+
+User: "mausam kaisa hai"
+{{"intents": [{{"intent": "weather", "params": {{"query": "current"}}}}], "response": ""}}
+
+User: "weather forecast"
+{{"intents": [{{"intent": "weather", "params": {{"query": "forecast"}}}}], "response": ""}}
+
 User: "switch to Chandler mode"
 {{"intents": [{{"intent": "switch_personality", "params": {{"personality": "chandler"}}}}], "response": "Oh, so NOW you want the funny one."}}
 
@@ -371,6 +428,39 @@ User: "start a hard cricket quiz"
 
 User: "quit quiz"
 {{"intents": [{{"intent": "quiz", "params": {{"action": "quit"}}}}], "response": "Quiz ended."}}
+
+User: "remind me to call mom at 5pm"
+{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "call mom", "time": "5pm", "date": "today", "repeat": "none"}}}}], "response": "I'll remind you to call mom at 5 PM."}}
+
+User: "remind me to take medicine at 10pm every day"
+{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "take medicine", "time": "10pm", "date": "today", "repeat": "daily"}}}}], "response": "Daily reminder set for 10 PM."}}
+
+User: "remind me in 2 hours to check the oven"
+{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "check the oven", "time": "in 2 hours"}}}}], "response": "Got it, I'll remind you in 2 hours."}}
+
+User: "what reminders do I have"
+{{"intents": [{{"intent": "reminder", "params": {{"action": "list"}}}}], "response": "Let me check your reminders."}}
+
+User: "cancel my reminder to call mom"
+{{"intents": [{{"intent": "reminder", "params": {{"action": "cancel", "text": "call mom"}}}}], "response": "Reminder cancelled."}}
+
+User: "set a timer for 5 minutes"
+{{"intents": [{{"intent": "timer", "params": {{"action": "set_timer", "duration": 300}}}}], "response": "Timer set for 5 minutes."}}
+
+User: "timer lagao 10 minute"
+{{"intents": [{{"intent": "timer", "params": {{"action": "set_timer", "duration": 600}}}}], "response": "Timer set for 10 minutes."}}
+
+User: "set alarm for 7am"
+{{"intents": [{{"intent": "timer", "params": {{"action": "set_alarm", "time": "07:00", "repeat": "none"}}}}], "response": "Alarm set for 7 AM."}}
+
+User: "set a daily alarm for 6:30am"
+{{"intents": [{{"intent": "timer", "params": {{"action": "set_alarm", "time": "06:30", "repeat": "daily"}}}}], "response": "Daily alarm set for 6:30 AM."}}
+
+User: "cancel timer"
+{{"intents": [{{"intent": "timer", "params": {{"action": "cancel"}}}}], "response": "Timer cancelled."}}
+
+User: "snooze"
+{{"intents": [{{"intent": "timer", "params": {{"action": "snooze"}}}}], "response": "Snoozed."}}
 
 ### Chained commands
 User: "play Sajni and set the lights to red"

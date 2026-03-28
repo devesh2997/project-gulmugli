@@ -306,6 +306,240 @@ def _match_youtube_search(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_reminder(text: str) -> list[Intent] | None:
+    """Match unambiguous reminder commands."""
+    t = text.strip().lower()
+
+    # List reminders: "list reminders", "what reminders do I have", "my reminders"
+    # Hindi: "reminders dikha", "kya reminders hain"
+    if re.fullmatch(
+        r"(list\s+reminders?|what\s+reminders?\s+(do\s+i\s+have|are\s+there)|"
+        r"my\s+reminders?|show\s+reminders?|"
+        r"reminders?\s+dikha(o)?|kya\s+reminders?\s+hain?|"
+        r"reminders?\s+(bata(o)?|batao))",
+        t,
+    ):
+        return [Intent(name="reminder", params={"action": "list"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Cancel reminder: "cancel reminder", "delete reminder"
+    # Hindi: "reminder cancel karo", "reminder hatao"
+    if re.fullmatch(
+        r"(cancel\s+(my\s+)?reminders?|delete\s+(my\s+)?reminders?|"
+        r"reminders?\s+(cancel|hatao|hata\s+do|band)\s*(karo?)?)",
+        t,
+    ):
+        return [Intent(name="reminder", params={"action": "cancel"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Add reminder with "remind me to X at Y" pattern
+    m = re.match(
+        r"remind\s+me\s+to\s+(.+?)\s+at\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*$",
+        t,
+    )
+    if m:
+        return [Intent(name="reminder",
+                       params={"action": "add", "text": m.group(1).strip(),
+                               "time": m.group(2).strip(), "date": "today"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # "remind me tomorrow to X"
+    m = re.match(
+        r"remind\s+me\s+tomorrow\s+to\s+(.+)$",
+        t,
+    )
+    if m:
+        return [Intent(name="reminder",
+                       params={"action": "add", "text": m.group(1).strip(),
+                               "time": "morning", "date": "tomorrow"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # "reminder: X at Y"
+    m = re.match(
+        r"reminder[:\s]+(.+?)\s+at\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*$",
+        t,
+    )
+    if m:
+        return [Intent(name="reminder",
+                       params={"action": "add", "text": m.group(1).strip(),
+                               "time": m.group(2).strip(), "date": "today"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Hindi: "yaad dilana ki 5 baje call karna hai"
+    m = re.match(
+        r"yaad\s+dila(?:na|o)\s+(?:ki\s+)?(\d{1,2})\s+baje\s+(.+)$",
+        t,
+    )
+    if m:
+        hour = m.group(1).strip()
+        task = m.group(2).strip()
+        return [Intent(name="reminder",
+                       params={"action": "add", "text": task,
+                               "time": f"{hour}:00", "date": "today"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Hindi: "reminder set karo X at Y"
+    m = re.match(
+        r"reminder\s+set\s+karo?\s+(.+?)\s+at\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*$",
+        t,
+    )
+    if m:
+        return [Intent(name="reminder",
+                       params={"action": "add", "text": m.group(1).strip(),
+                               "time": m.group(2).strip(), "date": "today"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
+def _match_timer(text: str) -> list[Intent] | None:
+    """Match unambiguous timer and alarm commands."""
+    t = text.strip().lower()
+
+    # ── Set timer: "set timer for 5 minutes", "5 minute timer", "timer 10 min"
+    # Hindi: "timer lagao 5 minute", "5 minute ka timer"
+    m = re.match(
+        r"(?:set\s+(?:a\s+)?timer\s+(?:for\s+)?|timer\s+(?:lagao\s+|set\s+(?:karo?\s+)?)?)"
+        r"(\d+)\s*(?:minute|min|minat)s?",
+        t,
+    )
+    if m:
+        minutes = int(m.group(1))
+        return [Intent(name="timer", params={"action": "set_timer", "duration": minutes * 60, "label": ""},
+                       response=f"Timer set for {minutes} minute{'s' if minutes != 1 else ''}.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    m = re.match(r"(\d+)\s*(?:minute|min|minat)s?\s+(?:ka\s+)?timer", t)
+    if m:
+        minutes = int(m.group(1))
+        return [Intent(name="timer", params={"action": "set_timer", "duration": minutes * 60, "label": ""},
+                       response=f"Timer set for {minutes} minute{'s' if minutes != 1 else ''}.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    # Timer with seconds: "timer 30 seconds", "30 second timer"
+    m = re.match(
+        r"(?:set\s+(?:a\s+)?timer\s+(?:for\s+)?|timer\s+(?:lagao\s+)?)"
+        r"(\d+)\s*(?:second|sec)s?",
+        t,
+    )
+    if m:
+        seconds = int(m.group(1))
+        return [Intent(name="timer", params={"action": "set_timer", "duration": seconds, "label": ""},
+                       response=f"Timer set for {seconds} seconds.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    m = re.match(r"(\d+)\s*(?:second|sec)s?\s+timer", t)
+    if m:
+        seconds = int(m.group(1))
+        return [Intent(name="timer", params={"action": "set_timer", "duration": seconds, "label": ""},
+                       response=f"Timer set for {seconds} seconds.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    # Timer with hours: "timer 1 hour", "1 hour timer"
+    m = re.match(
+        r"(?:set\s+(?:a\s+)?timer\s+(?:for\s+)?|timer\s+(?:lagao\s+)?)"
+        r"(\d+)\s*(?:hour|hr|ghante?)s?",
+        t,
+    )
+    if m:
+        hours = int(m.group(1))
+        return [Intent(name="timer", params={"action": "set_timer", "duration": hours * 3600, "label": ""},
+                       response=f"Timer set for {hours} hour{'s' if hours != 1 else ''}.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    # ── Set alarm: "set alarm for 7am", "alarm at 7:00", "wake me up at 7"
+    # Hindi: "alarm set karo 7 baje", "alarm lagao 7 baje"
+    m = re.match(
+        r"(?:set\s+(?:an?\s+)?alarm\s+(?:for\s+|at\s+)?|alarm\s+(?:set\s+karo?\s+|lagao\s+)?(?:at\s+)?|wake\s+me\s+(?:up\s+)?(?:at\s+)?)"
+        r"(\d{1,2})(?::(\d{2}))?\s*(?:am|pm|baje)?",
+        t,
+    )
+    if m:
+        hour = int(m.group(1))
+        minute = int(m.group(2)) if m.group(2) else 0
+        if "pm" in t and hour < 12:
+            hour += 12
+        elif "am" in t and hour == 12:
+            hour = 0
+        time_str = f"{hour:02d}:{minute:02d}"
+        return [Intent(name="timer", params={"action": "set_alarm", "time": time_str, "label": "", "repeat": "none"},
+                       response=f"Alarm set for {hour:02d}:{minute:02d}.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    # ── Cancel timer/alarm
+    if re.fullmatch(
+        r"(cancel\s+(the\s+)?timer|stop\s+(the\s+)?timer|timer\s+(cancel|band)\s*(karo?)?|timer\s+hatao)",
+        t,
+    ):
+        return [Intent(name="timer", params={"action": "cancel", "cancel_type": "timer"},
+                       response="Timer cancelled.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    if re.fullmatch(
+        r"(cancel\s+(the\s+)?alarm|stop\s+(the\s+)?alarm|alarm\s+(cancel|band)\s*(karo?)?|alarm\s+hatao)",
+        t,
+    ):
+        return [Intent(name="timer", params={"action": "cancel", "cancel_type": "alarm"},
+                       response="Alarm cancelled.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # ── Snooze
+    if re.fullmatch(r"(snooze|snooze\s+karo?|snooze\s+kar\s+do)", t):
+        return [Intent(name="timer", params={"action": "snooze"},
+                       response="Snoozed for 5 minutes.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # ── List timers/alarms
+    if re.fullmatch(r"(list\s+timers?|active\s+timers?|show\s+timers?|what\s+timers?)", t):
+        return [Intent(name="timer", params={"action": "list"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
+def _match_weather(text: str) -> list[Intent] | None:
+    """Match unambiguous weather queries."""
+    t = text.strip().lower()
+
+    # English: "what's the weather", "weather today", "how's the weather", "temperature"
+    if re.fullmatch(
+        r"(what'?s the weather|weather( today| outside)?|how'?s the weather( today| outside)?|"
+        r"current weather|weather report|weather update|"
+        r"what'?s the temperature|temperature( outside)?|how (hot|cold) is it( outside)?|"
+        r"is it (hot|cold|warm|raining|snowing)( outside| today)?|"
+        r"will it rain( today)?|is it going to rain( today)?|"
+        # Hindi/Hinglish
+        r"mausam kaisa hai|mausam bata(o)?|aaj (ka )?mausam|"
+        r"barish hogi kya|barish ho rahi hai kya|"
+        r"temperature kya hai|kitni garmi hai|kitni sardi hai|"
+        r"bahar kaisa mausam hai|weather kaisa hai)",
+        t,
+    ):
+        return [Intent(name="weather", params={"query": "current"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # "weather forecast", "week ka mausam"
+    if re.fullmatch(
+        r"(weather forecast|forecast|weekly weather|week ka mausam|"
+        r"kal ka mausam|tomorrow'?s? weather|agle (din|hafta) ka mausam)",
+        t,
+    ):
+        return [Intent(name="weather", params={"query": "forecast"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
 def _match_sleep(text: str) -> list[Intent] | None:
     """Match unambiguous sleep/wake commands."""
     t = text.strip().lower()
@@ -366,7 +600,10 @@ def _match_video_control(text: str) -> list[Intent] | None:
 
 
 PREFILTER_CHAIN = [
+    _match_timer,
+    _match_weather,
     _match_sleep,
+    _match_reminder,
     _match_quiz,
     _match_youtube_search,
     _match_video_music,

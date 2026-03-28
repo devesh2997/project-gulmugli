@@ -66,6 +66,9 @@ class FaceUI:
         self._personalities: list[dict] = []
         self._settings: list[dict] = []
         self._sleep_mode: bool = False
+        self._weather: Optional[dict] = None
+        self._active_timers: list[dict] = []
+        self._reminders: list[dict] = []
 
         # Callback for actions received from the browser UI.
         # Set this from main.py to route UI actions into the assistant's
@@ -264,6 +267,36 @@ class FaceUI:
         """Close the quiz overlay on the dashboard."""
         self._broadcast({"type": "quiz_close"})
 
+    def show_reminder(self, data: dict) -> None:
+        """
+        Notify the dashboard that a reminder just fired.
+
+        Args:
+            data: Reminder dict with id, text, remind_at, repeat, etc.
+        """
+        self._broadcast({"type": "reminder_fired", "data": data})
+
+    def update_reminders(self, reminders: list[dict]) -> None:
+        """
+        Send the full list of active reminders to the dashboard.
+
+        Args:
+            reminders: List of active reminder dicts.
+        """
+        self._reminders = reminders
+        self._broadcast({"type": "reminders_updated", "reminders": reminders})
+
+    def show_weather(self, data: dict) -> None:
+        """
+        Show weather data on the dashboard.
+
+        Args:
+            data: Dict with temperature, condition, feels_like, humidity, etc.
+                  Optionally includes forecast[] and hourly[] arrays.
+        """
+        self._weather = data
+        self._broadcast({"type": "weather_show", "data": data})
+
     def video_control(self, action: str) -> None:
         """Send a video player control command to the dashboard."""
         self._broadcast({"type": "video_control", "action": action})
@@ -281,6 +314,19 @@ class FaceUI:
         msg = {"type": "player_command", "command": command}
         msg.update(params)
         self._broadcast(msg)
+
+    def set_timers(self, timers: list[dict]) -> None:
+        """Broadcast the full list of active timers/alarms to the dashboard."""
+        self._active_timers = timers
+        self._broadcast({"type": "timers", "timers": timers})
+
+    def timer_fired(self, data: dict) -> None:
+        """Broadcast when a timer/alarm fires."""
+        self._broadcast({"type": "timer_fired", "data": data})
+
+    def timer_cancelled(self, data: dict) -> None:
+        """Broadcast when a timer/alarm is cancelled."""
+        self._broadcast({"type": "timer_cancelled", "data": data})
 
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
@@ -353,6 +399,14 @@ class FaceUI:
             if self._sleep_mode:
                 await websocket.send(json.dumps({
                     "type": "sleep_mode", "active": True,
+                }))
+            if self._reminders:
+                await websocket.send(json.dumps({
+                    "type": "reminders_updated", "reminders": self._reminders,
+                }))
+            if self._active_timers:
+                await websocket.send(json.dumps({
+                    "type": "timers", "timers": self._active_timers,
                 }))
         except Exception:
             pass

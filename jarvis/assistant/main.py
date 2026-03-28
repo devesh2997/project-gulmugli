@@ -201,6 +201,70 @@ def build_assistant() -> dict:
     else:
         assistant["quiz"] = None
 
+    # Timer/Alarm manager — background scheduling with persistent alarms
+    try:
+        from providers.timer.manager import TimerManager
+
+        def _on_timer_fire(entry):
+            """Called when a timer/alarm fires — speak + broadcast to dashboard."""
+            face_ui = assistant.get("face_ui")
+            voice_router = assistant.get("voice_router")
+            lights = assistant.get("lights")
+
+            # Build the spoken message
+            if entry.type == "alarm":
+                label_str = f" — {entry.label}" if entry.label and entry.label != "Alarm" else ""
+                message = f"Alarm{label_str}! Time to wake up!"
+
+                # Wake-up alarm: gradually increase light brightness
+                if lights and entry.label.lower() in ("wake up", "alarm", "morning"):
+                    sleep_cfg = config.get("sleep_mode", {})
+                    target_brightness = sleep_cfg.get("wake_lights_brightness", 50)
+                    def _gradual_lights():
+                        import time as _time
+                        try:
+                            lights.turn_on()
+                            # Ramp up over 5 minutes (or less if brightness is low)
+                            steps = 10
+                            step_delay = 30  # 30s between steps = 5 min total
+                            for i in range(1, steps + 1):
+                                brightness = int((i / steps) * target_brightness)
+                                lights.set_brightness(brightness)
+                                # Warm color at start, neutral at end
+                                if i <= steps // 2:
+                                    lights.set_color("#FF8C00")  # warm orange
+                                _time.sleep(step_delay)
+                        except Exception as e:
+                            log.warning("Gradual wake lights failed: %s", e)
+                    threading.Thread(target=_gradual_lights, name="wake-lights", daemon=True).start()
+            else:
+                label_str = f" — {entry.label}" if entry.label and entry.label != "Timer" else ""
+                message = f"Timer done{label_str}!"
+
+            # Broadcast to dashboard
+            if face_ui:
+                face_ui.timer_fired(entry.to_dict())
+                face_ui.set_timers(assistant["timer_manager"].list_active())
+
+            # Speak the alert
+            if voice_router:
+                try:
+                    if face_ui:
+                        face_ui.show_transcript(message, role="assistant")
+                    voice_router.speak(message)
+                except Exception as e:
+                    log.warning("Timer fire TTS failed: %s", e)
+            else:
+                print(f"\n*** {message} ***\n")
+
+        timer_mgr = TimerManager(on_fire=_on_timer_fire)
+        timer_mgr.start()
+        assistant["timer_manager"] = timer_mgr
+        log.info("TimerManager ready.")
+    except Exception as e:
+        log.info("TimerManager not available (%s). Timer/alarm features disabled.", e)
+        assistant["timer_manager"] = None
+
     # Face UI — browser-based animated face (purely cosmetic, optional)
     face_ui = FaceUI(port=config.get("ui", {}).get("port", 8765))
     face_ui.start()

@@ -23,6 +23,7 @@ from core.interfaces import (
     MemoryProvider,
     KnowledgeProvider,
     QuizProvider,
+    WeatherProvider,
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -40,6 +41,7 @@ _registry: dict[str, dict[str, type]] = {
     "memory": {},
     "knowledge": {},
     "quiz": {},
+    "weather": {},
 }
 
 

@@ -693,6 +693,91 @@ class QuizProvider(ABC):
         ...
 
 
+@dataclass
+class WeatherData:
+    """Weather data returned by any weather provider."""
+    temperature: float           # current temperature in configured units
+    feels_like: float            # feels-like temperature
+    humidity: int                # 0-100 %
+    wind_speed: float            # km/h or mph depending on config
+    condition: str               # sunny, partly_cloudy, cloudy, rain, thunderstorm, snow, fog, clear_night
+    description: str             # human-readable: "Partly cloudy"
+    icon: str                    # same as condition — used by frontend for icon selection
+    sunrise: str = ""            # HH:MM format
+    sunset: str = ""             # HH:MM format
+    uv_index: float = 0.0       # UV index
+    pressure: float = 0.0       # hPa
+
+
+@dataclass
+class WeatherForecast:
+    """A single day's forecast."""
+    date: str                    # YYYY-MM-DD
+    temp_min: float
+    temp_max: float
+    condition: str
+    description: str
+    icon: str
+    humidity: int = 0
+    wind_speed: float = 0.0
+    precipitation_chance: int = 0  # 0-100 %
+
+
+@dataclass
+class HourlyWeather:
+    """A single hour's weather data."""
+    time: str                    # HH:MM format
+    temperature: float
+    condition: str
+    icon: str
+    precipitation_chance: int = 0
+
+
+class WeatherProvider(ABC):
+    """
+    Interface for weather data retrieval.
+
+    The weather system is local-first, internet-enhanced. When online,
+    it fetches real weather data. When offline, it returns cached data
+    or gracefully reports unavailability.
+
+    Current implementations: Open-Meteo (free, no API key)
+    Possible future implementations: OpenWeatherMap, WeatherAPI, AccuWeather
+    """
+
+    @abstractmethod
+    def get_current(self, lat: float, lon: float) -> Optional["WeatherData"]:
+        """
+        Get current weather conditions.
+
+        Returns None if weather data is unavailable (offline + no cache).
+        """
+        ...
+
+    @abstractmethod
+    def get_forecast(self, lat: float, lon: float, days: int = 3) -> list["WeatherForecast"]:
+        """
+        Get multi-day forecast.
+
+        Returns empty list if unavailable.
+        """
+        ...
+
+    @abstractmethod
+    def get_hourly(self, lat: float, lon: float, hours: int = 12) -> list["HourlyWeather"]:
+        """
+        Get hourly forecast for the next N hours.
+
+        Returns empty list if unavailable.
+        """
+        ...
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if this provider can currently serve requests."""
+        ...
+
+
 class MemoryProvider(ABC):
     """
     Interface for persistent memory — interaction logging, facts, and recall.

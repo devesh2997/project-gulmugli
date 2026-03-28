@@ -126,6 +126,19 @@ knowledge:
   # cache_ttl: 300                 # seconds to cache results (for RSS/news feeds)
   # max_snippet_length: 200        # truncate snippets to save context window
 
+# --- Weather ---
+# Real-time weather data. Uses Open-Meteo (free, no API key needed).
+# The assistant fetches weather on voice command and shows it on the dashboard.
+# Results are cached for 15 minutes to avoid hammering the API.
+weather:
+  provider: "openmeteo"           # options: openmeteo (free, no API key)
+  location:
+    lat: 28.6139                  # latitude (Delhi default)
+    lon: 77.2090                  # longitude
+    name: "New Delhi"             # human-readable name for spoken responses
+  units: "celsius"                # celsius or fahrenheit
+  cache_minutes: 15               # how long to cache results
+
 # --- Audio Output ---
 # System-level audio routing. Volume lives here, not in music,
 # because "volume down" applies to everything: music, voice responses, alerts.
