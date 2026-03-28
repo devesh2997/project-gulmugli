@@ -275,17 +275,22 @@ class YouTubeMusicProvider(MusicProvider):
         AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
 
     def resume(self) -> None:
-        # If mpv is still alive and paused, just unpause
-        if self._mpv_process and self._mpv_process.poll() is None:
+        # If mpv is still alive and was paused by the user, just unpause
+        if self.is_playing() and self._paused:
             self._send_mpv_command({"command": ["set_property", "pause", False]})
             self._paused = False
             AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
             return
 
-        # mpv died (e.g. session restart) but we remember the last song — replay it
+        # If mpv is alive but NOT paused, it's already playing — do nothing
+        if self.is_playing() and not self._paused:
+            log.debug("Already playing — ignoring resume.")
+            return
+
+        # mpv died (e.g. song ended, crash) but we remember the last song — replay it
         if self._last_song:
             log.info('Resuming last song: "%s" by %s', self._last_song.title, self._last_song.artist)
-            self.play(self._last_song)
+            self.play(self._last_song)  # play() calls stop() internally, prevents duplicates
             return
 
         log.debug("Nothing to resume — no paused track or last song.")
