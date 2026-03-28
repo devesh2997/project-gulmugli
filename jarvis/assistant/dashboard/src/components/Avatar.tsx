@@ -18,6 +18,7 @@ import { AvatarOrb } from './avatars/AvatarOrb'
 import { AvatarPixel } from './avatars/AvatarPixel'
 import { AvatarLight } from './avatars/AvatarLight'
 import { AvatarCaricature } from './avatars/AvatarCaricature'
+import { AvatarCozmo } from './avatars/AvatarCozmo'
 
 export interface AvatarComponentProps {
   size: number
@@ -35,6 +36,7 @@ export const AVATAR_REGISTRY: Record<string, React.ComponentType<AvatarComponent
   pixel: AvatarPixel,
   light: AvatarLight,
   caricature: AvatarCaricature,
+  cozmo: AvatarCozmo,
 }
 
 /** Get list of all registered avatar type names. */
