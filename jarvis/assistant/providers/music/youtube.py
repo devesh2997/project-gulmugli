@@ -254,38 +254,25 @@ class YouTubeMusicProvider(MusicProvider):
             self._last_song = song
             self._paused = False
 
-            # Always store video_id so the dashboard can display the video thumbnail.
-            # In video mode the dashboard iframe handles both audio and video;
-            # in normal mode mpv handles audio and the dashboard shows a mini thumbnail.
-            self._current_video_id = song.uri
+            # Find the actual music video ID (with real footage) for the dashboard.
+            # Topic channel uploads (from song search) are audio-only with static thumbnails.
+            # The video search finds the official music video with actual footage.
+            music_video_id = self.find_music_video_id(song)
+            self._current_video_id = music_video_id or song.uri
 
-            url = f"https://www.youtube.com/watch?v={song.uri}"
-
-            # mpv handles BOTH audio and video natively.
-            # When a display is available, mpv opens a video window.
-            # The dashboard acts as a remote control via WebSocket.
-            # On headless systems (no display), mpv falls back to audio-only.
+            # mpv plays AUDIO ONLY. Video is handled by the dashboard's YouTube Player API.
+            # This separation works because:
+            #   - mpv is proven, fast, has IPC control, works on all platforms
+            #   - Dashboard uses YouTube IFrame Player API for video (proper JS API, not raw iframe)
+            #   - AudioFocusManager coordinates pause/resume between mpv and TTS
+            url = f"https://www.youtube.com/watch?v={song.uri}"  # Use song URI for audio (better quality)
             mpv_args = [
                 self.player,
+                "--no-video",
                 f"--input-ipc-server={self.ipc_socket}",
                 "--really-quiet",
                 url,
             ]
-
-            # Check if a display is available for video output
-            has_display = os.environ.get("DISPLAY") or platform.system() == "Darwin"
-            if has_display:
-                # Video window: sized for bedside display, non-fullscreen, on-top
-                mpv_args.extend([
-                    "--geometry=960x540",     # 16:9, good for 5.5" screen
-                    "--ontop",                # float above other windows
-                    "--border=no",            # borderless window
-                    "--title=Jarvis Player",  # window title for identification
-                    "--osd-level=0",          # no on-screen display (dashboard has controls)
-                ])
-            else:
-                # Headless: audio only
-                mpv_args.append("--no-video")
 
             try:
                 self._mpv_process = subprocess.Popen(

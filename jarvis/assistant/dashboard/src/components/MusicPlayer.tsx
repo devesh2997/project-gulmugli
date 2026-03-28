@@ -1,15 +1,18 @@
 /**
- * MusicPlayer -- unified music component replacing VideoPlayer + NowPlayingCompact + NowPlayingExpanded.
+ * MusicPlayer -- unified music component using the YouTube IFrame Player API.
  *
- * The YouTube iframe IS the audio source (mute=0, no mpv).
- * A SINGLE iframe is mounted and never unmounted while a song is active.
- * Mode transitions are pure CSS transforms — YouTube never loses playback state.
+ * A SINGLE YT.Player instance is created and never destroyed while a song is active.
+ * The player's container <div> is repositioned via CSS for each mode — the player
+ * itself survives mode transitions without losing playback state.
  *
  * Modes:
  *   'compact'    — floating bottom bar (frosted glass, personality accent)
+ *                  Player container positioned off-screen; audio still plays.
  *   'expanded'   — bottom sheet with video, controls, seek bar, volume
+ *                  Player container moves into the sheet (visible video).
  *   'fullscreen' — edge-to-edge video with auto-hiding overlay controls
- *   'hidden'     — no UI (iframe removed, song cleared)
+ *                  Player container fills viewport.
+ *   'hidden'     — no UI, player destroyed
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -17,6 +20,13 @@ import { AnimatePresence, motion, PanInfo } from 'framer-motion'
 import { VideoControls } from './video/VideoControls'
 import { useLightMode } from '../hooks/useLightMode'
 import type { NowPlaying, AssistantActions } from '../types/assistant'
+
+declare global {
+  interface Window {
+    YT: any
+    onYouTubeIframeAPIReady: () => void
+  }
+}
 
 type PlayerMode = 'compact' | 'expanded' | 'fullscreen' | 'hidden'
 
@@ -122,11 +132,15 @@ function ControlBtn({ onClick, label, primary = false, size = 42, children }: {
 
 export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
   const [mode, setMode] = useState<PlayerMode>('hidden')
-  const iframeRef = useRef<HTMLIFrameElement>(null)
   const isLight = useLightMode()
   const constraintsRef = useRef<HTMLDivElement>(null)
 
-  // Track position locally (updated by message listener from iframe)
+  // YT Player API
+  const ytPlayerRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [ytReady, setYtReady] = useState(!!window.YT?.Player)
+
+  // Track position locally
   const [localPosition, setLocalPosition] = useState(0)
   const [localDuration, setLocalDuration] = useState(0)
   const [localPaused, setLocalPaused] = useState(false)
@@ -141,6 +155,10 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     if (volumeTimer.current) clearTimeout(volumeTimer.current)
     volumeTimer.current = setTimeout(() => {
       actions.setVolume(level)
+      // Also set volume on the YT player directly
+      if (ytPlayerRef.current?.setVolume) {
+        ytPlayerRef.current.setVolume(level)
+      }
       volumeTimer.current = null
     }, 100)
   }, [actions])
@@ -154,8 +172,119 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     }, 8000)
   }, [])
 
-  // Track loaded videoId to avoid unnecessary iframe src changes
+  // Track loaded videoId to avoid unnecessary reloads
   const loadedVideoIdRef = useRef<string | null>(null)
+
+  // Position polling interval ref
+  const positionPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ── Wait for YouTube IFrame API to load ──
+  useEffect(() => {
+    if (window.YT?.Player) {
+      setYtReady(true)
+      return
+    }
+    const prev = window.onYouTubeIframeAPIReady
+    window.onYouTubeIframeAPIReady = () => {
+      prev?.()
+      setYtReady(true)
+    }
+    return () => {
+      // Restore if we set it
+      if (window.onYouTubeIframeAPIReady === arguments[0]) {
+        window.onYouTubeIframeAPIReady = prev as any
+      }
+    }
+  }, [])
+
+  // ── Create / update the YT.Player when videoId changes ──
+  useEffect(() => {
+    if (!ytReady || !nowPlaying?.videoId) return
+
+    const videoId = nowPlaying.videoId
+
+    // If player exists and videoId is the same, skip
+    if (ytPlayerRef.current && loadedVideoIdRef.current === videoId) return
+
+    // If player exists but different video, just load the new video
+    if (ytPlayerRef.current && loadedVideoIdRef.current !== videoId) {
+      ytPlayerRef.current.loadVideoById(videoId)
+      loadedVideoIdRef.current = videoId
+      return
+    }
+
+    // No player yet — create one
+    if (!containerRef.current) return
+
+    // Create a child div for YT.Player to render into (it replaces the element)
+    const playerDiv = document.createElement('div')
+    playerDiv.id = 'yt-player-el'
+    containerRef.current.innerHTML = ''
+    containerRef.current.appendChild(playerDiv)
+
+    ytPlayerRef.current = new window.YT.Player('yt-player-el', {
+      videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 0,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0,
+        playsinline: 1,
+        origin: window.location.origin,
+      },
+      events: {
+        onReady: (event: any) => {
+          event.target.playVideo()
+          // Try to get duration
+          const dur = event.target.getDuration?.()
+          if (dur && dur > 0) setLocalDuration(dur)
+        },
+        onStateChange: (event: any) => {
+          // 0=ended, 1=playing, 2=paused, 3=buffering
+          if (event.data === 0) {
+            actions.reportPlayerEnded()
+            setMode('hidden')
+          }
+          if (event.data === 1) setLocalPaused(false)
+          if (event.data === 2) setLocalPaused(true)
+        },
+      },
+    })
+    loadedVideoIdRef.current = videoId
+  }, [ytReady, nowPlaying?.videoId, actions])
+
+  // ── Position polling (every 1s from the player) ──
+  useEffect(() => {
+    if (positionPollRef.current) {
+      clearInterval(positionPollRef.current)
+      positionPollRef.current = null
+    }
+
+    if (mode === 'hidden') return
+
+    positionPollRef.current = setInterval(() => {
+      const player = ytPlayerRef.current
+      if (!player?.getCurrentTime || !player?.getDuration) return
+
+      const time = player.getCurrentTime()
+      const dur = player.getDuration()
+
+      if (typeof time === 'number' && seekOverride === null) {
+        setLocalPosition(time)
+      }
+      if (typeof dur === 'number' && dur > 0) {
+        setLocalDuration(dur)
+      }
+    }, 1000)
+
+    return () => {
+      if (positionPollRef.current) {
+        clearInterval(positionPollRef.current)
+        positionPollRef.current = null
+      }
+    }
+  }, [mode, seekOverride])
 
   // ── When new song arrives, show compact ──
   useEffect(() => {
@@ -184,33 +313,29 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     }
   }, [nowPlaying.position, nowPlaying.duration, seekOverride])
 
-  // ── YouTube postMessage helper ──
-  const postCommand = useCallback((func: string, args: unknown[] = []) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func, args: args.length ? args : '' }),
-      '*'
-    )
-  }, [])
-
   // ── Listen for backend player_command events (voice commands) ──
-  // mpv handles the actual playback; we just update local UI state here.
   useEffect(() => {
     const handler = (e: Event) => {
       const cmd = (e as CustomEvent).detail
       if (!cmd) return
+      const player = ytPlayerRef.current
       switch (cmd.command) {
         case 'pause':
+          player?.pauseVideo?.()
           setLocalPaused(true)
           break
         case 'play':
+          player?.playVideo?.()
           setLocalPaused(false)
           break
         case 'seek':
           if (typeof cmd.position === 'number') {
+            player?.seekTo?.(cmd.position, true)
             setLocalPosition(cmd.position)
           }
           break
         case 'stop':
+          player?.stopVideo?.()
           setMode('hidden')
           break
       }
@@ -218,41 +343,6 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     window.addEventListener('jarvis-player-command', handler)
     return () => window.removeEventListener('jarvis-player-command', handler)
   }, [actions])
-
-  // ── Listen for YouTube state change messages (for detecting video end) ──
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (typeof e.data !== 'string') return
-      try {
-        const msg = JSON.parse(e.data)
-        // YouTube IFrame API sends state change info
-        if (msg.event === 'onStateChange') {
-          // State 0 = ended
-          if (msg.info === 0) {
-            actions.reportPlayerEnded()
-            setMode('hidden')
-          }
-          // State 1 = playing
-          if (msg.info === 1) setLocalPaused(false)
-          // State 2 = paused
-          if (msg.info === 2) setLocalPaused(true)
-        }
-        // infoDelivery contains currentTime and duration
-        if (msg.event === 'infoDelivery' && msg.info) {
-          if (typeof msg.info.currentTime === 'number' && seekOverride === null) {
-            setLocalPosition(msg.info.currentTime)
-          }
-          if (typeof msg.info.duration === 'number' && msg.info.duration > 0) {
-            setLocalDuration(msg.info.duration)
-          }
-        }
-      } catch {
-        // Not a JSON message, ignore
-      }
-    }
-    window.addEventListener('message', handler)
-    return () => window.removeEventListener('message', handler)
-  }, [actions, seekOverride])
 
   // ── Position reporting to backend every 2s ──
   useEffect(() => {
@@ -264,15 +354,14 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     return () => clearInterval(interval)
   }, [mode, localPosition, localDuration, actions])
 
-  // ── Manage iframe src changes ──
+  // ── Destroy player when going hidden ──
   useEffect(() => {
-    if (nowPlaying.videoId && iframeRef.current) {
-      if (loadedVideoIdRef.current !== nowPlaying.videoId) {
-        iframeRef.current.src = `https://www.youtube.com/embed/${nowPlaying.videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
-        loadedVideoIdRef.current = nowPlaying.videoId
-      }
+    if (mode === 'hidden' && ytPlayerRef.current) {
+      ytPlayerRef.current.destroy?.()
+      ytPlayerRef.current = null
+      loadedVideoIdRef.current = null
     }
-  }, [nowPlaying.videoId])
+  }, [mode])
 
   // ── Cleanup timers ──
   useEffect(() => {
@@ -280,21 +369,26 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
       if (collapseTimer.current) clearTimeout(collapseTimer.current)
       if (seekOverrideTimer.current) clearTimeout(seekOverrideTimer.current)
       if (volumeTimer.current) clearTimeout(volumeTimer.current)
+      if (positionPollRef.current) clearInterval(positionPollRef.current)
     }
   }, [])
 
   // ── Handlers ──
   const handlePlayPause = useCallback(() => {
+    const player = ytPlayerRef.current
     if (localPaused) {
+      player?.playVideo?.()
       actions.resume()
       setLocalPaused(false)
     } else {
+      player?.pauseVideo?.()
       actions.pause()
       setLocalPaused(true)
     }
   }, [localPaused, actions])
 
   const handleSeek = useCallback((position: number) => {
+    ytPlayerRef.current?.seekTo?.(position, true)
     actions.seek(position)
     setSeekOverride(position)
     if (seekOverrideTimer.current) clearTimeout(seekOverrideTimer.current)
@@ -302,6 +396,7 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
   }, [actions])
 
   const handleStop = useCallback(() => {
+    ytPlayerRef.current?.stopVideo?.()
     setMode('hidden')
     actions.stop()
   }, [actions])
@@ -357,9 +452,50 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
   const pct = localDuration > 0 ? (displayPosition / localDuration) * 100 : 0
   const videoId = nowPlaying.videoId
 
-  // Viewport for fullscreen calculations
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 960
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 540
+  // Compute player container style based on mode
+  const playerContainerStyle: React.CSSProperties = mode === 'compact'
+    ? {
+        position: 'fixed',
+        left: -9999,
+        top: -9999,
+        width: 640,
+        height: 360,
+        zIndex: -1,
+        pointerEvents: 'none',
+      }
+    : mode === 'expanded'
+      ? {
+          // Rendered inline inside the expanded sheet via a ref move
+          width: '100%',
+          aspectRatio: '16 / 9',
+          borderRadius: 16,
+          overflow: 'hidden',
+          position: 'relative',
+          flexShrink: 0,
+          background: '#0a0a0a',
+        }
+      : mode === 'fullscreen'
+        ? {
+            width: '100%',
+            height: '100%',
+            position: 'absolute',
+            inset: 0,
+          }
+        : {
+            position: 'fixed',
+            left: -9999,
+            top: -9999,
+            width: 640,
+            height: 360,
+            zIndex: -1,
+            pointerEvents: 'none',
+          }
+
+  // We need to portal the container div into different layout positions.
+  // Strategy: render the container in a fixed position wrapper always, and for
+  // expanded/fullscreen modes, render a placeholder that we move the container into.
+  // Actually, simpler: always render the container fixed/off-screen, and for
+  // expanded/fullscreen just reposition it on-screen with proper styles.
 
   return (
     <>
@@ -369,56 +505,21 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
         style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 49 }}
       />
 
-      {/* ── THE SINGLE IFRAME ── always mounted, positioned based on mode */}
-      <div
-        style={{
-          position: 'fixed',
-          // In compact mode: push iframe off-screen but keep it alive for audio
-          ...(mode === 'compact' ? {
-            left: -9999,
-            top: -9999,
-            width: 640,
-            height: 360,
-            zIndex: -1,
-            pointerEvents: 'none',
-          } : mode === 'expanded' ? {
-            // Will be placed inside the expanded sheet via a portal-like approach
-            // Actually: just render it inline in the expanded sheet below
-            left: -9999,
-            top: -9999,
-            width: 640,
-            height: 360,
-            zIndex: -1,
-            pointerEvents: 'none',
-          } : mode === 'fullscreen' ? {
-            left: -9999,
-            top: -9999,
-            width: 640,
-            height: 360,
-            zIndex: -1,
-            pointerEvents: 'none',
-          } : {
-            left: -9999,
-            top: -9999,
-            width: 640,
-            height: 360,
-            zIndex: -1,
-            pointerEvents: 'none',
-          }),
-        }}
-      >
-        <iframe
-          ref={iframeRef}
-          allow="autoplay; encrypted-media"
+      {/* ── THE YT PLAYER CONTAINER ── always mounted, repositioned per mode */}
+      {mode === 'compact' && (
+        <div
+          ref={containerRef}
           style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            display: 'block',
+            position: 'fixed',
+            left: -9999,
+            top: -9999,
+            width: 640,
+            height: 360,
+            zIndex: -1,
+            pointerEvents: 'none',
           }}
-          title="Music player"
         />
-      </div>
+      )}
 
       {/* ── COMPACT MODE ── floating bottom bar */}
       <AnimatePresence>
@@ -657,7 +758,7 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
                 />
               </div>
 
-              {/* Video area — visible iframe embed */}
+              {/* Video area — YT Player container (visible in expanded mode) */}
               {videoId && (
                 <div
                   onClick={(e) => {
@@ -675,17 +776,13 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
                     background: '#0a0a0a',
                   }}
                 >
-                  <iframe
-                    src={`https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&mute=1&modestbranding=1`}
-                    allow="autoplay; encrypted-media"
+                  <div
+                    ref={containerRef}
                     style={{
                       width: '100%',
                       height: '100%',
-                      border: 'none',
-                      display: 'block',
                       pointerEvents: 'none',
                     }}
-                    title="Video preview"
                   />
                   {/* Fullscreen hint overlay */}
                   <div style={{
@@ -696,6 +793,7 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
                     justifyContent: 'center',
                     background: 'rgba(0,0,0,0.15)',
                     opacity: 0.7,
+                    pointerEvents: 'none',
                   }}>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="white" opacity={0.7}>
                       <path d="M4 4h4V2H2v6h2V4zm16 0v4h2V2h-6v2h4zM4 20v-4H2v6h6v-2H4zm16 0h-4v2h6v-6h-2v4z" />
@@ -903,21 +1001,14 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
               overflow: 'hidden',
             }}
           >
-            {/* Fullscreen iframe — muted preview (audio from the off-screen main iframe) */}
-            <iframe
-              src={videoId
-                ? `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&mute=1&modestbranding=1`
-                : ''
-              }
-              allow="autoplay; encrypted-media"
+            {/* YT Player container — visible fullscreen */}
+            <div
+              ref={containerRef}
               style={{
                 width: '100%',
                 height: '100%',
-                border: 'none',
-                display: 'block',
                 pointerEvents: 'none',
               }}
-              title="Fullscreen video"
             />
 
             {/* VideoControls overlay */}
