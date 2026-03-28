@@ -259,41 +259,37 @@ class YouTubeMusicProvider(MusicProvider):
             # in normal mode mpv handles audio and the dashboard shows a mini thumbnail.
             self._current_video_id = song.uri
 
-            # Browser mode — dashboard iframe IS the player (no mpv).
-            # Falls through to mpv if no dashboard is connected.
-            if self._is_browser_mode():
-                log.info('Browser mode — sending play_song to dashboard for videoId=%s', song.uri)
-                self._face_ui.play_song({
-                    "videoId": song.uri,
-                    "title": song.title,
-                    "artist": song.artist,
-                    "album": song.album,
-                    "duration": song.duration,
-                })
-                self._browser_playing = True
-                AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
-                return True
-
-            if video:
-                log.info('Video mode — dashboard will play videoId=%s', song.uri)
-                AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
-                return True
-
             url = f"https://www.youtube.com/watch?v={song.uri}"
 
-            # mpv with:
-            #   --no-video: audio only (we're a voice assistant, not a TV)
-            #   --input-ipc-server: creates a socket we can send commands to (pause, skip, volume)
-            #   --really-quiet: no terminal spam
+            # mpv handles BOTH audio and video natively.
+            # When a display is available, mpv opens a video window.
+            # The dashboard acts as a remote control via WebSocket.
+            # On headless systems (no display), mpv falls back to audio-only.
+            mpv_args = [
+                self.player,
+                f"--input-ipc-server={self.ipc_socket}",
+                "--really-quiet",
+                url,
+            ]
+
+            # Check if a display is available for video output
+            has_display = os.environ.get("DISPLAY") or platform.system() == "Darwin"
+            if has_display:
+                # Video window: sized for bedside display, non-fullscreen, on-top
+                mpv_args.extend([
+                    "--geometry=960x540",     # 16:9, good for 5.5" screen
+                    "--ontop",                # float above other windows
+                    "--border=no",            # borderless window
+                    "--title=Jarvis Player",  # window title for identification
+                    "--osd-level=0",          # no on-screen display (dashboard has controls)
+                ])
+            else:
+                # Headless: audio only
+                mpv_args.append("--no-video")
+
             try:
                 self._mpv_process = subprocess.Popen(
-                    [
-                        self.player,
-                        "--no-video",
-                        f"--input-ipc-server={self.ipc_socket}",
-                        "--really-quiet",
-                        url,
-                    ],
+                    mpv_args,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                 )
@@ -327,21 +323,11 @@ class YouTubeMusicProvider(MusicProvider):
             pass
 
     def pause(self) -> None:
-        if self._is_browser_mode():
-            self._face_ui.player_command("pause")
-            self._paused = True
-            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
-            return
         self._send_mpv_command({"command": ["set_property", "pause", True]})
         self._paused = True
         AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
 
     def resume(self) -> None:
-        if self._is_browser_mode() and self._paused:
-            self._face_ui.player_command("play")
-            self._paused = False
-            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
-            return
         # If mpv is still alive and was paused by the user, just unpause
         if self.is_playing() and self._paused:
             self._send_mpv_command({"command": ["set_property", "pause", False]})
@@ -363,9 +349,7 @@ class YouTubeMusicProvider(MusicProvider):
         log.debug("Nothing to resume — no paused track or last song.")
 
     def stop(self) -> None:
-        if self._is_browser_mode():
-            self._face_ui.player_command("stop")
-            self._browser_playing = False
+        self._browser_playing = False
         AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
         self._current_video_id = None
 
@@ -413,18 +397,12 @@ class YouTubeMusicProvider(MusicProvider):
 
     def seek(self, position: float) -> None:
         """Seek to an absolute position in seconds."""
-        if self._is_browser_mode():
-            self._face_ui.player_command("seek", position=position)
-            return
         if not self.is_playing():
             log.warning("seek() called but mpv is not running — ignoring.")
             return
         self._send_mpv_command({"command": ["set_property", "time-pos", position]})
 
     def set_volume(self, level: int) -> None:
-        if self._is_browser_mode():
-            self._face_ui.player_command("volume", level=max(0, min(100, level)))
-            return
         if not self.is_playing():
             log.warning("set_volume() called but mpv is not running — ignoring.")
             return
@@ -477,16 +455,10 @@ class YouTubeMusicProvider(MusicProvider):
 
     def _focus_duck(self, level: int) -> None:
         """Called by AudioFocusManager: lower volume for ducking."""
-        if self._is_browser_mode():
-            self._face_ui.player_command("volume", level=level)
-            return
         self._send_mpv_command({"command": ["set_property", "volume", level]})
 
     def _focus_restore(self, level: int) -> None:
         """Called by AudioFocusManager: restore volume after ducking."""
-        if self._is_browser_mode():
-            self._face_ui.player_command("volume", level=level)
-            return
         self._send_mpv_command({"command": ["set_property", "volume", level]})
 
     def _focus_pause(self) -> None:
@@ -496,9 +468,6 @@ class YouTubeMusicProvider(MusicProvider):
         CRITICAL: Does NOT set self._paused. This is a system-initiated pause,
         not a user pause. The distinction matters in _focus_resume().
         """
-        if self._is_browser_mode():
-            self._face_ui.player_command("pause")
-            return
         self._send_mpv_command({"command": ["set_property", "pause", True]})
 
     def _focus_resume(self) -> None:
@@ -512,16 +481,9 @@ class YouTubeMusicProvider(MusicProvider):
         if self._paused:
             log.debug("Focus resume skipped — user had paused music.")
             return
-        if self._is_browser_mode():
-            self._face_ui.player_command("play")
-            return
         self._send_mpv_command({"command": ["set_property", "pause", False]})
 
     def _focus_get_volume(self) -> int:
         """Called by AudioFocusManager: query current volume."""
-        if self._is_browser_mode():
-            # In browser mode we don't have a direct volume query;
-            # return 100 as default (dashboard controls its own volume).
-            return 100
         vol = self._query_mpv_property("volume")
         return int(vol) if vol is not None else 100

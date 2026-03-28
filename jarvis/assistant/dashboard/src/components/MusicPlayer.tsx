@@ -192,40 +192,32 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     )
   }, [])
 
-  // ── Listen for backend player_command events ──
+  // ── Listen for backend player_command events (voice commands) ──
+  // mpv handles the actual playback; we just update local UI state here.
   useEffect(() => {
     const handler = (e: Event) => {
       const cmd = (e as CustomEvent).detail
       if (!cmd) return
       switch (cmd.command) {
         case 'pause':
-          postCommand('pauseVideo')
           setLocalPaused(true)
           break
         case 'play':
-          postCommand('playVideo')
           setLocalPaused(false)
           break
         case 'seek':
           if (typeof cmd.position === 'number') {
-            postCommand('seekTo', [cmd.position, true])
             setLocalPosition(cmd.position)
-          }
-          break
-        case 'volume':
-          if (typeof cmd.level === 'number') {
-            postCommand('setVolume', [cmd.level])
           }
           break
         case 'stop':
           setMode('hidden')
-          actions.stop()
           break
       }
     }
     window.addEventListener('jarvis-player-command', handler)
     return () => window.removeEventListener('jarvis-player-command', handler)
-  }, [postCommand, actions])
+  }, [actions])
 
   // ── Listen for YouTube state change messages (for detecting video end) ──
   useEffect(() => {
@@ -294,23 +286,20 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
   // ── Handlers ──
   const handlePlayPause = useCallback(() => {
     if (localPaused) {
-      postCommand('playVideo')
       actions.resume()
       setLocalPaused(false)
     } else {
-      postCommand('pauseVideo')
       actions.pause()
       setLocalPaused(true)
     }
-  }, [localPaused, actions, postCommand])
+  }, [localPaused, actions])
 
   const handleSeek = useCallback((position: number) => {
-    postCommand('seekTo', [position, true])
     actions.seek(position)
     setSeekOverride(position)
     if (seekOverrideTimer.current) clearTimeout(seekOverrideTimer.current)
     seekOverrideTimer.current = setTimeout(() => setSeekOverride(null), 2000)
-  }, [postCommand, actions])
+  }, [actions])
 
   const handleStop = useCallback(() => {
     setMode('hidden')
