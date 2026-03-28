@@ -7,9 +7,11 @@
  * Horizontal scrollable row for many personalities.
  */
 
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { PersonalityInfo } from '../../types/assistant'
 import type { AvatarType } from '../../types/assistant'
+import { getAvatarTypes } from '../Avatar'
 
 // Personality → accent colour mapping (fallback)
 const COLORS: Record<string, string> = {
@@ -21,9 +23,18 @@ const COLORS: Record<string, string> = {
 
 const AVATAR_TYPES: Record<string, AvatarType> = {
   jarvis: 'orb',
-  devesh: 'pixel',
+  devesh: 'cozmo',
   girlfriend: 'light',
   chandler: 'caricature',
+}
+
+/** Human-readable labels for avatar types */
+const AVATAR_LABELS: Record<string, string> = {
+  orb: 'Orb',
+  pixel: 'Pixel',
+  light: 'Light',
+  caricature: 'Sketch',
+  cozmo: 'Cozmo',
 }
 
 function getColor(id: string, index: number): string {
@@ -102,12 +113,34 @@ function MiniCaricature({ color, size }: { color: string; size: number }) {
   )
 }
 
-function MiniAvatar({ id, color, size }: { id: string; color: string; size: number }) {
-  const avatarType = AVATAR_TYPES[id] || 'orb'
-  switch (avatarType) {
+/* Old MiniAvatar removed — replaced by the version below that accepts avatarType */
+
+/** Mini Cozmo preview — two rounded eye rects */
+function MiniCozmo({ color, size }: { color: string; size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      {/* Left eye */}
+      <rect x="8" y="14" width="10" height="8" rx="3" fill={color} opacity="0.8" />
+      {/* Right eye */}
+      <rect x="22" y="14" width="10" height="8" rx="3" fill={color} opacity="0.8" />
+      {/* Left pupil */}
+      <rect x="12" y="17" width="3" height="3" rx="1" fill="#fff" opacity="0.6" />
+      {/* Right pupil */}
+      <rect x="26" y="17" width="3" height="3" rx="1" fill="#fff" opacity="0.6" />
+      {/* Mouth */}
+      <path d="M15 30 Q20 33 25 30" fill="none" stroke={color} strokeWidth="1.2"
+        strokeLinecap="round" opacity="0.5" />
+    </svg>
+  )
+}
+
+function MiniAvatar({ id, avatarType, color, size }: { id: string; avatarType?: string; color: string; size: number }) {
+  const type = avatarType || AVATAR_TYPES[id] || 'orb'
+  switch (type) {
     case 'pixel': return <MiniPixel color={color} size={size} />
     case 'light': return <MiniLight color={color} size={size} />
     case 'caricature': return <MiniCaricature color={color} size={size} />
+    case 'cozmo': return <MiniCozmo color={color} size={size} />
     case 'orb':
     default: return <MiniOrb color={color} size={size} />
   }
@@ -117,9 +150,14 @@ interface Props {
   personalities: PersonalityInfo[]
   active: string
   onSwitch: (id: string) => void
+  onAvatarChange?: (avatarType: string) => void
+  currentAvatarType?: string
 }
 
-export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
+export function PersonalityPicker({ personalities, active, onSwitch, onAvatarChange, currentAvatarType }: Props) {
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const availableAvatars = getAvatarTypes()
+
   if (!personalities.length) return null
 
   return (
@@ -145,7 +183,15 @@ export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
           return (
             <motion.button
               key={p.id}
-              onClick={() => onSwitch(p.id)}
+              onClick={() => {
+                if (isActive) {
+                  // Tap active personality → toggle avatar picker
+                  setShowAvatarPicker(prev => !prev)
+                } else {
+                  onSwitch(p.id)
+                  setShowAvatarPicker(false)
+                }
+              }}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               animate={{
@@ -175,7 +221,12 @@ export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
                 animate={{ opacity: isActive ? 1 : 0.45 }}
                 transition={{ duration: 0.25 }}
               >
-                <MiniAvatar id={p.id} color={color} size={36} />
+                <MiniAvatar
+                  id={p.id}
+                  avatarType={isActive ? currentAvatarType : undefined}
+                  color={color}
+                  size={36}
+                />
               </motion.div>
 
               {/* Name */}
@@ -197,6 +248,75 @@ export function PersonalityPicker({ personalities, active, onSwitch }: Props) {
           )
         })}
       </div>
+
+      {/* Avatar picker — appears below the active personality when tapped */}
+      <AnimatePresence>
+        {showAvatarPicker && onAvatarChange && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            style={{ overflow: 'hidden', marginTop: 12 }}
+          >
+            <div style={{
+              fontSize: 9, fontWeight: 600, letterSpacing: 1.5,
+              textTransform: 'uppercase' as const,
+              color: 'var(--text-tertiary)',
+              marginBottom: 8,
+            }}>
+              Avatar Style
+            </div>
+            <div style={{
+              display: 'flex', gap: 8, flexWrap: 'wrap',
+            }}>
+              {availableAvatars.map(type => {
+                const isSelected = type === currentAvatarType
+                const activeColor = getColor(active, 0)
+                return (
+                  <motion.button
+                    key={type}
+                    onClick={() => {
+                      onAvatarChange(type)
+                      setShowAvatarPicker(false)
+                    }}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.94 }}
+                    animate={{
+                      borderColor: isSelected ? activeColor : 'var(--border-subtle)',
+                      boxShadow: isSelected
+                        ? `0 0 14px ${activeColor}30`
+                        : 'none',
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    style={{
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', gap: 4,
+                      padding: '8px 10px 6px',
+                      borderRadius: 12,
+                      background: isSelected ? 'var(--surface-subtle)' : 'transparent',
+                      border: '1.5px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                      minWidth: 56,
+                    }}
+                  >
+                    <motion.div animate={{ opacity: isSelected ? 1 : 0.5 }}>
+                      <MiniAvatar id={active} avatarType={type} color={activeColor} size={28} />
+                    </motion.div>
+                    <span style={{
+                      fontSize: 8, fontWeight: 600,
+                      letterSpacing: 0.5,
+                      color: isSelected ? activeColor : 'var(--text-tertiary)',
+                    }}>
+                      {AVATAR_LABELS[type] || type}
+                    </span>
+                  </motion.button>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

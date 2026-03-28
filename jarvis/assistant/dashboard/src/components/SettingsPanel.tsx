@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { AssistantStore, SettingSchema } from '../types/assistant'
+import { useTokens } from '../context/TokenProvider'
 import { PersonalityPicker } from './settings/PersonalityPicker'
 import { AppearanceSection } from './preferences/AppearanceSection'
 import { SleepSection } from './preferences/SleepSection'
@@ -78,6 +79,12 @@ export function SettingsPanel({ store }: Props) {
   const actions = store?.actions
   const personalities = store?.personalities ?? []
   const personality = store?.personality ?? 'jarvis'
+  const { getToken, updateToken } = useTokens()
+  const currentAvatarType = (getToken('personality.avatarType') || 'orb') as string
+
+  const handleAvatarChange = useCallback((avatarType: string) => {
+    updateToken('personality.avatarType', avatarType)
+  }, [updateToken])
 
   // Track whether developer settings overlay is open
   const [showDev, setShowDev] = useState(false)
@@ -151,6 +158,8 @@ export function SettingsPanel({ store }: Props) {
                 personalities={personalities}
                 active={personality}
                 onSwitch={actions.switchPersonality}
+                onAvatarChange={handleAvatarChange}
+                currentAvatarType={currentAvatarType}
               />
             )}
           </motion.div>
