@@ -7,7 +7,7 @@
     "mood_default": "neutral"
   },
   "devesh": {
-    "avatarType": "pixel",
+    "avatarType": "cozmo",
     "accent": "#2dd4bf",
     "tint": "cool",
     "glow_color": "#2dd4bf30",
