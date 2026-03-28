@@ -260,6 +260,10 @@ class FaceUI:
         """Close the quiz overlay on the dashboard."""
         self._broadcast({"type": "quiz_close"})
 
+    def video_control(self, action: str) -> None:
+        """Send a video player control command to the dashboard."""
+        self._broadcast({"type": "video_control", "action": action})
+
     def open_youtube(self, url: str) -> None:
         """Open a YouTube URL in the dashboard's browse mode iframe."""
         self._broadcast({"type": "youtube_browse", "url": url})

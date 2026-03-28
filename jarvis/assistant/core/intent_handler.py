@@ -667,6 +667,13 @@ def handle_intent(assistant: dict, intent) -> str:
             face_ui.open_youtube(url)
         return intent.response or f"Opening YouTube search for {query}"
 
+    elif intent.name == "video_control":
+        action = intent.params.get("action", "")
+        face_ui = assistant.get("face_ui")
+        if face_ui:
+            face_ui.video_control(action)
+        return intent.response or ""
+
     elif intent.name == "system":
         action = intent.params.get("action", "")
         if action == "time":

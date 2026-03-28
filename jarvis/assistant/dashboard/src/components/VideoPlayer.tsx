@@ -18,7 +18,7 @@ import { AnimatePresence, motion, PanInfo, useMotionValue, useTransform } from '
 import { VideoControls } from './video/VideoControls'
 import type { NowPlaying, AssistantActions } from '../types/assistant'
 
-export type VideoMode = 'full' | 'mini' | 'hidden'
+export type VideoMode = 'full' | 'fullscreen' | 'mini' | 'hidden'
 
 interface VideoPlayerProps {
   nowPlaying: NowPlaying
@@ -104,6 +104,10 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
     onModeChange('full')
   }, [onModeChange])
 
+  const handleToggleFullscreen = useCallback(() => {
+    onModeChange(mode === 'fullscreen' ? 'full' : 'fullscreen')
+  }, [mode, onModeChange])
+
   const handlePlayPause = useCallback(() => {
     if (nowPlaying.paused) {
       postCommand('playVideo')
@@ -183,9 +187,9 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
 
   return (
     <>
-      {/* Background overlay — only in full mode */}
+      {/* Background overlay — full and fullscreen modes */}
       <AnimatePresence>
-        {mode === 'full' && (
+        {(mode === 'full' || mode === 'fullscreen') && (
           <motion.div
             key="video-backdrop"
             initial={{ opacity: 0 }}
@@ -206,36 +210,46 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
       {/* SINGLE iframe container — mode transitions are CSS only */}
       <motion.div
         animate={
-          mode === 'full'
+          mode === 'fullscreen'
             ? {
-                x: fullX,
-                y: fullY,
-                width: fullW,
-                height: fullH,
-                borderRadius: 24,
+                x: 0,
+                y: 0,
+                width: vw,
+                height: vh,
+                borderRadius: 0,
                 opacity: 1,
                 scale: 1,
               }
-            : mode === 'mini'
+            : mode === 'full'
               ? {
-                  x: miniPos.x,
-                  y: miniPos.y,
-                  width: MINI_W,
-                  height: MINI_H,
-                  borderRadius: 14,
-                  opacity: 1,
-                  scale: 1,
-                }
-              : {
-                  // Hidden: push off-screen to preserve iframe state
-                  x: -9999,
-                  y: -9999,
+                  x: fullX,
+                  y: fullY,
                   width: fullW,
                   height: fullH,
                   borderRadius: 24,
-                  opacity: 0,
+                  opacity: 1,
                   scale: 1,
                 }
+              : mode === 'mini'
+                ? {
+                    x: miniPos.x,
+                    y: miniPos.y,
+                    width: MINI_W,
+                    height: MINI_H,
+                    borderRadius: 14,
+                    opacity: 1,
+                    scale: 1,
+                  }
+                : {
+                    // Hidden: push off-screen to preserve iframe state
+                    x: -9999,
+                    y: -9999,
+                    width: fullW,
+                    height: fullH,
+                    borderRadius: 24,
+                    opacity: 0,
+                    scale: 1,
+                  }
         }
         transition={{
           type: 'spring',
@@ -254,14 +268,16 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
           position: 'fixed',
           top: 0,
           left: 0,
-          zIndex: mode === 'hidden' ? -1 : mode === 'mini' ? 101 : 100,
+          zIndex: mode === 'hidden' ? -1 : mode === 'fullscreen' ? 102 : mode === 'mini' ? 101 : 100,
           overflow: 'hidden',
           background: '#0a0a0a',
-          boxShadow: mode === 'full'
-            ? `0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(var(--personality-accent-rgb), 0.08), 0 0 80px rgba(0, 0, 0, 0.4)`
-            : mode === 'mini'
-              ? '0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(var(--personality-accent-rgb), 0.08)'
-              : 'none',
+          boxShadow: mode === 'fullscreen'
+            ? 'none'
+            : mode === 'full'
+              ? `0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(var(--personality-accent-rgb), 0.08), 0 0 80px rgba(0, 0, 0, 0.4)`
+              : mode === 'mini'
+                ? '0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(var(--personality-accent-rgb), 0.08)'
+                : 'none',
           cursor: mode === 'full' ? 'grab' : mode === 'mini' ? 'pointer' : 'default',
           pointerEvents: mode === 'hidden' ? 'none' : 'auto',
           ...(mode === 'mini' ? { x: miniDragX, y: miniDragY, opacity: miniDragOpacity } : {}),
@@ -298,17 +314,19 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
         />
 
         {/* Controls overlay — full mode only, not in browse mode */}
-        {mode === 'full' && !isBrowseMode && (
+        {(mode === 'full' || mode === 'fullscreen') && !isBrowseMode && (
           <VideoControls
             title={nowPlaying.title}
             artist={nowPlaying.artist}
             paused={nowPlaying.paused}
             duration={nowPlaying.duration}
             position={nowPlaying.position}
+            isFullscreen={mode === 'fullscreen'}
             onPlayPause={handlePlayPause}
             onSeek={actions.seek}
             onClose={handleClose}
             onMinimize={handleMinimize}
+            onToggleFullscreen={handleToggleFullscreen}
           />
         )}
 

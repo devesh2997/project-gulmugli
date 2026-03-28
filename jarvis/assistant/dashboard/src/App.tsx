@@ -107,6 +107,17 @@ function AppContent() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // -- Listen for voice-triggered video control commands --
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const action = (e as CustomEvent).detail
+      if (action === 'fullscreen') setVideoMode('fullscreen')
+      else if (action === 'exit_fullscreen') setVideoMode('full')
+    }
+    window.addEventListener('jarvis-video-control', handler)
+    return () => window.removeEventListener('jarvis-video-control', handler)
+  }, [])
+
   // -- Avatar size: responsive to viewport, generous for 5.5" screens --
   const vh = typeof window !== 'undefined' ? window.innerHeight : 540
   const vw = typeof window !== 'undefined' ? window.innerWidth : 960

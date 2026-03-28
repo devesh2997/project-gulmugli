@@ -273,6 +273,11 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         setState(prev => ({ ...prev, youtubeBrowseUrl: msg.url }))
         break
 
+      case 'video_control':
+        // Forward to App.tsx via custom event (avoids prop drilling)
+        window.dispatchEvent(new CustomEvent('jarvis-video-control', { detail: (msg as any).action }))
+        break
+
       default:
         console.debug('[WS] Unknown message type:', msg)
     }

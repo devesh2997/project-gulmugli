@@ -19,10 +19,12 @@ interface VideoControlsProps {
   paused: boolean
   duration: number
   position: number
+  isFullscreen: boolean
   onPlayPause: () => void
   onSeek: (position: number) => void
   onClose: () => void
   onMinimize: () => void
+  onToggleFullscreen: () => void
 }
 
 function fmt(s: number) {
@@ -40,6 +42,8 @@ export function VideoControls({
   onSeek,
   onClose,
   onMinimize,
+  isFullscreen,
+  onToggleFullscreen,
 }: VideoControlsProps) {
   const [visible, setVisible] = useState(true)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -217,6 +221,37 @@ export function VideoControls({
                     <path d="M2 12h10" />
                     <path d="M5 8l2 2 2-2" />
                   </svg>
+                </motion.button>
+
+                {/* Fullscreen toggle */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.88 }}
+                  onClick={(e) => { e.stopPropagation(); onToggleFullscreen() }}
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: isFullscreen ? 'rgba(var(--personality-accent-rgb), 0.2)' : 'rgba(255,255,255,0.1)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: isFullscreen ? 'var(--personality-accent)' : 'rgba(255,255,255,0.8)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  {isFullscreen ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M5 1v3H1" /><path d="M9 1v3h4" /><path d="M5 13v-3H1" /><path d="M9 13v-3h4" />
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M1 5V1h4" /><path d="M13 5V1H9" /><path d="M1 9v4h4" /><path d="M13 9v4H9" />
+                    </svg>
+                  )}
                 </motion.button>
 
                 {/* Close button */}

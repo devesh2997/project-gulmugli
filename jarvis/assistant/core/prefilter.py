@@ -337,11 +337,40 @@ def _match_sleep(text: str) -> list[Intent] | None:
 # Tried in order. First match wins.
 # IMPORTANT: Only include patterns where we're 100% confident.
 # If there's any ambiguity, let the LLM handle it.
+def _match_video_control(text: str) -> list[Intent] | None:
+    """Match video player control commands (fullscreen, exit fullscreen)."""
+    t = text.strip().lower()
+
+    if re.fullmatch(
+        r"(full\s*screen|make it full\s*screen|"
+        r"video full\s*screen|go full\s*screen|"
+        r"video bada karo|bada karo|"
+        r"maximize|maximise)",
+        t,
+    ):
+        return [Intent(name="video_control", params={"action": "fullscreen"},
+                       response="Going fullscreen.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    if re.fullmatch(
+        r"(exit full\s*screen|leave full\s*screen|"
+        r"small (screen|window)|chhota karo|"
+        r"minimize video|minimize)",
+        t,
+    ):
+        return [Intent(name="video_control", params={"action": "exit_fullscreen"},
+                       response="Exiting fullscreen.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
 PREFILTER_CHAIN = [
     _match_sleep,
     _match_quiz,
     _match_youtube_search,
     _match_video_music,
+    _match_video_control,
     _match_music_control,
     _match_volume,
     _match_lights_simple,
