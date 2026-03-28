@@ -102,7 +102,9 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
 
   const handleExpand = useCallback(() => {
     onModeChange('full')
-  }, [onModeChange])
+    // Ensure video plays when expanding (it may have been paused in hidden/mini mode)
+    setTimeout(() => postCommand('playVideo'), 300)
+  }, [onModeChange, postCommand])
 
   const handleToggleFullscreen = useCallback(() => {
     onModeChange(mode === 'fullscreen' ? 'full' : 'fullscreen')
@@ -171,7 +173,7 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
   const iframeSrc = isBrowseMode
     ? (browseUrl ?? '')
     : videoId
-      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
+      ? `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&mute=1&origin=${window.location.origin}`
       : ''
 
   // Update tracking ref to manage iframe src changes via useEffect
@@ -179,7 +181,7 @@ export function VideoPlayer({ nowPlaying, actions, mode, onModeChange, browseUrl
     if (!isBrowseMode && videoId && iframeRef.current) {
       if (loadedVideoIdRef.current !== videoId) {
         // New video — set the src (this is the only place src changes)
-        iframeRef.current.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&origin=${window.location.origin}`
+        iframeRef.current.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1&mute=1&origin=${window.location.origin}`
         loadedVideoIdRef.current = videoId
       }
     }
