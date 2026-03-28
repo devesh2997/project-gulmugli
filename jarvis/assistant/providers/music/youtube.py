@@ -144,6 +144,26 @@ class YouTubeMusicProvider(MusicProvider):
             for r in results
         ]
 
+    def find_music_video_id(self, song: SongResult) -> str | None:
+        """
+        Find the actual music VIDEO id for a song (not the Topic/audio-only version).
+
+        ytmusicapi's song search returns Topic channel uploads (static thumbnail,
+        no real video). This method does a separate video search to find the
+        official music video with actual footage.
+
+        Returns the videoId of the best matching video, or None if not found.
+        """
+        try:
+            query = f"{song.title} {song.artist}".strip()
+            results = self.ytm.search(query, filter="videos", limit=3)
+            if results:
+                # First result is usually the official music video
+                return results[0].get("videoId")
+        except Exception as e:
+            log.debug("Music video search failed for '%s': %s", song.title, e)
+        return None
+
     @property
     def current_video_id(self) -> str | None:
         """The YouTube videoId when playing in video mode, None otherwise."""

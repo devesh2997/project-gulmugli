@@ -75,8 +75,15 @@ def set_quiz_provider(quiz_provider) -> None:
 
 # ── Helpers ──────────────────────────────────────────────────────
 
-def _build_now_playing_data(song, with_video: bool = False) -> dict:
-    """Build a now-playing payload dict for the dashboard from a SongResult."""
+def _build_now_playing_data(song, video_id: str | None = None) -> dict:
+    """Build a now-playing payload dict for the dashboard from a SongResult.
+
+    Args:
+        song: The SongResult being played.
+        video_id: Override video ID. If provided, uses this instead of song.uri.
+                  This should be the actual music video ID (from filter='videos'),
+                  not the Topic/audio-only ID (from filter='songs').
+    """
     data = {
         "title": song.title,
         "artist": song.artist,
@@ -84,10 +91,10 @@ def _build_now_playing_data(song, with_video: bool = False) -> dict:
         "duration": _parse_duration(song.duration),
         "position": 0,
     }
-    # Always include video_id so the dashboard can show a mini video thumbnail.
-    # with_video is kept for future use (auto-expand video player vs compact).
-    if song.uri:
-        data["video_id"] = song.uri
+    # Use the music video ID if available, otherwise fall back to song URI
+    vid = video_id or song.uri
+    if vid:
+        data["video_id"] = vid
     return data
 
 
@@ -148,9 +155,12 @@ def handle_intent(assistant: dict, intent) -> str:
                 # Not paused but we have a last song — replay it
                 song = music._last_song
                 music.play(song, video=with_video)
+                music_video_id = None
+                if hasattr(music, 'find_music_video_id'):
+                    music_video_id = music.find_music_video_id(song)
                 face_ui = assistant.get("face_ui")
                 if face_ui:
-                    face_ui.set_now_playing(_build_now_playing_data(song, with_video))
+                    face_ui.set_now_playing(_build_now_playing_data(song, video_id=music_video_id))
                 return f"Playing {song.title} by {song.artist} again."
             elif not raw_query:
                 return "I don't have anything to play. Tell me what you'd like to hear."
@@ -170,10 +180,17 @@ def handle_intent(assistant: dict, intent) -> str:
                      " (video)" if with_video else "")
             assistant["music"].play(song, video=with_video)
 
-            # Notify dashboard
+            # Find the actual music video ID (not the Topic/audio-only version).
+            # This runs in the current thread but is fast (~100-200ms).
+            # The music video has real footage; the song's URI is often a static thumbnail.
+            music_video_id = None
+            if hasattr(music, 'find_music_video_id'):
+                music_video_id = music.find_music_video_id(song)
+
+            # Notify dashboard with the music video ID
             face_ui = assistant.get("face_ui")
             if face_ui:
-                face_ui.set_now_playing(_build_now_playing_data(song, with_video))
+                face_ui.set_now_playing(_build_now_playing_data(song, video_id=music_video_id))
 
             suffix = " with video" if with_video else ""
             return f"Playing {song.title} by {song.artist}{suffix}."
