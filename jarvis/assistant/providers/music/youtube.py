@@ -17,6 +17,7 @@ import json
 import os
 import platform
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ytmusicapi import YTMusic
@@ -47,6 +48,16 @@ class YouTubeMusicProvider(MusicProvider):
         self._last_song: SongResult | None = None
         self._paused: bool = False
         self._current_video_id: str | None = None
+
+        # Serializes concurrent play() calls so rapid invocations don't
+        # collide on the IPC socket (e.g., "play X" followed immediately by "play Y").
+        self._play_lock = threading.Lock()
+
+        # Callback registered by main.py — fired when mpv exits naturally (song ends).
+        self._on_ended_callback = None
+
+        # Background thread that watches mpv's process lifetime.
+        self._monitor_thread: threading.Thread | None = None
 
         # Kill any orphaned mpv from previous sessions on startup
         self.stop()
@@ -138,53 +149,110 @@ class YouTubeMusicProvider(MusicProvider):
         """The YouTube videoId when playing in video mode, None otherwise."""
         return self._current_video_id
 
-    def play(self, song: SongResult, video: bool = False) -> bool:
-        # Stop any existing playback
-        self.stop()
+    def is_playing(self) -> bool:
+        """True if mpv is running and has not exited."""
+        return self._mpv_process is not None and self._mpv_process.poll() is None
 
-        self._last_song = song
+    def register_on_ended(self, callback) -> None:
+        """
+        Register a callback that fires when playback ends naturally
+        (mpv exits on its own — song finished, stream error, etc.).
+        main.py uses this to clear the dashboard's now-playing state.
+        """
+        self._on_ended_callback = callback
+
+    def _start_monitor(self) -> None:
+        """Spawn a daemon thread that polls mpv's process status every 500ms."""
+        if self._monitor_thread and self._monitor_thread.is_alive():
+            return  # already monitoring
+
+        def _watch():
+            proc = self._mpv_process
+            if proc is None:
+                return
+            while proc.poll() is None:
+                import time
+                time.sleep(0.5)
+            # mpv exited naturally (song ended, stream finished, etc.)
+            self._playback_ended()
+
+        self._monitor_thread = threading.Thread(
+            target=_watch, name="mpv-monitor", daemon=True,
+        )
+        self._monitor_thread.start()
+
+    def _playback_ended(self) -> None:
+        """Clean up after mpv exits on its own (not via stop())."""
+        log.debug("mpv process exited — playback ended naturally.")
+        self._mpv_process = None
+        self._current_video_id = None
         self._paused = False
 
-        # Always store video_id so the dashboard can display the video thumbnail.
-        # In video mode the dashboard iframe handles both audio and video;
-        # in normal mode mpv handles audio and the dashboard shows a mini thumbnail.
-        self._current_video_id = song.uri
+        # Clean up socket file
+        if os.path.exists(self.ipc_socket):
+            try:
+                os.remove(self.ipc_socket)
+            except OSError:
+                pass
 
-        if video:
-            log.info('Video mode — dashboard will play videoId=%s', song.uri)
-            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
-            return True
+        AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
 
-        url = f"https://www.youtube.com/watch?v={song.uri}"
+        # Notify main.py so the dashboard clears now-playing
+        if self._on_ended_callback:
+            try:
+                self._on_ended_callback()
+            except Exception as e:
+                log.warning("on_ended callback failed: %s", e)
 
-        # mpv with:
-        #   --no-video: audio only (we're a voice assistant, not a TV)
-        #   --input-ipc-server: creates a socket we can send commands to (pause, skip, volume)
-        #   --really-quiet: no terminal spam
-        try:
-            self._mpv_process = subprocess.Popen(
-                [
-                    self.player,
-                    "--no-video",
-                    f"--input-ipc-server={self.ipc_socket}",
-                    "--really-quiet",
-                    url,
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
-            return True
-        except FileNotFoundError:
-            install_hint = {
-                "Darwin": "brew install mpv",
-                "Linux": "sudo apt-get install mpv",
-            }.get(platform.system(), "install mpv from https://mpv.io")
-            log.error("'%s' not found. Install it: %s", self.player, install_hint)
-            return False
-        except Exception as e:
-            log.error("Failed to start playback: %s", e)
-            return False
+    def play(self, song: SongResult, video: bool = False) -> bool:
+        with self._play_lock:
+            # Stop any existing playback
+            self.stop()
+
+            self._last_song = song
+            self._paused = False
+
+            # Always store video_id so the dashboard can display the video thumbnail.
+            # In video mode the dashboard iframe handles both audio and video;
+            # in normal mode mpv handles audio and the dashboard shows a mini thumbnail.
+            self._current_video_id = song.uri
+
+            if video:
+                log.info('Video mode — dashboard will play videoId=%s', song.uri)
+                AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
+                return True
+
+            url = f"https://www.youtube.com/watch?v={song.uri}"
+
+            # mpv with:
+            #   --no-video: audio only (we're a voice assistant, not a TV)
+            #   --input-ipc-server: creates a socket we can send commands to (pause, skip, volume)
+            #   --really-quiet: no terminal spam
+            try:
+                self._mpv_process = subprocess.Popen(
+                    [
+                        self.player,
+                        "--no-video",
+                        f"--input-ipc-server={self.ipc_socket}",
+                        "--really-quiet",
+                        url,
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, True)
+                self._start_monitor()
+                return True
+            except FileNotFoundError:
+                install_hint = {
+                    "Darwin": "brew install mpv",
+                    "Linux": "sudo apt-get install mpv",
+                }.get(platform.system(), "install mpv from https://mpv.io")
+                log.error("'%s' not found. Install it: %s", self.player, install_hint)
+                return False
+            except Exception as e:
+                log.error("Failed to start playback: %s", e)
+                return False
 
     def _send_mpv_command(self, command: dict) -> None:
         """Send a command to mpv via IPC socket."""
@@ -224,6 +292,7 @@ class YouTubeMusicProvider(MusicProvider):
 
     def stop(self) -> None:
         AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
+        self._current_video_id = None
 
         # Kill the process we spawned this session
         if self._mpv_process:
@@ -269,9 +338,15 @@ class YouTubeMusicProvider(MusicProvider):
 
     def seek(self, position: float) -> None:
         """Seek to an absolute position in seconds."""
+        if not self.is_playing():
+            log.warning("seek() called but mpv is not running — ignoring.")
+            return
         self._send_mpv_command({"command": ["set_property", "time-pos", position]})
 
     def set_volume(self, level: int) -> None:
+        if not self.is_playing():
+            log.warning("set_volume() called but mpv is not running — ignoring.")
+            return
         level = max(0, min(100, level))
         self._send_mpv_command({"command": ["set_property", "volume", level]})
 

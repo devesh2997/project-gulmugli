@@ -385,7 +385,7 @@ export function VideoControls({
                 padding: '0 20px 16px',
               }}
             >
-              {duration > 0 && (
+              {duration > 0 ? (
                 <>
                   <div
                     ref={barRef}
@@ -457,6 +457,24 @@ export function VideoControls({
                     <span>{fmt(duration)}</span>
                   </div>
                 </>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '4px 0',
+                }}>
+                  <span style={{
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    color: 'var(--personality-accent)',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    opacity: 0.7,
+                  }}>
+                    LIVE
+                  </span>
+                </div>
               )}
             </div>
           </motion.div>

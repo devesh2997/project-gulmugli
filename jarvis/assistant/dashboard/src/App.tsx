@@ -79,17 +79,27 @@ function AppContent() {
   // Handle NowPlayingCompact tap: expand audio sheet (video thumbnail has its own handler)
   const handleCompactExpand = useCallback(() => {
     setNowPlayingExpanded(true)
-  }, [])
+    if (videoMode === 'full' || videoMode === 'fullscreen') setVideoMode('hidden')
+  }, [videoMode])
 
   // Handle video expand from compact/expanded widgets
   const handleExpandVideo = useCallback(() => {
     setVideoMode('full')
+    setNowPlayingExpanded(false) // close audio sheet
   }, [])
 
   // Handle video mode changes from VideoPlayer
   const handleVideoModeChange = useCallback((mode: VideoMode) => {
     setVideoMode(mode)
   }, [])
+
+  // -- Reset video/expanded state when music stops --
+  useEffect(() => {
+    if (!assistant.nowPlaying) {
+      setVideoMode('hidden')
+      setNowPlayingExpanded(false)
+    }
+  }, [assistant.nowPlaying])
 
   // -- Fullscreen toggle (F11 / Cmd+F) --
   useEffect(() => {

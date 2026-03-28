@@ -13,7 +13,7 @@
  * Auto-collapses after 6 seconds of no interaction.
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, PanInfo } from 'framer-motion'
 import type { NowPlaying, AssistantActions } from '../types/assistant'
 
@@ -128,6 +128,20 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse, videoId, o
   const barRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Seek optimistic update: override position locally for 2s after seeking
+  const [seekOverride, setSeekOverride] = useState<number | null>(null)
+  const seekOverrideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Volume debounce: only send every 100ms
+  const volumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debouncedSetVolume = useCallback((level: number) => {
+    if (volumeTimer.current) clearTimeout(volumeTimer.current)
+    volumeTimer.current = setTimeout(() => {
+      actions.setVolume(level)
+      volumeTimer.current = null
+    }, 100)
+  }, [actions])
+
   const reset = useCallback(() => {
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(onCollapse, 6000)
@@ -135,14 +149,23 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse, videoId, o
 
   useEffect(() => {
     reset()
-    return () => { if (timer.current) clearTimeout(timer.current) }
+    return () => {
+      if (timer.current) clearTimeout(timer.current)
+      if (seekOverrideTimer.current) clearTimeout(seekOverrideTimer.current)
+      if (volumeTimer.current) clearTimeout(volumeTimer.current)
+    }
   }, [reset])
 
   const seekFromEvent = useCallback((clientX: number) => {
     if (!nowPlaying.duration || !barRef.current) return
     const r = barRef.current.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
-    actions.seek(ratio * nowPlaying.duration)
+    const newPos = ratio * nowPlaying.duration
+    actions.seek(newPos)
+    // Optimistic: show the new position immediately and block poll updates for 2s
+    setSeekOverride(newPos)
+    if (seekOverrideTimer.current) clearTimeout(seekOverrideTimer.current)
+    seekOverrideTimer.current = setTimeout(() => setSeekOverride(null), 2000)
     reset()
   }, [nowPlaying.duration, actions, reset])
 
@@ -167,7 +190,8 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse, videoId, o
     }
   }
 
-  const pct = nowPlaying.duration > 0 ? (nowPlaying.position / nowPlaying.duration) * 100 : 0
+  const displayPosition = seekOverride !== null ? seekOverride : nowPlaying.position
+  const pct = nowPlaying.duration > 0 ? (displayPosition / nowPlaying.duration) * 100 : 0
 
   return (
     <>
@@ -434,7 +458,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse, videoId, o
               fontFamily: 'var(--font-mono)',
               letterSpacing: '0.04em',
             }}>
-              <span>{fmt(nowPlaying.position)}</span>
+              <span>{fmt(displayPosition)}</span>
               <span>{fmt(nowPlaying.duration)}</span>
             </div>
           </div>
@@ -481,7 +505,7 @@ export function NowPlayingExpanded({ nowPlaying, actions, onCollapse, videoId, o
             min={0}
             max={100}
             defaultValue={50}
-            onChange={e => { actions.setVolume(Number(e.target.value)); reset() }}
+            onChange={e => { debouncedSetVolume(Number(e.target.value)); reset() }}
             aria-label="Volume"
             style={{
               flex: 1,

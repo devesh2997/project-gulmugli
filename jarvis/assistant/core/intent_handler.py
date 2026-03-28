@@ -203,8 +203,11 @@ def handle_intent(assistant: dict, intent) -> str:
                     face_ui.set_music_paused(True)
                 elif action == "resume":
                     face_ui.set_music_paused(False)
-                    # If resume replayed the last song, update now-playing
-                    if music._last_song and not music._paused:
+                    # Always broadcast now-playing after resume.
+                    # If mpv was dead and resume() replayed the song, the
+                    # dashboard needs fresh now-playing data (new duration/position).
+                    # If mpv was just unpaused, this is a harmless refresh.
+                    if music._last_song:
                         face_ui.set_now_playing(_build_now_playing_data(music._last_song))
 
             return intent.response or f"{action.title()}."

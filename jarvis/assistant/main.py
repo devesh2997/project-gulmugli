@@ -23,6 +23,7 @@ from core.voice_router import VoiceRouter
 from core.interfaces import WakeWordDetection
 from core.pipeline import process_input
 from core.intent_handler import is_sleep_mode, trigger_wake
+from core.audio_focus import AudioFocusManager, AudioChannel
 from ui.server import FaceUI
 from ui.actions import handle_ui_action
 
@@ -668,6 +669,19 @@ def main():
 
     assistant = build_assistant()
 
+    # Register callback for when mpv exits naturally (song ends).
+    # Clears the dashboard's now-playing state and audio focus so the UI
+    # doesn't show stale data after a song finishes.
+    music = assistant.get("music")
+    if music and hasattr(music, "register_on_ended"):
+        def _on_music_ended():
+            face_ui = assistant.get("face_ui")
+            if face_ui:
+                face_ui.set_now_playing(None)
+            AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
+
+        music.register_on_ended(_on_music_ended)
+
     # Start playback position polling thread — updates dashboard progress bar every second
     def _position_poll_loop():
         import time as _time
@@ -675,12 +689,14 @@ def main():
         face_ui = assistant.get("face_ui")
         while True:
             try:
-                if music and face_ui and not getattr(face_ui, '_music_paused', False):
+                if (music and face_ui
+                        and not getattr(face_ui, '_music_paused', False)
+                        and music.is_playing()):
                     pos = music.get_playback_position()
                     if pos:
                         face_ui.update_playback_position(pos["position"], pos["duration"])
             except Exception:
-                pass
+                pass  # Never crash the poller thread
             _time.sleep(1)
 
     _poll_thread = threading.Thread(target=_position_poll_loop, name="position-poller", daemon=True)

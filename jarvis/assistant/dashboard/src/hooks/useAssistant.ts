@@ -351,12 +351,33 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     }
   }, [])
 
+  // Debounce refs for rapid button presses and seek/volume
+  const lastActionTime = useRef(0)
+  const seekTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** Guard against rapid taps on play/pause/stop/skip (300ms cooldown) */
+  const debouncedMusicAction = useCallback((actionName: string) => {
+    const now = Date.now()
+    if (now - lastActionTime.current < 300) return
+    lastActionTime.current = now
+    sendAction({ action: 'music_control', params: { action: actionName } })
+  }, [sendAction])
+
+  /** Debounced seek — only sends last position within 200ms window */
+  const debouncedSeek = useCallback((position: number) => {
+    if (seekTimer.current) clearTimeout(seekTimer.current)
+    seekTimer.current = setTimeout(() => {
+      sendAction({ action: 'seek', params: { position } })
+      seekTimer.current = null
+    }, 200)
+  }, [sendAction])
+
   const actions: AssistantActions = useMemo(() => ({
-    pause: () => sendAction({ action: 'music_control', params: { action: 'pause' } }),
-    resume: () => sendAction({ action: 'music_control', params: { action: 'resume' } }),
-    skip: () => sendAction({ action: 'music_control', params: { action: 'skip' } }),
-    stop: () => sendAction({ action: 'music_control', params: { action: 'stop' } }),
-    seek: (position: number) => sendAction({ action: 'seek', params: { position } }),
+    pause: () => debouncedMusicAction('pause'),
+    resume: () => debouncedMusicAction('resume'),
+    skip: () => debouncedMusicAction('skip'),
+    stop: () => debouncedMusicAction('stop'),
+    seek: (position: number) => debouncedSeek(position),
     setVolume: (level: number) => sendAction({ action: 'volume', params: { level } }),
     setLights: (params: Record<string, unknown>) => sendAction({ action: 'light_control', params }),
     switchPersonality: (id: string) => sendAction({ action: 'switch_personality', params: { personality: id } }),
@@ -428,7 +449,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'quiz_quit' }))
       }
     },
-  }), [sendAction])
+  }), [sendAction, debouncedMusicAction, debouncedSeek])
 
   useEffect(() => {
     connect()
