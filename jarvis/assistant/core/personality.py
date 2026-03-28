@@ -63,6 +63,7 @@ class PersonalityManager:
                 fallback_voice=pdata.get("fallback_voice", ""),
                 music_preferences=pdata.get("music_preferences", {}),
                 wake_word=pdata.get("wake_word", ""),
+                avatar_type=pdata.get("avatar_type", "orb"),
             )
 
         # If no personalities defined at all, create a fallback from the

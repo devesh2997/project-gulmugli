@@ -47,7 +47,7 @@ export type AssistantMood =
   | 'gotcha'
 
 // ─── Avatar Types ─────────────────────────────────────────────────
-export type AvatarType = 'orb' | 'pixel' | 'light' | 'caricature'
+export type AvatarType = 'orb' | 'pixel' | 'light' | 'caricature' | string
 
 // ─── Intent Badges ────────────────────────────────────────────────
 export type IntentStatus = 'queued' | 'processing' | 'done' | 'failed'

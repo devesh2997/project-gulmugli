@@ -84,6 +84,7 @@ class Personality:
     fallback_voice: str = ""          # voice to use when preferred provider unavailable
     music_preferences: dict = field(default_factory=dict)  # override global prefs, empty = use global
     wake_word: str = ""               # optional per-personality wake word
+    avatar_type: str = "orb"          # dashboard avatar: orb, pixel, light, caricature (extensible)
 
 
 @dataclass

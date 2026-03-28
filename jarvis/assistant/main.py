@@ -216,7 +216,7 @@ def build_assistant() -> dict:
 
     # Send personality list to dashboard so it can show a switcher
     face_ui.set_personalities([
-        {"id": p.id, "display_name": p.display_name, "description": p.description}
+        {"id": p.id, "display_name": p.display_name, "description": p.description, "avatar_type": p.avatar_type}
         for p in personality_manager.list()
     ])
 
