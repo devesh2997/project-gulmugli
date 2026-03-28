@@ -268,22 +268,22 @@ export function NowPlayingCompact({ nowPlaying, onExpand, videoId, onExpandVideo
               position: 'absolute',
               bottom: 0,
               left: 0,
-              right: 0,
+              width: '100%',
               height: 3,
               borderRadius: '0 0 20px 20px',
               overflow: 'hidden',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
           >
-            <motion.div
+            <div
               style={{
                 height: '100%',
+                width: `${Math.min(100, Math.max(0, (nowPlaying.position / nowPlaying.duration) * 100))}%`,
                 background: 'var(--personality-accent)',
                 opacity: 0.6,
-                borderRadius: 'inherit',
+                transition: 'width 1s linear',
               }}
-              animate={{ width: `${(nowPlaying.position / nowPlaying.duration) * 100}%` }}
-              transition={{ duration: 1, ease: 'linear' }}
             />
           </div>
         )}

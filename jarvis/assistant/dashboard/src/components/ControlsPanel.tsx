@@ -136,7 +136,8 @@ function AudioIcon() {
 /* ───── Main panel ───── */
 
 export function ControlsPanel({ store }: Props) {
-  const hasLights = store.lights != null
+  // Always show lights section — even without state, the user should be able to control them
+  const hasLights = true
 
   return (
     <div style={{
