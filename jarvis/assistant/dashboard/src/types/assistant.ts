@@ -193,6 +193,18 @@ export interface YouTubeBrowseMessage {
   url: string
 }
 
+export interface PlaySongMessage {
+  type: 'play_song'
+  data: { videoId: string; title: string; artist: string; album?: string; duration?: number }
+}
+
+export interface PlayerCommandMessage {
+  type: 'player_command'
+  command: 'pause' | 'play' | 'stop' | 'seek' | 'volume'
+  position?: number
+  level?: number
+}
+
 export interface AudioOutputsMessage {
   type: 'audio_outputs'
   outputs: AudioDevice[]
@@ -292,6 +304,8 @@ export type ServerMessage =
   | QuizUpdateMessage
   | QuizCloseMessage
   | YouTubeBrowseMessage
+  | PlaySongMessage
+  | PlayerCommandMessage
   | { type: 'video_control'; action: string }
   | { type: 'playback_position'; position: number; duration: number }
 
@@ -388,6 +402,9 @@ export interface AssistantActions {
   btDisconnect: (mac: string) => void
   closeVideo: () => void
   closeBrowse: () => void
+  // Player position reporting
+  reportPosition: (position: number, duration: number) => void
+  reportPlayerEnded: () => void
   // Quiz controls
   quizAnswer: (answer: string) => void
   quizHint: () => void

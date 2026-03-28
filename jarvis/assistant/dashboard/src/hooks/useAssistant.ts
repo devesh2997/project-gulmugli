@@ -105,6 +105,27 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         }))
         break
 
+      case 'play_song':
+        setState(prev => ({
+          ...prev,
+          nowPlaying: {
+            title: msg.data.title || '',
+            artist: msg.data.artist || '',
+            album: msg.data.album || '',
+            artUrl: null,
+            duration: msg.data.duration || 0,
+            position: 0,
+            paused: false,
+            videoId: msg.data.videoId || null,
+          },
+        }))
+        break
+
+      case 'player_command':
+        // Forward to MusicPlayer via custom event
+        window.dispatchEvent(new CustomEvent('jarvis-player-command', { detail: msg }))
+        break
+
       case 'now_playing':
         setState(prev => ({
           ...prev,
@@ -122,6 +143,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         break
 
       case 'playback_position':
+        // Legacy: position now flows dashboard→backend, but keep for backward compat
         setState(prev => ({
           ...prev,
           nowPlaying: prev.nowPlaying
@@ -283,8 +305,10 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         break
 
       case 'video_control':
-        // Forward to App.tsx via custom event (avoids prop drilling)
-        window.dispatchEvent(new CustomEvent('jarvis-video-control', { detail: (msg as any).action }))
+        // Legacy: forward to MusicPlayer via player_command event
+        window.dispatchEvent(new CustomEvent('jarvis-player-command', {
+          detail: { command: (msg as any).action === 'fullscreen' ? 'play' : 'pause' }
+        }))
         break
 
       default:
@@ -432,6 +456,17 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     },
     closeBrowse: () => {
       setState(prev => ({ ...prev, youtubeBrowseUrl: null }))
+    },
+    // Player position reporting
+    reportPosition: (position: number, duration: number) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'position_report', params: { position, duration } }))
+      }
+    },
+    reportPlayerEnded: () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'player_ended' }))
+      }
     },
     // Quiz controls
     quizAnswer: (answer: string) => {

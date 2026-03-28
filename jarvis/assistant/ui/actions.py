@@ -265,6 +265,25 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
                 response="",
             )
 
+    elif action == "position_report":
+        music = assistant.get("music")
+        if music and hasattr(music, "report_position"):
+            pos = params.get("position", 0) or action_data.get("position", 0)
+            dur = params.get("duration", 0) or action_data.get("duration", 0)
+            music.report_position(pos, dur)
+        return
+
+    elif action == "player_ended":
+        music = assistant.get("music")
+        if music:
+            music._browser_playing = False
+        face_ui = assistant.get("face_ui")
+        if face_ui:
+            face_ui.set_now_playing(None)
+        from core.audio_focus import AudioFocusManager, AudioChannel
+        AudioFocusManager.instance().set_channel_active(AudioChannel.MUSIC, False)
+        return
+
     elif action == "quiz_hint":
         # User tapped the hint button on the quiz card
         intent = Intent(

@@ -13,16 +13,13 @@ import { Avatar } from './components/Avatar'
 import { Clock } from './components/Clock'
 import { StatusDot } from './components/StatusDot'
 import { ThoughtManifest } from './components/thoughts/ThoughtManifest'
-import { NowPlayingCompact } from './components/NowPlayingCompact'
-import { NowPlayingExpanded } from './components/NowPlayingExpanded'
 import { TransitionDissolver } from './components/TransitionDissolver'
 import SlidePanel from './components/SlidePanel'
 import Transcript from './components/Transcript'
 import { SettingsPanel } from './components/SettingsPanel'
 import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
-import { VideoPlayer } from './components/VideoPlayer'
-import type { VideoMode } from './components/VideoPlayer'
+import { MusicPlayer } from './components/MusicPlayer'
 import { QuizCard } from './components/QuizCard'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
@@ -66,41 +63,6 @@ function AppContent() {
 
   useGesture(handleGesture)
 
-  // -- Now-playing expanded/collapsed --
-  const [nowPlayingExpanded, setNowPlayingExpanded] = useState(false)
-
-  // -- Video player mode (managed here so NowPlayingCompact can drive it) --
-  // Default to 'hidden' — video thumbnail shows in compact widget but player doesn't pop up
-  // User must explicitly tap the thumbnail to expand to full video
-  const [videoMode, setVideoMode] = useState<VideoMode>('hidden')
-
-  const hasVideo = !!assistant.nowPlaying?.videoId
-
-  // Handle NowPlayingCompact tap: expand audio sheet (video thumbnail has its own handler)
-  const handleCompactExpand = useCallback(() => {
-    setNowPlayingExpanded(true)
-    if (videoMode === 'full' || videoMode === 'fullscreen') setVideoMode('hidden')
-  }, [videoMode])
-
-  // Handle video expand from compact/expanded widgets
-  const handleExpandVideo = useCallback(() => {
-    setVideoMode('full')
-    setNowPlayingExpanded(false) // close audio sheet
-  }, [])
-
-  // Handle video mode changes from VideoPlayer
-  const handleVideoModeChange = useCallback((mode: VideoMode) => {
-    setVideoMode(mode)
-  }, [])
-
-  // -- Reset video/expanded state when music stops --
-  useEffect(() => {
-    if (!assistant.nowPlaying) {
-      setVideoMode('hidden')
-      setNowPlayingExpanded(false)
-    }
-  }, [assistant.nowPlaying])
-
   // -- Fullscreen toggle (F11 / Cmd+F) --
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -115,17 +77,6 @@ function AppContent() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  // -- Listen for voice-triggered video control commands --
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const action = (e as CustomEvent).detail
-      if (action === 'fullscreen') setVideoMode('fullscreen')
-      else if (action === 'exit_fullscreen') setVideoMode('full')
-    }
-    window.addEventListener('jarvis-video-control', handler)
-    return () => window.removeEventListener('jarvis-video-control', handler)
   }, [])
 
   // -- Avatar size: responsive to viewport, generous for 5.5" screens --
@@ -149,12 +100,6 @@ function AppContent() {
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [avatarSize])
-
-  // Determine whether to show NowPlayingCompact: show when music is playing AND
-  // video is not in full mode AND not in browse mode
-  const showCompact = !!assistant.nowPlaying && !nowPlayingExpanded && videoMode !== 'full' && !assistant.youtubeBrowseUrl
-  // NowPlayingExpanded (audio sheet): show when expanded is toggled
-  const showExpanded = !!assistant.nowPlaying && nowPlayingExpanded && !assistant.youtubeBrowseUrl
 
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -203,27 +148,6 @@ function AppContent() {
 
         <EdgeHints visible={openPanel === null} />
 
-        {/* Now Playing: compact widget + audio expanded sheet */}
-        <AnimatePresence>
-          {showCompact && (
-            <NowPlayingCompact
-              nowPlaying={assistant.nowPlaying!}
-              onExpand={handleCompactExpand}
-              videoId={assistant.nowPlaying!.videoId}
-              onExpandVideo={handleExpandVideo}
-            />
-          )}
-          {showExpanded && (
-            <NowPlayingExpanded
-              nowPlaying={assistant.nowPlaying!}
-              actions={assistant.actions}
-              onCollapse={() => setNowPlayingExpanded(false)}
-              videoId={assistant.nowPlaying!.videoId}
-              onExpandVideo={handleExpandVideo}
-            />
-          )}
-        </AnimatePresence>
-
         {/* Slide Panels */}
         <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => setOpenPanel(null)} direction="bottom">
           <Transcript messages={assistant.transcript} onSendText={assistant.actions.sendText} />
@@ -236,15 +160,11 @@ function AppContent() {
         </SlidePanel>
       </motion.div>
 
-      {/* Floating video player -- mounted when videoId exists OR in browse mode */}
-      {(hasVideo || assistant.youtubeBrowseUrl) && (
-        <VideoPlayer
-          nowPlaying={assistant.nowPlaying ?? { title: '', artist: '', album: '', artUrl: null, duration: 0, position: 0, paused: false, videoId: null }}
+      {/* Music player — self-contained, manages its own mode */}
+      {assistant.nowPlaying && (
+        <MusicPlayer
+          nowPlaying={assistant.nowPlaying}
           actions={assistant.actions}
-          mode={assistant.youtubeBrowseUrl ? 'full' : videoMode}
-          onModeChange={handleVideoModeChange}
-          browseUrl={assistant.youtubeBrowseUrl}
-          onCloseBrowse={assistant.actions.closeBrowse}
         />
       )}
 

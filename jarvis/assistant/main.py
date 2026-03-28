@@ -682,6 +682,12 @@ def main():
 
         music.register_on_ended(_on_music_ended)
 
+    # Wire dashboard into music provider so browser mode can route playback
+    # through the iframe instead of mpv.
+    face_ui = assistant.get("face_ui")
+    if music and face_ui:
+        music.set_face_ui(face_ui)
+
     # Start playback position polling thread — updates dashboard progress bar every second
     def _position_poll_loop():
         import time as _time
@@ -691,6 +697,7 @@ def main():
             try:
                 if (music and face_ui
                         and not getattr(face_ui, '_music_paused', False)
+                        and not getattr(music, '_browser_playing', False)
                         and music.is_playing()):
                     pos = music.get_playback_position()
                     if pos:

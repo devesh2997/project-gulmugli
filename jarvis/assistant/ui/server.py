@@ -272,6 +272,16 @@ class FaceUI:
         """Open a YouTube URL in the dashboard's browse mode iframe."""
         self._broadcast({"type": "youtube_browse", "url": url})
 
+    def play_song(self, data: dict) -> None:
+        """Tell the dashboard to start playing a song via its iframe player."""
+        self._broadcast({"type": "play_song", "data": data})
+
+    def player_command(self, command: str, **params) -> None:
+        """Send a playback control command to the dashboard player."""
+        msg = {"type": "player_command", "command": command}
+        msg.update(params)
+        self._broadcast(msg)
+
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
         pass
