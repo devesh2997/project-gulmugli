@@ -121,6 +121,15 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         }))
         break
 
+      case 'playback_position':
+        setState(prev => ({
+          ...prev,
+          nowPlaying: prev.nowPlaying
+            ? { ...prev.nowPlaying, position: (msg as any).position, duration: (msg as any).duration }
+            : null,
+        }))
+        break
+
       case 'music_stopped':
         setState(prev => ({ ...prev, nowPlaying: null }))
         break

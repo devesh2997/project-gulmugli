@@ -293,6 +293,7 @@ export type ServerMessage =
   | QuizCloseMessage
   | YouTubeBrowseMessage
   | { type: 'video_control'; action: string }
+  | { type: 'playback_position'; position: number; duration: number }
 
 // ─── Messages TO the assistant (browser → server) ─────────────────
 export type GestureType =

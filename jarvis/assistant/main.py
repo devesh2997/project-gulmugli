@@ -668,6 +668,24 @@ def main():
 
     assistant = build_assistant()
 
+    # Start playback position polling thread — updates dashboard progress bar every second
+    def _position_poll_loop():
+        import time as _time
+        music = assistant.get("music")
+        face_ui = assistant.get("face_ui")
+        while True:
+            try:
+                if music and face_ui and not getattr(face_ui, '_music_paused', False):
+                    pos = music.get_playback_position()
+                    if pos:
+                        face_ui.update_playback_position(pos["position"], pos["duration"])
+            except Exception:
+                pass
+            _time.sleep(1)
+
+    _poll_thread = threading.Thread(target=_position_poll_loop, name="position-poller", daemon=True)
+    _poll_thread.start()
+
     if args.wake:
         run_wake_word_mode(assistant)
     elif args.voice:

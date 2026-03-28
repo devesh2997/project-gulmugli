@@ -151,6 +151,10 @@ class FaceUI:
             self._music_paused = False
             self._broadcast({"type": "music_stopped"})
 
+    def update_playback_position(self, position: float, duration: float) -> None:
+        """Push current playback position to the dashboard for progress bar."""
+        self._broadcast({"type": "playback_position", "position": position, "duration": duration})
+
     def set_music_paused(self, paused: bool) -> None:
         """Update the music paused/playing state on the dashboard."""
         self._music_paused = paused
