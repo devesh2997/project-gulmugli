@@ -506,34 +506,27 @@ def _match_timer(text: str) -> list[Intent] | None:
 
 
 def _match_weather(text: str) -> list[Intent] | None:
-    """Match unambiguous weather queries."""
+    """Match weather queries — keyword-based for typo tolerance."""
     t = text.strip().lower()
 
-    # English: "what's the weather", "weather today", "how's the weather", "temperature"
-    if re.fullmatch(
-        r"(what'?s the weather|weather( today| outside)?|how'?s the weather( today| outside)?|"
-        r"current weather|weather report|weather update|"
-        r"what'?s the temperature|temperature( outside)?|how (hot|cold) is it( outside)?|"
-        r"is it (hot|cold|warm|raining|snowing)( outside| today)?|"
-        r"will it rain( today)?|is it going to rain( today)?|"
-        # Hindi/Hinglish
-        r"mausam kaisa hai|mausam bata(o)?|aaj (ka )?mausam|"
-        r"barish hogi kya|barish ho rahi hai kya|"
-        r"temperature kya hai|kitni garmi hai|kitni sardi hai|"
-        r"bahar kaisa mausam hai|weather kaisa hai)",
-        t,
-    ):
-        return [Intent(name="weather", params={"query": "current"},
+    # Keyword detection: if any weather-related word appears, it's a weather query.
+    # This is intentionally broad — false positives are better than missing weather.
+    weather_keywords = r"\b(weather|mausam|temperature|forecast|barish|rain|snow|garmi|sardi|thand)\b"
+    if re.search(weather_keywords, t):
+        # Determine if forecast or current
+        forecast_keywords = r"\b(forecast|weekly|tomorrow|kal|agle|hafta|week)\b"
+        query = "forecast" if re.search(forecast_keywords, t) else "current"
+        return [Intent(name="weather", params={"query": query},
                        response="", confidence=1.0,
                        meta={"source": "prefilter"})]
 
-    # "weather forecast", "week ka mausam"
-    if re.fullmatch(
-        r"(weather forecast|forecast|weekly weather|week ka mausam|"
-        r"kal ka mausam|tomorrow'?s? weather|agle (din|hafta) ka mausam)",
+    # Additional patterns without the word "weather" — "how hot is it", "will it rain"
+    if re.search(
+        r"(how (hot|cold|warm) is it|is it (hot|cold|warm|raining|snowing)|"
+        r"will it rain|kitni garmi|kitni sardi|kitni thand)",
         t,
     ):
-        return [Intent(name="weather", params={"query": "forecast"},
+        return [Intent(name="weather", params={"query": "current"},
                        response="", confidence=1.0,
                        meta={"source": "prefilter"})]
 
