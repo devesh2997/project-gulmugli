@@ -39,6 +39,13 @@ INTENT_TIMEOUTS = {
     "system": 2.0,
     "memory_recall": 15.0,
     "memory_stats": 5.0,
+    "story": 120.0,           # LLM generates multi-paragraph story — needs time on CPU
+    "quiz": 60.0,             # LLM generates question + options
+    "weather": 15.0,          # API call + LLM summary
+    "ambient": 15.0,          # YouTube search for ambient sounds
+    "timer": 5.0,
+    "reminder": 5.0,
+    "youtube_search": 5.0,
 }
 
 
