@@ -533,6 +533,56 @@ def _match_weather(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_story(text: str) -> list[Intent] | None:
+    """Match unambiguous story mode commands."""
+    t = text.strip().lower()
+
+    # Stop story: "stop the story", "story band karo"
+    if re.fullmatch(
+        r"(stop\s+(the\s+)?story|story\s+(band|stop)\s*(karo?)?|"
+        r"kahani\s+band\s*(karo?)?|story\s+rok(o)?)",
+        t,
+    ):
+        return [Intent(name="story", params={"action": "stop"},
+                       response="Story stopped.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Continue story: "continue the story", "tell me more", "aage ki kahani"
+    if re.fullmatch(
+        r"(continue\s+(the\s+)?story|tell\s+me\s+more|more\s+story|"
+        r"aage\s+(ki\s+)?kahani|aur\s+sunao|phir\s+kya\s+hua|"
+        r"story\s+continue\s*(karo?)?|aage\s+batao)",
+        t,
+    ):
+        return [Intent(name="story", params={"action": "continue"},
+                       response="Continuing the story...", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Start story: "tell me a story", "story time", "ek kahani sunao"
+    if re.fullmatch(
+        r"(tell\s+me\s+a\s+(bedtime\s+)?story|"
+        r"story\s+time|bedtime\s+story|"
+        r"ek\s+kahani\s+sunao|kahani\s+sunao|"
+        r"tell\s+me\s+a\s+(funny|romantic|scary|adventure)\s+story|"
+        r"(funny|romantic|scary|adventure)\s+story\s+sunao)",
+        t,
+    ):
+        # Extract genre if present
+        genre = None
+        for g in ("funny", "romantic", "scary", "adventure", "bedtime"):
+            if g in t:
+                genre = g
+                break
+        params = {"action": "start"}
+        if genre:
+            params["genre"] = genre
+        return [Intent(name="story", params=params,
+                       response="Let me tell you a story...", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
 def _match_sleep(text: str) -> list[Intent] | None:
     """Match unambiguous sleep/wake commands."""
     t = text.strip().lower()
@@ -592,9 +642,81 @@ def _match_video_control(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_ambient(text: str) -> list[Intent] | None:
+    """Match unambiguous ambient sound commands."""
+    t = text.strip().lower()
+
+    # Stop ambient: "stop ambient", "stop rain sounds", "stop white noise"
+    # Hindi: "ambient band karo", "rain sounds band karo"
+    if re.fullmatch(
+        r"(stop\s+ambient(\s+sounds?)?|stop\s+(rain|ocean|white\s+noise|nature|sleep)\s+sounds?|"
+        r"ambient\s+(band|stop|off)\s*(karo?)?|"
+        r"stop\s+(the\s+)?(ambient|background)\s*(sounds?|noise|music)?)",
+        t,
+    ):
+        return [Intent(name="ambient", params={"action": "stop"},
+                       response="Ambient sounds stopped.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Volume: "ambient volume 20", "make rain louder", "ambient louder/quieter"
+    m = re.match(r"ambient\s+volume\s+(\d{1,3})%?", t)
+    if m:
+        level = int(m.group(1))
+        if level <= 100:
+            return [Intent(name="ambient", params={"action": "volume", "level": level},
+                           response=f"Ambient volume set to {level}%.", confidence=1.0,
+                           meta={"source": "prefilter"})]
+
+    if re.fullmatch(r"(make\s+(rain|ambient|background)\s+(louder|quieter|softer))", t):
+        direction = "louder" if "louder" in t else "quieter"
+        level = 50 if direction == "louder" else 15
+        return [Intent(name="ambient", params={"action": "volume", "level": level},
+                       response=f"Ambient volume {'up' if direction == 'louder' else 'down'}.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    # Play specific sounds: "play rain sounds", "rain sounds", "white noise"
+    # "play white noise", "play ambient sounds", "sleep sounds", "nature sounds"
+    # Hindi: "barish ki awaaz", "baarish sounds"
+    ambient_sounds = (
+        r"rain|ocean|thunderstorm|white\s+noise|pink\s+noise|brown\s+noise|"
+        r"fireplace|forest|birds|wind|cafe|fan|"
+        r"barish|baarish|nature"
+    )
+
+    # "play rain sounds", "rain sounds please", "put on rain sounds"
+    m = re.fullmatch(
+        rf"(?:play\s+|put\s+on\s+|start\s+)?({ambient_sounds})"
+        r"(?:\s+(?:sounds?|noise|awaaz|ki\s+awaaz))?(?:\s+please)?",
+        t,
+    )
+    if m:
+        sound = m.group(1).strip().replace(" ", "_")
+        # Normalize Hindi variants
+        if sound in ("barish", "baarish"):
+            sound = "rain"
+        elif sound == "nature":
+            sound = "forest"
+        return [Intent(name="ambient", params={"action": "play", "sound": sound},
+                       response=f"Playing {sound.replace('_', ' ')} sounds.",
+                       confidence=1.0, meta={"source": "prefilter"})]
+
+    # "play ambient sounds", "ambient sounds", "sleep sounds"
+    if re.fullmatch(
+        r"(?:play\s+)?(ambient|sleep|relaxing|background)\s+sounds?",
+        t,
+    ):
+        return [Intent(name="ambient", params={"action": "play", "sound": "rain"},
+                       response="Playing rain sounds.", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
 PREFILTER_CHAIN = [
+    _match_ambient,
     _match_timer,
     _match_weather,
+    _match_story,
     _match_sleep,
     _match_reminder,
     _match_quiz,

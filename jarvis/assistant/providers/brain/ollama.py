@@ -249,7 +249,17 @@ Respond with valid JSON only. No explanation. No markdown.
    "snooze for 30 minutes" → action: "snooze", time: "30"
    Default date is "today", default repeat is "none"
 
-15. "timer" — Set, cancel, or manage timers and alarms
+15. "story" — User wants a bedtime story or story experience
+   Params: {{"action": "start|continue|stop", "genre": "bedtime|funny|romantic|scary|adventure|null", "topic": "optional user-specified topic or null"}}
+   Start: "tell me a story", "tell me a bedtime story", "story time", "ek kahani sunao", "tell me a funny story"
+   Continue: "continue the story", "tell me more", "aage ki kahani", "aur sunao"
+   Stop: "stop the story", "story band karo"
+   Extract genre from the request: "tell me a scary story" → genre: "scary"
+   Extract topic from the request: "tell me a story about a princess" → topic: "a princess"
+   If no genre mentioned, leave genre as null. If no topic, leave topic as null.
+   IMPORTANT: Do NOT generate a story in the response. The response should just be a brief acknowledgment.
+
+16. "timer" — Set, cancel, or manage timers and alarms
    Params: {{"action": "set_timer|set_alarm|cancel|snooze|list", "duration": seconds, "time": "HH:MM", "label": "string", "repeat": "none|daily|weekdays"}}
    Set timer: "set a timer for 5 minutes" → action: "set_timer", duration: 300
    "timer lagao 10 minute" → action: "set_timer", duration: 600
@@ -268,6 +278,22 @@ Respond with valid JSON only. No explanation. No markdown.
    List: "what timers are active" → action: "list"
    IMPORTANT: Timers use "duration" (in seconds). Alarms use "time" (HH:MM format).
    Convert minutes/hours to seconds for duration. Convert 12h to 24h for time.
+
+17. "ambient" — Play, stop, or control background ambient sounds (rain, white noise, ocean, etc.)
+   Params: {{"action": "play|stop|volume", "sound": "rain|ocean|thunderstorm|white_noise|pink_noise|brown_noise|fireplace|forest|birds|wind|cafe|fan", "level": 0-100}}
+   This is for AMBIENT/BACKGROUND sounds — NOT music. Used for sleep, relaxation, focus.
+   Play: "play rain sounds" → action: "play", sound: "rain"
+   "white noise" → action: "play", sound: "white_noise"
+   "ocean sounds lagao" → action: "play", sound: "ocean"
+   "play ambient sounds" → action: "play", sound: "rain" (default to rain)
+   "sleep sounds" → action: "play", sound: "rain"
+   "barish ki awaaz" → action: "play", sound: "rain"
+   "fireplace sounds" → action: "play", sound: "fireplace"
+   Stop: "stop ambient" → action: "stop"
+   "stop rain sounds" → action: "stop"
+   Volume: "ambient volume 20" → action: "volume", level: 20
+   "make rain louder" → action: "volume", level: 50
+   IMPORTANT: Differentiate from music_play. If the user asks for "rain sounds" or "white noise" it's ambient, not music.
 
 ## Format
 Always return an "intents" array, even for a single command.
@@ -461,6 +487,18 @@ User: "cancel timer"
 
 User: "snooze"
 {{"intents": [{{"intent": "timer", "params": {{"action": "snooze"}}}}], "response": "Snoozed."}}
+
+User: "tell me a bedtime story"
+{{"intents": [{{"intent": "story", "params": {{"action": "start", "genre": "bedtime"}}}}], "response": "Let me tell you a story..."}}
+
+User: "tell me a funny story about a robot"
+{{"intents": [{{"intent": "story", "params": {{"action": "start", "genre": "funny", "topic": "a robot"}}}}], "response": "Alright, here's a funny one!"}}
+
+User: "ek kahani sunao"
+{{"intents": [{{"intent": "story", "params": {{"action": "start"}}}}], "response": "Let me tell you a story..."}}
+
+User: "continue the story"
+{{"intents": [{{"intent": "story", "params": {{"action": "continue"}}}}], "response": "Continuing..."}}
 
 ### Chained commands
 User: "play Sajni and set the lights to red"

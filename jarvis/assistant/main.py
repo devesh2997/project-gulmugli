@@ -278,6 +278,15 @@ def build_assistant() -> dict:
     else:
         assistant["weather"] = None
 
+    # Ambient sounds — background audio for sleep/relaxation (rain, white noise, etc.)
+    try:
+        from providers.ambient.sounds import AmbientSoundProvider
+        assistant["ambient"] = AmbientSoundProvider()
+        log.info("AmbientSoundProvider ready.")
+    except Exception as e:
+        log.info("Ambient sound provider not available (%s). Ambient features disabled.", e)
+        assistant["ambient"] = None
+
     # Reminders — persistent scheduling with repeat support
     try:
         from providers.reminder.manager import ReminderManager

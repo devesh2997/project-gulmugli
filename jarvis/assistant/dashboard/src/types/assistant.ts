@@ -328,6 +328,28 @@ export interface QuizState {
   showStats: boolean
 }
 
+// ─── Story Mode ──────────────────────────────────────────────────
+export type StoryGenre = 'bedtime' | 'funny' | 'romantic' | 'scary' | 'adventure' | null
+
+export interface StoryState {
+  active: boolean
+  genre: StoryGenre
+  paragraphs: string[]
+  currentParagraph: number
+  finished: boolean
+}
+
+export interface StoryModeMessage {
+  type: 'story_mode'
+  data: {
+    active: boolean
+    genre?: string | null
+    paragraphs?: string[]
+    current_paragraph?: number
+    finished?: boolean
+  }
+}
+
 // ─── Weather ─────────────────────────────────────────────────────
 export type WeatherCondition =
   | 'sunny'
@@ -392,6 +414,34 @@ export interface WeatherShowMessage {
   data: WeatherData
 }
 
+// ─── Ambient Sounds ─────────────────────────────────────────────
+export type AmbientSoundName =
+  | 'rain'
+  | 'ocean'
+  | 'thunderstorm'
+  | 'white_noise'
+  | 'pink_noise'
+  | 'brown_noise'
+  | 'fireplace'
+  | 'forest'
+  | 'birds'
+  | 'wind'
+  | 'cafe'
+  | 'fan'
+
+export interface AmbientState {
+  active: boolean
+  sound: AmbientSoundName | ''
+  volume: number
+}
+
+export interface AmbientMessage {
+  type: 'ambient'
+  active: boolean
+  sound: AmbientSoundName | ''
+  volume: number
+}
+
 export type ServerMessage =
   | StateMessage
   | PersonalityMessage
@@ -424,6 +474,8 @@ export type ServerMessage =
   | PlaySongMessage
   | PlayerCommandMessage
   | WeatherShowMessage
+  | StoryModeMessage
+  | AmbientMessage
   | { type: 'video_control'; action: string }
   | { type: 'playback_position'; position: number; duration: number }
 
@@ -493,11 +545,13 @@ export interface AssistantStore {
   settings: SettingSchema[]
   sleepMode: boolean
   quiz: QuizState
+  story: StoryState
   reminders: ReminderData[]
   firedReminder: ReminderData | null
   timers: TimerData[]
   firedTimer: TimerData | null
   weather: WeatherData | null
+  ambient: AmbientState
   youtubeBrowseUrl: string | null
   actions: AssistantActions
   sendAction: (action: UIAction) => void
@@ -540,4 +594,7 @@ export interface AssistantActions {
   quizAnswer: (answer: string) => void
   quizHint: () => void
   quizQuit: () => void
+  // Ambient controls
+  stopAmbient: () => void
+  setAmbientVolume: (level: number) => void
 }

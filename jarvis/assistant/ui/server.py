@@ -69,6 +69,8 @@ class FaceUI:
         self._weather: Optional[dict] = None
         self._active_timers: list[dict] = []
         self._reminders: list[dict] = []
+        self._story_mode: Optional[dict] = None
+        self._ambient: Optional[dict] = None
 
         # Callback for actions received from the browser UI.
         # Set this from main.py to route UI actions into the assistant's
@@ -320,6 +322,17 @@ class FaceUI:
         self._active_timers = timers
         self._broadcast({"type": "timers", "timers": timers})
 
+    def set_story_mode(self, data: dict) -> None:
+        """
+        Broadcast story mode state to all connected clients.
+
+        Args:
+            data: Dict with active, genre, paragraphs[], current_paragraph, finished.
+                  When active is False, the dashboard closes the story overlay.
+        """
+        self._story_mode = data
+        self._broadcast({"type": "story_mode", "data": data})
+
     def timer_fired(self, data: dict) -> None:
         """Broadcast when a timer/alarm fires."""
         self._broadcast({"type": "timer_fired", "data": data})
@@ -327,6 +340,16 @@ class FaceUI:
     def timer_cancelled(self, data: dict) -> None:
         """Broadcast when a timer/alarm is cancelled."""
         self._broadcast({"type": "timer_cancelled", "data": data})
+
+    def set_ambient(self, data: dict) -> None:
+        """
+        Broadcast current ambient sound state to all connected clients.
+
+        Args:
+            data: Dict with active (bool), sound (str), volume (int).
+        """
+        self._ambient = data
+        self._broadcast({"type": "ambient", **data})
 
     def set_mood(self, mood: str) -> None:
         # TODO: v2 — broadcast mood to clients
@@ -404,9 +427,17 @@ class FaceUI:
                 await websocket.send(json.dumps({
                     "type": "reminders_updated", "reminders": self._reminders,
                 }))
+            if self._story_mode and self._story_mode.get("active"):
+                await websocket.send(json.dumps({
+                    "type": "story_mode", "data": self._story_mode,
+                }))
             if self._active_timers:
                 await websocket.send(json.dumps({
                     "type": "timers", "timers": self._active_timers,
+                }))
+            if self._ambient and self._ambient.get("active"):
+                await websocket.send(json.dumps({
+                    "type": "ambient", **self._ambient,
                 }))
         except Exception:
             pass

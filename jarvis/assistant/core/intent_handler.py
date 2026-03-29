@@ -32,6 +32,16 @@ _sleep_mode = threading.Event()
 _sleep_lock = threading.Lock()
 _pre_sleep_volume: int | None = None
 
+# ── Story mode state ────────────────────────────────────────────
+# Tracks the last story generated so "continue" can pick up from it.
+_story_state: dict = {
+    "active": False,
+    "genre": None,
+    "topic": None,
+    "paragraphs": [],     # accumulated story text (list of paragraph strings)
+    "personality_id": "",  # which personality told the story
+}
+
 
 def is_sleep_mode() -> bool:
     """Check if the assistant is currently in sleep mode."""
@@ -407,6 +417,111 @@ def handle_intent(assistant: dict, intent) -> str:
             return intent.response or "Good morning! Ready when you are."
 
         return intent.response or "I'm not sure what to do with that."
+
+    elif intent.name == "story":
+        global _story_state
+        action = intent.params.get("action", "start")
+        face_ui = assistant.get("face_ui")
+        voice_router = assistant.get("voice_router")
+        story_cfg = config.get("story", {})
+        max_paragraphs = story_cfg.get("max_paragraphs", 5)
+        default_genre = story_cfg.get("default_genre", "bedtime")
+        auto_sleep = story_cfg.get("auto_sleep_after", True)
+
+        if action == "stop":
+            _story_state = {"active": False, "genre": None, "topic": None,
+                            "paragraphs": [], "personality_id": ""}
+            if face_ui:
+                face_ui.set_story_mode({"active": False})
+            return intent.response or "Story stopped."
+
+        if action == "continue":
+            if not _story_state["active"] or not _story_state["paragraphs"]:
+                return "There's no story to continue. Ask me to tell you a story first."
+
+            p = personality_manager.active
+            last_text = "\n\n".join(_story_state["paragraphs"])
+            system = (
+                f"You are {p.display_name}, a storyteller. {p.tone}\n\n"
+                f"Continue this story from where it left off. Add 2-3 more paragraphs. "
+                f"Keep the same tone and characters. End with a satisfying moment."
+            )
+            resp = assistant["brain"].generate(
+                prompt=f"Continue this story:\n\n{last_text}",
+                system=system,
+                temperature=0.8,
+            )
+            new_text = resp.text.strip()
+            new_paragraphs = [p_text.strip() for p_text in new_text.split("\n\n") if p_text.strip()]
+            _story_state["paragraphs"].extend(new_paragraphs)
+
+            # Broadcast updated story to dashboard
+            if face_ui:
+                face_ui.set_story_mode({
+                    "active": True,
+                    "genre": _story_state["genre"],
+                    "paragraphs": _story_state["paragraphs"],
+                    "current_paragraph": len(_story_state["paragraphs"]) - 1,
+                    "finished": False,
+                })
+
+            return new_text
+
+        # action == "start"
+        genre = intent.params.get("genre") or default_genre
+        topic = intent.params.get("topic")
+        p = personality_manager.active
+
+        # Build story prompt based on genre and personality
+        genre_instructions = {
+            "bedtime": "Make it calming, gentle, and soothing. Use peaceful imagery. End with a tranquil, sleepy scene.",
+            "funny": "Make it hilarious and witty. Use clever wordplay and unexpected twists. End with a great punchline.",
+            "romantic": "Make it sweet and heartwarming. Build emotional connection between characters. End with a tender moment.",
+            "scary": "Make it suspenseful and eerie. Build tension gradually. End with a surprising twist, but keep it fun, not traumatic.",
+            "adventure": "Make it exciting and action-packed. Include brave characters and challenges. End with a triumphant victory.",
+        }
+        genre_note = genre_instructions.get(genre, genre_instructions["bedtime"])
+
+        topic_note = f"The story should be about: {topic}. " if topic else ""
+
+        system = (
+            f"You are {p.display_name}, telling a story in character. {p.tone}\n\n"
+            f"TASK: Tell an original {genre} story in 3-{max_paragraphs} paragraphs.\n"
+            f"{topic_note}"
+            f"Keep it engaging — use dialogue, vivid descriptions, and a clear arc.\n"
+            f"{genre_note}\n"
+            f"Format: Write the story directly as plain text. Separate paragraphs with blank lines.\n"
+            f"Do NOT include a title, headers, or meta-commentary. Just tell the story."
+        )
+
+        resp = assistant["brain"].generate(
+            prompt=f"Tell me a {genre} story" + (f" about {topic}" if topic else ""),
+            system=system,
+            temperature=0.8,
+        )
+
+        story_text = resp.text.strip()
+        paragraphs = [p_text.strip() for p_text in story_text.split("\n\n") if p_text.strip()]
+
+        _story_state = {
+            "active": True,
+            "genre": genre,
+            "topic": topic,
+            "paragraphs": paragraphs,
+            "personality_id": p.id,
+        }
+
+        # Broadcast to dashboard
+        if face_ui:
+            face_ui.set_story_mode({
+                "active": True,
+                "genre": genre,
+                "paragraphs": paragraphs,
+                "current_paragraph": 0,
+                "finished": False,
+            })
+
+        return story_text
 
     elif intent.name == "chat":
         # For chat, use the ORIGINAL user input — not the classified "message" param.
@@ -1028,6 +1143,37 @@ def handle_intent(assistant: dict, intent) -> str:
             return ". ".join(lines) + "."
 
         return intent.response or "I'm not sure what to do with that timer command."
+
+    elif intent.name == "ambient" and assistant.get("ambient"):
+        action = intent.params.get("action", "play")
+        ambient = assistant["ambient"]
+        face_ui = assistant.get("face_ui")
+
+        if action == "play":
+            sound = intent.params.get("sound", "rain")
+            success = ambient.play(sound)
+            if success:
+                if face_ui:
+                    face_ui.set_ambient(ambient.get_state())
+                return intent.response or f"Playing {sound.replace('_', ' ')} sounds."
+            else:
+                available = ", ".join(ambient.list_sounds())
+                return f"I couldn't play '{sound}'. Available sounds: {available}."
+
+        elif action == "stop":
+            ambient.stop()
+            if face_ui:
+                face_ui.set_ambient(ambient.get_state())
+            return intent.response or "Ambient sounds stopped."
+
+        elif action == "volume":
+            level = int(intent.params.get("level", 30))
+            ambient.set_volume(level)
+            if face_ui:
+                face_ui.set_ambient(ambient.get_state())
+            return intent.response or f"Ambient volume set to {level}%."
+
+        return intent.response or "I'm not sure what to do with that ambient command."
 
     elif intent.name == "system":
         action = intent.params.get("action", "")

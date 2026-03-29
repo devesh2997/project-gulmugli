@@ -23,7 +23,9 @@ import type {
   ServerMessage,
   UIAction,
   QuizState,
+  StoryState,
   WeatherData,
+  AmbientState,
 } from '../types/assistant'
 
 interface InternalState {
@@ -41,11 +43,13 @@ interface InternalState {
   settings: SettingSchema[]
   sleepMode: boolean
   quiz: QuizState
+  story: StoryState
   reminders: ReminderData[]
   firedReminder: ReminderData | null
   timers: TimerData[]
   firedTimer: TimerData | null
   weather: WeatherData | null
+  ambient: AmbientState
   youtubeBrowseUrl: string | null
 }
 
@@ -64,11 +68,13 @@ const DEFAULT_STATE: InternalState = {
   settings: [],
   sleepMode: false,
   quiz: { active: false, question: null, lastResult: null, score: { correct: 0, total: 0 }, outcomes: [], showStats: false },
+  story: { active: false, genre: null, paragraphs: [], currentParagraph: 0, finished: false },
   reminders: [],
   firedReminder: null,
   timers: [],
   firedTimer: null,
   weather: null,
+  ambient: { active: false, sound: '', volume: 30 },
   youtubeBrowseUrl: null,
 }
 
@@ -340,6 +346,30 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         setState(prev => ({ ...prev, weather: msg.data }))
         break
 
+      case 'story_mode':
+        setState(prev => ({
+          ...prev,
+          story: {
+            active: (msg as any).data.active ?? false,
+            genre: (msg as any).data.genre ?? null,
+            paragraphs: (msg as any).data.paragraphs ?? [],
+            currentParagraph: (msg as any).data.current_paragraph ?? 0,
+            finished: (msg as any).data.finished ?? false,
+          },
+        }))
+        break
+
+      case 'ambient':
+        setState(prev => ({
+          ...prev,
+          ambient: {
+            active: (msg as any).active ?? false,
+            sound: (msg as any).sound ?? '',
+            volume: (msg as any).volume ?? 30,
+          },
+        }))
+        break
+
       case 'youtube_browse':
         setState(prev => ({ ...prev, youtubeBrowseUrl: msg.url }))
         break
@@ -547,6 +577,13 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'quiz_quit' }))
       }
+    },
+    // Ambient controls
+    stopAmbient: () => {
+      sendAction({ action: 'text_input', params: { text: 'stop ambient' } })
+    },
+    setAmbientVolume: (level: number) => {
+      sendAction({ action: 'text_input', params: { text: `ambient volume ${level}` } })
     },
   }), [sendAction, debouncedMusicAction, debouncedSeek])
 

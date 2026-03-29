@@ -22,9 +22,11 @@ import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
 import { MusicPlayer } from './components/MusicPlayer'
 import { QuizCard } from './components/QuizCard'
+import { StoryOverlay } from './components/StoryOverlay'
 import { ReminderNotification } from './components/ReminderNotification'
 import { TimerWidget } from './components/TimerWidget'
 import { WeatherWidget } from './components/WeatherWidget'
+import { AmbientIndicator } from './components/AmbientIndicator'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -211,6 +213,13 @@ function AppContent() {
         )}
       </AnimatePresence>
 
+      {/* Story overlay — full-screen bedtime story experience */}
+      <AnimatePresence>
+        {assistant.story?.active && (
+          <StoryOverlay story={assistant.story} actions={assistant.actions} />
+        )}
+      </AnimatePresence>
+
       {/* Weather widget — appears when weather is queried, auto-fades */}
       <AnimatePresence>
         {assistant.weather && !weatherDismissed && (
@@ -231,6 +240,12 @@ function AppContent() {
       <TimerWidget
         timers={assistant.timers}
         firedTimer={assistant.firedTimer}
+        actions={assistant.actions}
+      />
+
+      {/* Ambient sound indicator — floating pill at bottom center */}
+      <AmbientIndicator
+        ambient={assistant.ambient}
         actions={assistant.actions}
       />
 
