@@ -265,6 +265,50 @@ def build_assistant() -> dict:
         log.info("TimerManager not available (%s). Timer/alarm features disabled.", e)
         assistant["timer_manager"] = None
 
+    # Weather — Open-Meteo (free, no API key, local-first with cache)
+    weather_cfg = config.get("weather", {})
+    if weather_cfg.get("provider", "openmeteo"):
+        try:
+            from providers.weather.openmeteo import OpenMeteoWeatherProvider
+            assistant["weather"] = OpenMeteoWeatherProvider()
+            log.info("Weather provider ready (Open-Meteo).")
+        except Exception as e:
+            log.info("Weather provider not available (%s). Weather features disabled.", e)
+            assistant["weather"] = None
+    else:
+        assistant["weather"] = None
+
+    # Reminders — persistent scheduling with repeat support
+    try:
+        from providers.reminder.manager import ReminderManager
+
+        def _on_reminder_fire(reminder):
+            """Called when a reminder fires — speak + broadcast to dashboard."""
+            face_ui_ref = assistant.get("face_ui")
+            voice_router_ref = assistant.get("voice_router")
+
+            message = f"Reminder: {reminder['text']}"
+
+            if face_ui_ref:
+                face_ui_ref.show_reminder(reminder)
+                face_ui_ref.show_transcript(message, role="assistant")
+
+            if voice_router_ref:
+                try:
+                    voice_router_ref.speak(message)
+                except Exception as e:
+                    log.warning("Reminder fire TTS failed: %s", e)
+            else:
+                print(f"\n*** {message} ***\n")
+
+        reminder_mgr = ReminderManager(on_fire=_on_reminder_fire)
+        reminder_mgr.start()
+        assistant["reminder"] = reminder_mgr
+        log.info("ReminderManager ready.")
+    except Exception as e:
+        log.info("ReminderManager not available (%s). Reminder features disabled.", e)
+        assistant["reminder"] = None
+
     # Face UI — browser-based animated face (purely cosmetic, optional)
     face_ui = FaceUI(port=config.get("ui", {}).get("port", 8765))
     face_ui.start()
