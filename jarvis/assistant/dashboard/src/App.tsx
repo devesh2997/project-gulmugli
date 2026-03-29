@@ -16,6 +16,7 @@ import { ThoughtManifest } from './components/thoughts/ThoughtManifest'
 import { TransitionDissolver } from './components/TransitionDissolver'
 import SlidePanel from './components/SlidePanel'
 import Transcript from './components/Transcript'
+import type { TranscriptTab } from './components/Transcript'
 import { SettingsPanel } from './components/SettingsPanel'
 import { ControlsPanel } from './components/ControlsPanel'
 import { EdgeHints } from './components/EdgeHints'
@@ -50,6 +51,18 @@ function AppContent() {
 
   // -- Panel state --
   const [openPanel, setOpenPanel] = useState<PanelId>(null)
+  const [transcriptTab, setTranscriptTab] = useState<TranscriptTab>('conversation')
+
+  // Count upcoming events for the Clock badge
+  const upcomingCount =
+    assistant.reminders.filter(r => r.active).length +
+    assistant.timers.filter(t => t.active).length
+
+  // Open transcript panel with Upcoming tab (called from Clock badge tap)
+  const openUpcomingTab = useCallback(() => {
+    setTranscriptTab('upcoming')
+    setOpenPanel('transcript')
+  }, [])
 
   // -- Weather dismiss state --
   const [weatherDismissed, setWeatherDismissed] = useState(false)
@@ -145,7 +158,10 @@ function AppContent() {
           </div>
 
           <div style={{ paddingTop: Math.max(32, avatarSize * 0.35) }}>
-            <Clock />
+            <Clock
+              upcomingCount={upcomingCount}
+              onUpcomingTap={openUpcomingTab}
+            />
           </div>
         </div>
 
@@ -161,8 +177,16 @@ function AppContent() {
         <EdgeHints visible={openPanel === null} />
 
         {/* Slide Panels */}
-        <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => setOpenPanel(null)} direction="bottom">
-          <Transcript messages={assistant.transcript} onSendText={assistant.actions.sendText} />
+        <SlidePanel isOpen={openPanel === 'transcript'} onClose={() => { setOpenPanel(null); setTranscriptTab('conversation') }} direction="bottom">
+          <Transcript
+            messages={assistant.transcript}
+            onSendText={assistant.actions.sendText}
+            reminders={assistant.reminders}
+            timers={assistant.timers}
+            actions={assistant.actions}
+            activeTab={transcriptTab}
+            onTabChange={setTranscriptTab}
+          />
         </SlidePanel>
         <SlidePanel isOpen={openPanel === 'controls'} onClose={() => setOpenPanel(null)} direction="left">
           <ControlsPanel store={assistant} />

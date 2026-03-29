@@ -529,6 +529,7 @@ export interface AssistantActions {
   reportPosition: (position: number, duration: number) => void
   reportPlayerEnded: () => void
   // Reminder controls
+  cancelReminder: (id: string) => void
   snoozeReminder: (id: string, minutes: number) => void
   dismissReminder: () => void
   // Timer controls

@@ -23,6 +23,10 @@ const SIZE_MAP = {
 
 interface ClockProps {
   size?: 'compact' | 'medium' | 'large'
+  /** Number of upcoming events (reminders + timers + alarms) */
+  upcomingCount?: number
+  /** Callback when the event badge is tapped */
+  onUpcomingTap?: () => void
 }
 
 /** Single digit that slides up when changing */
@@ -63,7 +67,7 @@ function AnimatedDigit({ digit, fontSize }: { digit: string; fontSize: string })
   )
 }
 
-export function Clock({ size = 'large' }: ClockProps) {
+export function Clock({ size = 'large', upcomingCount = 0, onUpcomingTap }: ClockProps) {
   const [now, setNow] = useState(() => new Date())
   const isLight = useLightMode()
 
@@ -187,6 +191,64 @@ export function Clock({ size = 'large' }: ClockProps) {
       >
         {dayName}
       </span>
+
+      {/* Upcoming events badge — subtle breathing dot/count below day name */}
+      <AnimatePresence>
+        {upcomingCount > 0 && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={onUpcomingTap}
+            style={{
+              marginTop: '0.35em',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <motion.div
+              animate={{
+                opacity: [0.45, 0.75, 0.45],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              style={{
+                minWidth: 20,
+                height: 20,
+                borderRadius: 10,
+                background: isLight
+                  ? 'rgba(42, 32, 24, 0.12)'
+                  : 'rgba(var(--personality-accent-rgb), 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 6px',
+              }}
+            >
+              <span style={{
+                fontSize: `calc(${fontSize} * 0.13)`,
+                fontWeight: 700,
+                color: isLight ? '#2a2018' : 'var(--personality-accent)',
+                fontFamily: 'var(--font-mono)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: 0,
+                lineHeight: 1,
+              }}>
+                {upcomingCount}
+              </span>
+            </motion.div>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -509,6 +509,11 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       }
     },
     // Reminder controls
+    cancelReminder: (id: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'cancel_reminder', params: { id } }))
+      }
+    },
     snoozeReminder: (id: string, minutes: number) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'snooze_reminder', id, minutes }))

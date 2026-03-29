@@ -300,6 +300,28 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
             response="",
         )
 
+    elif action == "cancel_reminder":
+        # Cancel a specific reminder from the dashboard
+        reminder_id = params.get("id", "") or action_data.get("id", "")
+        reminder_mgr = assistant.get("reminder_manager")
+        face_ui = assistant.get("face_ui")
+        if reminder_mgr and reminder_id:
+            try:
+                cancelled = reminder_mgr.cancel(reminder_id)
+                if cancelled:
+                    log.info("Cancelled reminder %s via dashboard", reminder_id)
+                else:
+                    log.warning("Reminder %s not found for cancellation", reminder_id)
+                # Broadcast updated list regardless
+                if face_ui:
+                    face_ui._broadcast({
+                        "type": "reminders_updated",
+                        "reminders": reminder_mgr.list_active(),
+                    })
+            except Exception as e:
+                log.warning("Failed to cancel reminder: %s", e)
+        return
+
     elif action == "timer_cancel":
         # Cancel a specific timer/alarm from the dashboard
         entry_id = params.get("id", "") or action_data.get("id", "")
