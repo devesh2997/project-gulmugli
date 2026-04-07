@@ -50,3 +50,15 @@ jarvis/assistant/data/
 # Logs
 *.log
 .superpowers/
+
+# Flutter (companion app)
+app/.dart_tool/
+app/.flutter-plugins*
+app/.packages
+app/build/
+app/.metadata
+app/android/.gradle/
+app/android/app/build/
+app/ios/Pods/
+app/ios/.symlinks/
+app/pubspec.lock

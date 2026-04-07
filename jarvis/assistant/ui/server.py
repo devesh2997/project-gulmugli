@@ -78,6 +78,12 @@ class FaceUI:
         #   face_ui.on_action = lambda action: handle_ui_action(assistant, action)
         self.on_action: Optional[callable] = None
 
+        # External listeners — other systems (API server, etc.) that want
+        # to receive a copy of every broadcast message. Each listener is a
+        # callable(message_dict) that is called synchronously from _broadcast().
+        # Used by the companion app API to forward state to Flutter clients.
+        self._external_listeners: list = []
+
         # Stores the latest value for each CSS/animation token path so they
         # can be re-sent to clients that connect after the values were set.
         # Key: dotted path string (e.g. "animation.orb.breathe.duration")
@@ -88,6 +94,67 @@ class FaceUI:
     def available(self) -> bool:
         """Whether the WebSocket library is installed."""
         return HAS_WEBSOCKETS
+
+    # ── External listener API ───────────────────────────────────
+
+    def add_listener(self, listener: callable) -> None:
+        """
+        Register an external listener that receives all broadcast messages.
+
+        The listener is called with the message dict (not serialized JSON)
+        from the _broadcast() method. It runs synchronously in the calling
+        thread, so keep it fast or dispatch to another thread/queue.
+
+        Used by the companion app API to forward FaceUI state to Flutter.
+        """
+        if listener not in self._external_listeners:
+            self._external_listeners.append(listener)
+            log.debug("External listener added (%d total).", len(self._external_listeners))
+
+    def remove_listener(self, listener: callable) -> None:
+        """Remove a previously registered external listener."""
+        try:
+            self._external_listeners.remove(listener)
+            log.debug("External listener removed (%d remaining).", len(self._external_listeners))
+        except ValueError:
+            pass
+
+    def get_state_snapshot(self) -> list[dict]:
+        """
+        Get the full current state as a list of messages.
+
+        Returns the same sequence of messages that _handle_client sends
+        to a newly connected WebSocket client. Used by the API WebSocket
+        to sync Flutter clients on connect.
+        """
+        messages = [
+            {"type": "state", "state": self._current_state},
+            {"type": "personality", "id": self._current_personality},
+            {"type": "volume", "level": self._volume},
+        ]
+        if self._personalities:
+            messages.append({"type": "personalities", "list": self._personalities})
+        if self._now_playing:
+            messages.append({"type": "now_playing", "data": self._now_playing, "paused": self._music_paused})
+        if self._lights:
+            messages.append({"type": "lights", **self._lights})
+        for path, value in self._token_overrides.items():
+            messages.append({"type": "token_update", "path": path, "value": value})
+        if self._settings:
+            messages.append({"type": "settings", "settings": self._settings})
+        if self._sleep_mode:
+            messages.append({"type": "sleep_mode", "active": True})
+        if self._reminders:
+            messages.append({"type": "reminders_updated", "reminders": self._reminders})
+        if self._story_mode and self._story_mode.get("active"):
+            messages.append({"type": "story_mode", "data": self._story_mode})
+        if self._active_timers:
+            messages.append({"type": "timers", "timers": self._active_timers})
+        if self._ambient and self._ambient.get("active"):
+            messages.append({"type": "ambient", **self._ambient})
+        if self._weather:
+            messages.append({"type": "weather_show", "data": self._weather})
+        return messages
 
     def start(self) -> None:
         """Start the WebSocket server in a background thread."""
@@ -358,7 +425,16 @@ class FaceUI:
     # ── Internal ────────────────────────────────────────────────
 
     def _broadcast(self, message: dict) -> None:
-        """Send a message to all connected browser clients."""
+        """Send a message to all connected browser clients and external listeners."""
+        # Forward to external listeners (API server, etc.) regardless of
+        # whether any WebSocket clients are connected — the API has its
+        # own client set.
+        for listener in self._external_listeners:
+            try:
+                listener(message)
+            except Exception:
+                pass  # External listeners must not break broadcasts
+
         if not self._loop or not self._clients:
             return
         data = json.dumps(message)

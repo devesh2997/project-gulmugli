@@ -344,6 +344,38 @@ def build_assistant() -> dict:
     except Exception as e:
         log.debug("Could not send settings to dashboard: %s", e)
 
+    # Companion App API — FastAPI server on a separate port.
+    # Runs alongside FaceUI; the Flutter app talks to this.
+    api_cfg = config.get("api", {})
+    if api_cfg.get("enabled", True):
+        try:
+            from api.app import create_api, start_api_server
+            api_app = create_api(assistant)
+            if api_app:
+                api_port = api_cfg.get("port", 8766)
+                start_api_server(api_app, host="0.0.0.0", port=api_port)
+                assistant["api"] = api_app
+
+                # Wire FaceUI broadcasts → API WebSocket clients.
+                # The API's WebSocket manager receives a copy of every
+                # FaceUI broadcast and forwards it to connected Flutter apps.
+                from api.ws import ws_manager
+                face_ui.add_listener(ws_manager.forward_broadcast)
+
+                # mDNS discovery — register the API so the Flutter app
+                # can find the server on the LAN without manual IP entry.
+                if api_cfg.get("discovery", {}).get("enabled", True):
+                    try:
+                        from api.discovery import register_service
+                        register_service(api_cfg)
+                    except Exception as e:
+                        log.debug("mDNS registration skipped: %s", e)
+        except Exception as e:
+            log.info("API server not available (%s). Companion app features disabled.", e)
+            assistant["api"] = None
+    else:
+        assistant["api"] = None
+
     # Wake word — background listening for activation phrases
     ww_cfg = config.get("wake_word", {})
     try:

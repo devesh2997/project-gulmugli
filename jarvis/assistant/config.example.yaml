@@ -295,6 +295,19 @@ memory:
   # embedding_model: "all-MiniLM-L6-v2"  # 22MB, runs on CPU
   # max_context_memories: 5               # how many memories to inject into LLM context
 
+# --- Companion App API ---
+# FastAPI server for the Flutter companion app.
+# Runs on a separate port from the dashboard WebSocket.
+# The app discovers this via mDNS or manual IP entry.
+api:
+  enabled: true
+  port: 8766                    # HTTP + WebSocket port (dashboard uses 8765)
+  auth_enabled: false           # Set true before deployment. False = no token needed (dev mode).
+  token: ""                     # Bearer token for auth (only used when auth_enabled: true).
+  discovery:
+    enabled: true               # Register via mDNS/Zeroconf so the app can find us
+    service_name: "jarvis"      # mDNS service name: _jarvis._tcp.local.
+
 # --- UI (Face Display) ---
 # Browser-based animated face that shows assistant state.
 # Opens in a browser on the Jetson's display (or any connected screen).
