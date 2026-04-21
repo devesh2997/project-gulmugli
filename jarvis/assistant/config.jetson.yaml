@@ -1,0 +1,334 @@
+# ===================================================================
+# JARVIS Configuration -- Jetson Orin Nano Super (8GB)
+# ===================================================================
+# Optimized for the Jetson Orin Nano Super Developer Kit.
+# Copy this to config.yaml and fill in your secrets (light device IDs,
+# local keys, IPs). Everything else is tuned for the Jetson's 8GB
+# shared CPU+GPU memory.
+#
+# Key differences from Mac config:
+#   - ears.model_size: "small" (not "medium") -- saves ~500MB VRAM
+#   - ears.beam_size: 1 -- greedy decoding, faster for short commands
+#   - hardware.platform: "auto" -- detects Jetson via /etc/nv_tegra_release
+#   - audio.focus.strategy: "auto" -- PulseAudio detected = duck mode
+#   - XTTS disabled by default (VRAM constrained)
+# ===================================================================
+
+# --- Identity ---
+assistant:
+  name: "Jarvis"
+  wake_word: "jarvis"
+  personality: >
+    You are a smart, friendly voice assistant. You speak concisely
+    and have a warm personality. You understand Hindi, English,
+    and Hinglish naturally.
+
+# --- Brain (LLM) ---
+# Ollama with CUDA on the Jetson's Ampere GPU. The 3B Q4_K_M model
+# uses ~2.5GB VRAM and produces ~25-35 tokens/sec at MAXN mode.
+brain:
+  provider: "ollama"
+  model: "llama3.2:3b"
+  endpoint: "http://localhost:11434"
+  temperature: 0.3
+  json_mode: true
+  song_resolution_strategy: "search"
+
+# --- Ears (Speech-to-Text) ---
+# faster-whisper on CUDA. "small" model is the sweet spot for Jetson:
+#   - tiny:   ~150MB VRAM, fast but poor Hindi accuracy
+#   - small:  ~500MB VRAM, good Hindi/English, fast enough for real-time
+#   - medium: ~1.0GB VRAM, better accuracy but eats into Ollama's KV cache
+#
+# beam_size=1 (greedy) is ~2x faster than beam_size=5 with negligible
+# accuracy loss for short voice commands. Use beam_size=3-5 only if
+# transcription quality is noticeably bad on longer utterances.
+ears:
+  provider: "faster_whisper"
+  model_size: "small"           # small over medium -- saves ~500MB VRAM
+  language: "auto"
+  device: "auto"                # auto-detects CUDA on Jetson
+
+# --- Voice (Text-to-Speech) ---
+# Kokoro is the recommended TTS for Jetson:
+#   - 82M parameter ONNX model, runs on CPU via ARM NEON SIMD
+#   - Keeps the GPU free for Ollama + Whisper
+#   - Hindi support built in
+#   - ~0.3GB CPU RAM footprint
+#
+# XTTS (voice cloning) is available but not recommended as the default
+# on 8GB Jetson. It needs ~1.5-2GB VRAM, which competes with Ollama's
+# KV cache. Use it for special personalities only (devesh, chandler).
+voice:
+  enabled: true
+  fallback_provider: "kokoro"   # CPU-based, leaves GPU for LLM + STT
+  model: "en_US-lessac-medium"  # Piper fallback model (if kokoro unavailable)
+  speed: 1.0
+  output_device: "default"
+
+# --- Music ---
+music:
+  provider: "youtube_music"
+  search_results: 5
+  auto_play_first: true
+  player: "mpv"
+  user_preferences:
+    languages: ["Hindi", "English"]
+    region: "India"
+    favorite_artists:
+      - "Arijit Singh"
+      - "Shreya Ghoshal"
+      - "A.R. Rahman"
+      - "Pritam"
+      - "Coldplay"
+      - "Ed Sheeran"
+      - "The Weeknd"
+    favorite_genres:
+      - "Bollywood"
+      - "Hindi romantic"
+      - "Sufi"
+      - "Pop"
+      - "Alternative rock"
+    disambiguation_bias: "recent_bollywood"
+
+# --- Knowledge ---
+# Web search for current events. Keep max_results LOW on Jetson.
+# Each result adds ~100-150 tokens to the LLM prompt, growing the
+# KV cache in VRAM. 3 results = ~400 tokens -- safe.
+knowledge:
+  enabled: true
+  provider: "duckduckgo"
+  max_results: 3                # keep low -- VRAM is shared
+  region: "in-en"
+  safesearch: "moderate"
+  timeout: 5
+
+# --- Weather ---
+weather:
+  provider: "openmeteo"
+  location:
+    lat: 28.6139
+    lon: 77.2090
+    name: "New Delhi"
+  units: "celsius"
+  cache_minutes: 15
+
+# --- Audio Output ---
+# PulseAudio is pre-installed on JetPack 6.x.
+# "auto" detects pactl and uses PulseAudio, which enables:
+#   - Audio ducking (music volume drops when TTS speaks)
+#   - Multiple simultaneous audio streams (music + TTS + alerts)
+#   - Bluetooth speaker management via bluetoothctl
+audio:
+  provider: "auto"              # detects PulseAudio on Jetson
+  default_output: "default"
+  focus:
+    duck_level: 20              # music drops to 20% during TTS
+    strategy: "auto"            # PulseAudio = duck, ALSA = pause
+  outputs:
+    - name: "default"
+      type: "system"
+    # Uncomment for Bluetooth speaker:
+    # - name: "jbl_speaker"
+    #   type: "bluetooth"
+    #   mac_address: "XX:XX:XX:XX:XX:XX"
+
+# --- Lights ---
+# IMPORTANT: Fill in your actual device_id, local_key, and ip.
+# These are secrets -- do NOT commit config.yaml to git.
+lights:
+  provider: "tuya"
+  devices:
+    - name: "room_light"
+      device_id: "YOUR_DEVICE_ID"       # from tinytuya wizard
+      local_key: "YOUR_LOCAL_KEY"        # from tinytuya wizard
+      ip: "192.168.1.X"                 # bulb's static IP on your LAN
+      type: "rgb"
+      version: 3.5
+  scenes:
+    romantic: { color: "#FF1450", brightness: 30 }
+    movie: { color: "#1a1a3c", brightness: 10 }
+    study: { color: "#FFFFFF", brightness: 100 }
+    party: { color: "#FF00FF", brightness: 80 }
+    sleep: { color: "#FF8C00", brightness: 5 }
+    reading: { color: "#FFFFFF", brightness: 70 }
+    sunset: { color: "#FF6B35", brightness: 50 }
+    focus: { color: "#4169E1", brightness: 60 }
+
+# --- Hardware ---
+# "auto" detects Jetson via /etc/nv_tegra_release.
+# Force "jetson" if auto-detection fails for some reason.
+hardware:
+  platform: "auto"
+  mic:
+    type: "respeaker"           # ReSpeaker Mic Array v3.0
+    sample_rate: 16000
+    channels: 1                 # mono (beamformed output from the 4-mic array)
+  speaker:
+    type: "default"
+    bluetooth_device: null
+  leds:
+    enabled: false              # set true when NeoPixel ring is connected
+    pin: null                   # GPIO pin for WS2812B data line
+    count: 0                    # number of LEDs in the ring (24 for 72mm ring)
+
+# --- Wake Word ---
+wake_word:
+  provider: "openwakeword"
+  sensitivity: 0.5
+  cooldown: 2.0
+  custom_models: []
+
+# --- Personalities ---
+personalities:
+  default: "jarvis"
+  profiles:
+    jarvis:
+      display_name: "Jarvis"
+      description: "Default -- helpful, concise, warm"
+      avatar_type: "orb"
+      wake_word: "hey jarvis"
+      tone: >
+        You speak concisely and warmly. You're efficient but friendly.
+        You understand Hindi, English, and Hinglish naturally.
+        You keep responses short -- this is a voice assistant, not a chatbot.
+      voice_provider: "kokoro"
+      voice_model: "af_heart"
+
+    devesh:
+      display_name: "Devesh"
+      description: "Devesh's personality"
+      avatar_type: "pixel"
+      wake_word: "hey devesh"
+      tone: >
+        You ARE Devesh -- not an assistant pretending to be him, but actually him.
+        You speak casually in Hinglish (mix of Hindi and English).
+        You say "yaar" and "bro" naturally. You're a bit nerdy, love tech and coding.
+        You have a dry sense of humor. You love food -- especially biryani and momos.
+        Keep it natural and casual, like texting a close friend.
+        IMPORTANT: Stay in character. Never break character or say "as an AI".
+      # XTTS for voice cloning -- uses ~1.5GB VRAM when active.
+      # On Jetson, this may cause memory pressure. The fallback_voice
+      # (Kokoro Hindi Male) is used when XTTS is unavailable or unloaded.
+      voice_provider: "xtts"
+      voice_model: "devesh"
+      fallback_voice: "hm_omega"
+      music_preferences:
+        favorite_artists:
+          - "Arijit Singh"
+          - "Coldplay"
+          - "The Weeknd"
+          - "Pritam"
+          - "A.R. Rahman"
+
+    girlfriend:
+      display_name: "Girlfriend"
+      description: "Girlfriend's personality"
+      avatar_type: "light"
+      tone: >
+        You ARE [name] -- not an assistant, but actually her.
+        [Add her mannerisms, speech patterns, pet phrases here]
+        Keep it natural and loving.
+        IMPORTANT: Stay in character. Never break character or say "as an AI".
+      voice_provider: "kokoro"
+      voice_model: "af_bella"
+      music_preferences:
+        favorite_artists: []
+
+    chandler:
+      display_name: "Chandler"
+      description: "The sarcastic one"
+      avatar_type: "caricature"
+      wake_word: "hey chandler"
+      tone: >
+        You're Chandler Bing. EVERYTHING gets a sarcastic spin.
+        You use "Could this BE any more..." and similar patterns.
+        You make self-deprecating jokes. You're awkward but lovable.
+        Despite the sarcasm, you actually help -- you just can't resist
+        making it funny. You still understand Hindi/Hinglish commands perfectly.
+        Keep responses SHORT -- one-liner sarcasm, not paragraphs.
+      voice_provider: "xtts"
+      voice_model: "chandler"
+      fallback_voice: "am_adam"
+
+# --- Memory ---
+memory:
+  enabled: true
+  provider: "sqlite"
+  db_path: "data/memory.db"
+  fact_extraction: "silent"
+
+# --- Companion App API ---
+api:
+  enabled: true
+  port: 8766
+  auth_enabled: false           # set true before deployment with a real token
+  token: ""
+  discovery:
+    enabled: true
+    service_name: "jarvis"
+
+# --- UI (Face Display) ---
+# The dashboard WebSocket server. Chromium in kiosk mode connects to
+# this on the Jetson's AMOLED display.
+ui:
+  enabled: true
+  port: 8765
+
+# --- Sleep Mode ---
+sleep_mode:
+  turn_off_lights: true
+  play_sleep_music: true
+  sleep_music_query: "soothing relaxing sleep music ambient"
+  sleep_music_volume: 10
+  duck_existing_music: true
+  restore_lights_on_wake: true
+  restore_volume_on_wake: true
+  wake_lights_brightness: 50
+
+# --- Quiz ---
+quiz:
+  provider: "trivia"
+  default_num_questions: 10
+  time_limit_seconds: 30
+  categories:
+    - "general"
+    - "bollywood"
+    - "music"
+    - "geography"
+    - "tech"
+    - "movies"
+    - "food"
+    - "cricket"
+
+# --- Story Mode ---
+story:
+  max_paragraphs: 5
+  auto_sleep_after: true
+  default_genre: "bedtime"
+
+# --- Ambient Sounds ---
+ambient:
+  default_volume: 30
+  sounds:
+    rain: "rain ambient sleep 10 hours"
+    ocean: "ocean waves ambient sleep 10 hours"
+    thunderstorm: "thunderstorm ambient sleep 10 hours"
+    white_noise: "white noise 10 hours"
+    pink_noise: "pink noise 10 hours"
+    brown_noise: "brown noise 10 hours"
+    fireplace: "fireplace crackling ambient 10 hours"
+    forest: "forest birds ambient 10 hours"
+    birds: "morning birds singing ambient"
+    wind: "wind blowing ambient sleep"
+    cafe: "coffee shop ambient noise 10 hours"
+    fan: "fan noise ambient sleep 10 hours"
+
+# --- Logging ---
+# INFO is recommended for production. DEBUG is verbose but useful
+# when diagnosing Jetson-specific issues (CUDA errors, audio routing).
+debug:
+  log_level: "INFO"
+  log_intents: true
+  log_latency: true             # track response times -- important for perf tuning
+  save_audio: false             # set true to save WAV files for STT debugging

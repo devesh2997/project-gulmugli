@@ -1,0 +1,36 @@
+# Voice Cloning Pipeline — Training Dependencies
+# These are needed for recording, transcription, and training.
+# NOT needed at inference time (the assistant only needs onnxruntime + kokoro-onnx).
+
+# ── Recording ──────────────────────────────────────────────
+sounddevice>=0.4.6          # Microphone input + audio playback
+soundfile>=0.12.0           # WAV file I/O (uses libsndfile)
+
+# ── Transcription ─────────────────────────────────────────
+faster-whisper>=1.0.0       # CTranslate2-based Whisper (already installed in assistant)
+
+# ── Data Preparation ──────────────────────────────────────
+librosa>=0.10.0             # Audio resampling, mel spectrogram, Griffin-Lim
+numpy>=1.24.0               # Array operations
+phonemizer>=3.2.0           # Text → IPA phonemes via espeak-ng
+                            # ALSO NEEDS: espeak-ng system package
+                            #   macOS:  brew install espeak-ng
+                            #   Linux:  sudo apt install espeak-ng
+
+# ── Training ──────────────────────────────────────────────
+torch>=2.0.0                # PyTorch (install separately for CUDA/MPS support)
+                            #   macOS:  pip install torch torchvision torchaudio
+                            #   CUDA:   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+                            #   CPU:    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+torchaudio>=2.0.0           # Mel spectrogram transform
+einops>=0.7.0               # Tensor reshaping (used by StyleTTS2 internals)
+pyyaml>=6.0                 # Config file parsing
+
+# ── Export ────────────────────────────────────────────────
+onnx>=1.14.0                # ONNX model format
+onnxruntime>=1.16.0         # ONNX inference runtime (test exported models)
+                            # For GPU inference: pip install onnxruntime-gpu
+
+# ── Optional ──────────────────────────────────────────────
+# matplotlib>=3.7.0         # Plot training curves, mel spectrograms
+# tensorboard>=2.14.0       # Training dashboard (if you want fancy graphs)

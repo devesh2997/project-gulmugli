@@ -1,0 +1,63 @@
+# jarvis-assistant.service -- Main JARVIS voice assistant
+#
+# Install:
+#   sudo cp jarvis-assistant.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable jarvis-assistant
+#   sudo systemctl start jarvis-assistant
+#
+# Logs:
+#   journalctl -u jarvis-assistant -f
+
+[Unit]
+Description=JARVIS Voice Assistant
+Documentation=file:///home/jarvis/jarvis/05-the-body/JETSON_SETUP.md
+After=network.target sound.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=jarvis
+Group=jarvis
+
+# Lock clocks to max before starting (does not persist across reboots)
+ExecStartPre=/usr/bin/jetson_clocks
+
+# Main process: run in wake word mode (fully hands-free)
+ExecStart=/home/jarvis/jarvis/.venv/bin/python /home/jarvis/jarvis/assistant/main.py --wake
+
+WorkingDirectory=/home/jarvis/jarvis/assistant
+
+# Environment
+Environment=PYTHONPATH=/home/jarvis/jarvis/assistant
+Environment=PYTHONUNBUFFERED=1
+Environment=HOME=/home/jarvis
+
+# PulseAudio needs the user's runtime dir to connect
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+
+# Restart policy: always restart, wait 5 seconds between attempts.
+# If it crashes 5 times in 60 seconds, stop trying (something is very wrong).
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Resource limits
+# Raise the open file limit (mpv, websockets, and PulseAudio use many FDs)
+LimitNOFILE=65536
+
+# Logging: all output goes to systemd journal
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jarvis-assistant
+
+# Security hardening (optional, uncomment if desired)
+# NoNewPrivileges=true
+# ProtectHome=read-only
+# ProtectSystem=strict
+# ReadWritePaths=/home/jarvis/jarvis/assistant/data
+
+[Install]
+WantedBy=multi-user.target

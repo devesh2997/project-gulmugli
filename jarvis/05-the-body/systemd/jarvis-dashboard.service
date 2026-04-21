@@ -1,0 +1,69 @@
+# jarvis-dashboard.service -- Chromium kiosk for JARVIS face display
+#
+# Opens Chromium in full-screen kiosk mode pointing at the FaceUI
+# WebSocket server (http://localhost:8765). This is the animated face
+# that shows on the 5.5" AMOLED display connected via HDMI.
+#
+# Install:
+#   sudo cp jarvis-dashboard.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable jarvis-dashboard
+#   sudo systemctl start jarvis-dashboard
+#
+# Logs:
+#   journalctl -u jarvis-dashboard -f
+
+[Unit]
+Description=JARVIS Dashboard (Chromium Kiosk)
+Documentation=file:///home/jarvis/jarvis/05-the-body/JETSON_SETUP.md
+After=jarvis-assistant.service graphical.target
+Wants=jarvis-assistant.service
+
+[Service]
+Type=simple
+User=jarvis
+Group=jarvis
+
+# Wait a few seconds for the WebSocket server to bind
+ExecStartPre=/bin/sleep 5
+
+# Disable screen blanking before launching Chromium
+ExecStartPre=/bin/bash -c 'DISPLAY=:0 xset s off; DISPLAY=:0 xset -dpms; DISPLAY=:0 xset s noblank'
+
+# Launch Chromium in kiosk mode
+# --kiosk: full-screen, no browser chrome
+# --no-first-run: skip the "welcome" dialog
+# --disable-restore-session-state: don't show "restore tabs?" after crash
+# --disable-session-crashed-bubble: don't show crash notification
+# --noerrdialogs: suppress error dialogs
+# --disable-infobars: no "Chrome is being controlled" bar
+# --check-for-update-interval: set to 1 year (prevent update nags)
+# --disable-gpu-compositing: use software compositing (more stable on Jetson HDMI)
+# --disable-features=TranslateUI: no "translate this page?" prompts
+ExecStart=/usr/bin/chromium-browser \
+    --kiosk \
+    --no-first-run \
+    --disable-restore-session-state \
+    --disable-session-crashed-bubble \
+    --noerrdialogs \
+    --disable-infobars \
+    --check-for-update-interval=31536000 \
+    --disable-features=TranslateUI \
+    --app=http://localhost:8765
+
+# Needs display access
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/jarvis/.Xauthority
+Environment=HOME=/home/jarvis
+
+# Restart if Chromium crashes
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jarvis-dashboard
+
+[Install]
+WantedBy=graphical.target

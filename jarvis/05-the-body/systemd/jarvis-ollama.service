@@ -1,0 +1,38 @@
+# jarvis-ollama.service -- Ollama override for JARVIS
+#
+# The `ollama install.sh` script creates its own systemd service.
+# This file is an OVERRIDE that adds Jetson-specific environment
+# variables for memory management. Use it if you need to customize
+# Ollama's behavior beyond the default service.
+#
+# Install as an override (preserves the original service):
+#   sudo mkdir -p /etc/systemd/system/ollama.service.d/
+#   sudo cp jarvis-ollama.service /etc/systemd/system/ollama.service.d/override.conf
+#   sudo systemctl daemon-reload
+#   sudo systemctl restart ollama
+#
+# Or replace the service entirely:
+#   sudo cp jarvis-ollama.service /etc/systemd/system/ollama.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl restart ollama
+
+[Service]
+# Override environment variables for Jetson 8GB memory constraints.
+
+# Don't reserve GPU VRAM buffer -- every MB counts on 8GB shared memory.
+Environment=OLLAMA_GPU_OVERHEAD=0
+
+# Single concurrent request -- JARVIS is single-user. Each parallel
+# slot allocates its own KV cache (~200MB for 3B at 2048 context).
+Environment=OLLAMA_NUM_PARALLEL=1
+
+# Keep the model loaded forever. Default is 5 minutes of idle before
+# unloading. Reloading takes 2-3 seconds -- unacceptable for a voice assistant.
+Environment=OLLAMA_KEEP_ALIVE=-1
+
+# Only one model in memory at a time. Prevents accidentally loading
+# two models and triggering OOM.
+Environment=OLLAMA_MAX_LOADED_MODELS=1
+
+# Listen on localhost only (security: no external access to the LLM)
+Environment=OLLAMA_HOST=127.0.0.1:11434
