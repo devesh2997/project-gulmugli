@@ -1,8 +1,16 @@
 # JARVIS Hardware Shopping List — Core Components
 
-**Last updated:** April 8, 2026
-**Focus:** Core hardware only (enclosure aesthetics deferred)
+**Last updated:** April 9, 2026
+**Focus:** Core hardware (enclosure aesthetics deferred)
 **Target platform:** NVIDIA Jetson Orin Nano Super
+**Status:** ✅ Jetson received. Now sourcing peripherals.
+
+## Audio architecture decision (locked in)
+
+JARVIS will support **BOTH internal speaker AND external Bluetooth** simultaneously, like Alexa:
+- **Internal speaker** (MAX98357A + 50mm driver) — voice responses, alerts, ambient sounds at low volume, "always-on" audio
+- **External Bluetooth** (any A2DP speaker) — music playback, story mode, anything that benefits from better fidelity
+- Software (`AudioOutputProvider`) routes audio to the right output based on intent type and what's connected
 
 > **How to read this document:** Each component has multiple purchase links ranked by trustworthiness. Prices were verified via web search on April 8, 2026. Always check the link before ordering — stock and pricing change frequently.
 
@@ -134,7 +142,69 @@ Small speaker to build into the enclosure. Paired with the MAX98357A amplifier a
 
 ---
 
-## 8. Cables & Miscellaneous
+## 8. Touchscreen Display — Waveshare 5.5" AMOLED HDMI
+
+The bedside dashboard. 1080×1920 portrait orientation, capacitive touch (5-point), HDMI input, AMOLED for true blacks (perfect for the dark theme), 6H toughened glass cover.
+
+| # | Seller | Est. Price (₹) | Link | Trust | Notes |
+|---|--------|----------------|------|-------|-------|
+| 1 | **Robocraze** | ~9,500–10,500 | [robocraze.com](https://robocraze.com/products/waveshare-5-5inch-hdmi-capacitive-touch-amoled-display-1080x1920-with-case) | ★★★★ | Includes plastic case. Indian warranty. Most reliable seller for this. |
+| 2 | **Robu.in** | ~9,500–11,000 | [robu.in](https://robu.in/product/waveshare-5-5inch-1080x1920-hdmi-amoled-capacitive-touch-screen-with-case/) | ★★★★ | Same Waveshare unit. Check stock. |
+| 3 | **ElectronicsComp** | ~9,500–10,500 | [electronicscomp.com](https://www.electronicscomp.com/waveshare-5.5inch-1080x1920-hdmi-amoled-capacitive-touch-screen-with-case) | ★★★★ | Reliable Indian retailer. |
+| 4 | **Zbotic** | ~10,000–11,500 | [zbotic.in](https://zbotic.in/product/waveshare-5-5inch-1080x1920-hdmi-amoled-capacitive-touch-screen-with-case/) | ★★★ | Indian electronics store. |
+| 5 | **IndiaMART (Luster Electronics, Gandhinagar)** | ~10,089 | [indiamart.com](https://www.indiamart.com/proddetail/waveshare-5-5-inch-hdmi-amoled-capacitive-touch-screen-25015638591.html) | ★★★ | Direct from authorized reseller. May need GST inquiry. |
+| 6 | **Amazon.in** | ~10,500–14,000 | [amazon.in](https://www.amazon.in/5-5inch-HDMI-AMOLED-Resolution-Capacitive/dp/B07ZPCLTVW) | ★★★ | Multiple sellers. Higher price but Amazon return policy. |
+| 7 | **Evelta** | varies | [evelta.com](https://www.evelta.com/5-5inch-amoled-capacitive-touch-screen-waveshare/) | ★★★ | Carries Waveshare line. Check stock. |
+| 8 | **Waveshare direct** | ~$129 (~₹10,800) + intl shipping | [waveshare.com](https://www.waveshare.com/5.5inch-hdmi-amoled-with-case.htm) | ★★★★★ | Official manufacturer. Adds shipping + customs (~₹2,000). Slower delivery. |
+
+**Connectivity to Jetson:**
+- 1× Mini HDMI cable (display side) → Standard HDMI (Jetson side)
+- 1× USB-A to USB-C cable for touch input + power (single cable carries both on this display)
+
+**Recommendation:** Robocraze at ~₹10,000 — lowest price from a reliable Indian seller with the protective case included.
+
+**Important:** Get the version **WITH CASE** — the bare display is fragile. The case has M2.5 mounting points perfect for integrating into the enclosure.
+
+---
+
+## 9. Active Cooling — PWM Fan + Heatsink
+
+The Jetson Orin Nano dev kit ships with a passive heatsink that's adequate at 7W but throttles under sustained AI workloads (Ollama + Whisper running simultaneously can hit 15W+). An active fan is essential for the MAXN performance mode we'll be running.
+
+| # | Seller | Est. Price (₹) | Link | Trust | Notes |
+|---|--------|----------------|------|-------|-------|
+| 1 | **Amazon.in (Generic PWM Fan for Orin Nano)** | ~600–1,200 | [amazon.in](https://www.amazon.in/Cooling-Adjustable-Embedded-Bracket-Modules/dp/B0C9F55LF3) | ★★★ | DC 5V PWM speed-adjustable, comes with screws. Direct mount on dev kit heatsink. |
+| 2 | **Robocraze / Robu.in** | ~800–1,500 | Search "Jetson Orin Nano fan" on [robocraze.com](https://robocraze.com) or [robu.in](https://robu.in) | ★★★★ | Multiple options, verify it fits the dev kit (40×40mm or specific Orin mount) |
+| 3 | **Waveshare Orin-FAN-PWM (Official)** | ~$10 + shipping (~₹1,800–2,500) | [waveshare.com](https://www.waveshare.com/orin-fan-pwm.htm) | ★★★★★ | Official cooling fan for Orin Nano with elastic bracket. Best fit, slow international shipping. |
+| 4 | **Seeed Studio (Heatsink + Fan combo)** | ~$24 (~₹2,000) + shipping | [seeedstudio.com](https://www.seeedstudio.com/Aluminum-Heatsink-with-Fan-for-Jetson-Orin-NX-Orin-Nano-Xavier-NX-Module-p-5633.html) | ★★★★★ | Full aluminum heatsink + fan. Only needed if NOT using the dev kit (dev kit has its own heatsink). |
+
+**Note:** The dev kit ALREADY has a passive heatsink — you only need to add a small PWM fan on top. The Seeed combo is for bare modules without the dev kit carrier.
+
+**PWM control:** The dev kit has a 4-pin fan header that supports PWM speed control. JetPack will auto-throttle the fan based on temperature. Set up: `sudo nvpmodel -m 0 && sudo jetson_clocks --fan` to enable auto-adjusted fan curve.
+
+**Recommendation:** Generic PWM fan from Amazon.in at ~₹800. Dev kit's existing heatsink is fine — just add active airflow.
+
+---
+
+## 10. Bluetooth Speaker (External, for music)
+
+You already have Bluetooth speakers in the household — anything A2DP-compatible works. If buying new specifically for JARVIS:
+
+| Speaker | Est. Price (₹) | Why |
+|---------|----------------|-----|
+| **JBL Go 4** | ~3,500–4,500 | Compact bedside size, great for voice + casual music, IP67. |
+| **JBL Flip 6/7** | ~10,000–14,000 | Rich bass for music, 12-hour battery, IP67. Best music quality in this range. |
+| **Marshall Emberton II** | ~12,000–15,000 | Premium aesthetic, classic look, fits bedside design language. |
+| **Sony SRS-XB100** | ~3,500–4,500 | Cheaper alternative to JBL Go, slightly better mids. |
+| **boAt Stone 350** | ~1,500–2,500 | Budget option. Lower fidelity but very affordable. |
+
+**Recommendation:** Use whatever Bluetooth speaker you already own first. The pairing is software (already supported via `bluetoothctl` on Jetson + our `AudioOutputProvider`). Only buy new if you want better music quality and the existing one isn't cutting it.
+
+**Important for software:** the Jetson Orin Nano has built-in Bluetooth 5.0. We pair via the API/dashboard's Bluetooth scanner (already built in `controls_panel.dart`).
+
+---
+
+## 11. Cables & Miscellaneous
 
 | Item | Est. Price (₹) | Where to Buy | Notes |
 |------|----------------|-------------|-------|
@@ -148,38 +218,47 @@ Small speaker to build into the enclosure. Paired with the MAX98357A amplifier a
 
 ---
 
-## Budget Summary — Core Hardware Only
+## Budget Summary — Core Hardware
 
-| Component | Est. Price (₹) | Priority |
-|-----------|----------------|----------|
-| Jetson Orin Nano Super Dev Kit | 33,000–35,000 | **Must have** |
-| ReSpeaker Mic Array v3.0 | 7,000–7,500 | **Must have** |
-| NVMe SSD 256GB (M.2 2230) | 2,500–3,500 | **Must have** |
-| Power Supply (19V DC barrel) | 600–1,500 | **Must have** |
-| WS2812B 24-LED Ring | 400–500 | Nice to have (Phase 2) |
-| MAX98357A Amplifier | 89–170 | Only if building internal speaker |
-| Speaker Driver 50mm | 110–200 | Only if building internal speaker |
-| Cables & misc | 500–1,000 | **Must have** |
-| **TOTAL (core essentials)** | **~₹44,000–48,000** | |
-| **TOTAL (with LED + internal speaker)** | **~₹45,000–50,000** | |
+| Component | Est. Price (₹) | Status / Priority |
+|-----------|----------------|---------------|
+| Jetson Orin Nano Super Dev Kit | 33,000–35,000 | ✅ **Owned** |
+| **NVMe SSD 256GB (M.2 2230)** | 2,500–3,500 | 🛒 **Buy now** — needed to flash JetPack |
+| **Power Supply (19V DC barrel 5.5×2.5mm)** | 600–1,500 | 🛒 **Buy now** — needed to power up |
+| **Micro HDMI cable** | 200–400 | 🛒 **Buy now** — initial setup |
+| **Active PWM Cooling Fan** | 600–1,200 | 🛒 **Buy now** — sustained AI workloads will throttle without it |
+| **ReSpeaker Mic Array v3.0** | 7,000–7,500 | 🛒 **Buy now** — voice testing on Jetson |
+| **Waveshare 5.5" AMOLED Touchscreen + Case** | 9,500–11,000 | 🛒 **Buy now** — bedside dashboard display |
+| MAX98357A Amplifier (internal speaker) | 89–170 | Phase 2 — internal speaker for voice/alerts |
+| Speaker Driver 50mm (internal speaker) | 110–200 | Phase 2 — paired with MAX98357A |
+| WS2812B 24-LED Ring | 400–500 | Phase 3 — needs enclosure design |
+| Bluetooth speaker (external) | 0 (already owned) or 3,500–14,000 if new | Optional — use existing if you have one |
+| Cables & misc (USB, jumpers, screws) | 500–1,000 | 🛒 **Buy now** — small bits |
+| **TOTAL (immediate Phase 1 + 1.5 buy)** | **~₹21,000–26,000** | |
+| **TOTAL (with internal speaker + LED)** | **~₹21,800–28,000** | |
 
-**Not included above (you likely already own):**
+**Not included (you already own):**
 
-- Bluetooth speaker (any A2DP speaker works — JBL Flip 5/6 ~₹8,000–12,000 if buying new)
+- Jetson Orin Nano (✅ received)
 - USB keyboard + mouse (for initial setup)
-- HDMI monitor (for initial setup — can use TV)
+- HDMI monitor (for initial setup — use any TV; touchscreen will replace later)
 - WiFi network
+- Likely a Bluetooth speaker (any A2DP works)
 
 ---
 
 ## Purchase Order (What to Buy When)
 
-| Phase | Items | When | Why Wait |
-|-------|-------|------|----------|
-| **Phase 1** (now) | Jetson Orin Nano Super + NVMe SSD + Power Supply + Micro HDMI cable | Immediately | Core compute — start porting software |
-| **Phase 2** (after Jetson boots) | ReSpeaker Mic Array v3.0 + USB cable | 1 week after Phase 1 | Needs Jetson to test. Order from Robocraze. |
-| **Phase 3** (after software port) | WS2812B LED ring + jumper wires + brass inserts | After enclosure design confirmed | Design may change ring size requirements |
-| **Phase 4** (if building internal speaker) | MAX98357A + speaker driver + thermal pads | After enclosure printed | Only if you decide to build internal speaker |
+| Phase | Items | Total ₹ | Why |
+|-------|-------|---------|-----|
+| **Phase 1A — TODAY** | NVMe 2230 SSD + 19V/5.5×2.5mm power supply + Micro HDMI cable | ~3,500–5,500 | Boot the Jetson with JetPack. Without these the dev kit is a brick. |
+| **Phase 1B — TODAY** | PWM cooling fan + thermal pads | ~800–1,500 | Install during JetPack flash. Sustained Ollama runs will thermal-throttle without active cooling. |
+| **Phase 2 — This week** | ReSpeaker Mic Array v3.0 + USB-A→USB-C cable | ~7,500 | Test voice pipeline on Jetson hardware. Order from Robocraze. |
+| **Phase 3 — This week/next** | Waveshare 5.5" AMOLED touchscreen + case + Mini HDMI cable | ~10,500 | Get the actual dashboard experience running on the target screen. Can use HDMI monitor in the meantime. |
+| **Phase 4 — After basic enclosure** | MAX98357A amp + 50mm speaker driver + jumper wires + brass inserts | ~500–800 | Internal speaker for voice/alerts. Bluetooth speaker handles music. |
+| **Phase 5 — Final polish** | WS2812B 24-LED ring | ~500 | Status lighting around enclosure. Wait until enclosure CAD is final. |
+
+**Total to spend in next ~2 weeks:** ~₹22,000 (Phases 1A + 1B + 2 + 3)
 
 ---
 
@@ -195,6 +274,10 @@ Small speaker to build into the enclosure. Paired with the MAX98357A amplifier a
 
 5. **International ordering** (Seeed Studio, Yahboom, etc.) adds ₹1,500–3,000 in customs/shipping and takes 2–4 weeks. Only use as fallback if Indian retailers are out of stock.
 
+6. **Touchscreen needs Mini HDMI cable** (not Micro HDMI). The Jetson outputs HDMI via DisplayPort/HDMI port (full-size HDMI). The Waveshare AMOLED display has a Mini HDMI input. So you need a **Standard HDMI → Mini HDMI** cable, NOT Micro HDMI. Different connector — easy to confuse.
+
+7. **Active cooling is non-negotiable for AI workloads.** The dev kit's stock passive heatsink is fine for idle/light loads but will thermal-throttle under sustained Ollama + Whisper inference, which is exactly what JARVIS does. Buy the fan with everything else, install before first power-on.
+
 ---
 
-*Prices verified via web search on April 8, 2026. Stock availability changes frequently — check links before ordering.*
+*Prices verified via web search on April 8–9, 2026. Stock availability changes frequently — check links before ordering.*
