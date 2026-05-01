@@ -1,5 +1,6 @@
 # Memory Index
 
+- **[session_handoff.md](session_handoff.md) — READ FIRST. Latest session state, what's paused, what's next.**
 - [user_devesh.md](user_devesh.md) — Devesh (ET): senior full-stack dev, new to AI/ML, building Jarvis as birthday gift
 - [feedback_run_default_mode.md](feedback_run_default_mode.md) — Always run assistant in default mode, no --text flag unless deliberately testing
 - [feedback_ui_vision.md](feedback_ui_vision.md) — UI design vision: soft, custom, animated, personality-driven, intent badges, pixelated avatar
