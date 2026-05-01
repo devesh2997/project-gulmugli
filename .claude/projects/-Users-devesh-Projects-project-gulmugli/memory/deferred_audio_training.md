@@ -1,12 +1,25 @@
 ---
-name: Voice cloning training — DEFERRED
-description: Audio recording + StyleTTS2 fine-tuning pipeline is built but Devesh hasn't recorded yet. PROMPT HIM about quality check + recording when he asks to "work on audio" or "voice training" again.
+name: Voice cloning training — DEFERRED (in progress)
+description: Audio recording in progress — Devesh has recorded 29/214 clips (~1.8 min of 30+ min target). PROMPT HIM to resume with `--resume` flag when he asks to "work on audio" or "voice training" again.
 type: project
 ---
 
-## Current state (deferred)
+## Current state (paused mid-recording)
 
-The complete voice cloning pipeline is built and committed at `jarvis/03-the-voice/voice-cloning/`. Everything is ready — Devesh just hasn't recorded the training audio yet because he doesn't have time right now.
+**Progress as of last session:**
+- ✅ Audio quality check passed (29.6 dB SNR with EarPods, "GOOD ENOUGH" verdict)
+- ✅ Recording session started — **29 clips recorded** so far (~1.8 minutes of audio)
+- ⏸️ **Paused** — Devesh wants to come back to it later. He'll continue from clip 30.
+- File location: `jarvis/03-the-voice/voice-cloning/recordings/`
+- Progress file: `recordings/progress.json` (handles resume automatically)
+
+**Resume command (when he comes back):**
+```bash
+cd /Users/devesh/Projects/project-gulmugli
+AUDIO_INPUT_DEVICE="earpods" /Users/devesh/Projects/project-gulmugli/.venv/bin/python jarvis/03-the-voice/voice-cloning/record_voice.py --resume
+```
+
+The complete voice cloning pipeline is built and committed at `jarvis/03-the-voice/voice-cloning/`. Recording is the only step that needs human time.
 
 ## What exists (already done)
 

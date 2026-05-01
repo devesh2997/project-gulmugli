@@ -36,6 +36,25 @@ try:
 except ImportError:
     HAS_SD = False
 
+# Optional: pick a specific input device by substring match (case-insensitive).
+#   AUDIO_INPUT_DEVICE="earpods"   → uses EarPods Microphone
+#   AUDIO_INPUT_DEVICE="macbook"   → uses MacBook Pro Microphone
+#   (unset)                         → uses system default
+PREFERRED_DEVICE_HINT = os.environ.get("AUDIO_INPUT_DEVICE", "").lower()
+
+
+def _apply_input_device():
+    """Set sd.default.device based on env var hint."""
+    if not PREFERRED_DEVICE_HINT or not HAS_SD:
+        return None
+    devices = sd.query_devices()
+    for i, d in enumerate(devices):
+        if (d["max_input_channels"] > 0
+                and PREFERRED_DEVICE_HINT in d["name"].lower()):
+            sd.default.device = (i, None)
+            return d["name"]
+    return None
+
 try:
     import soundfile as sf
     HAS_SF = True
@@ -611,6 +630,17 @@ Examples:
     total_duration = progress.get("total_duration_seconds", 0.0)
 
     print_header()
+
+    # Apply preferred input device (if set via env var)
+    chosen_device = _apply_input_device()
+    if chosen_device:
+        print(f"  Input device: {chosen_device}")
+    else:
+        try:
+            default_in = sd.query_devices(kind="input")
+            print(f"  Input device: {default_in['name']} (system default)")
+        except Exception:
+            pass
 
     # Calibrate mic
     try:

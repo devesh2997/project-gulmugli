@@ -47,6 +47,13 @@ jarvis/assistant/voices/kokoro/*.bin
 # Memory database (user interaction history — personal data)
 jarvis/assistant/data/
 
+# Voice cloning training data (personal voice recordings)
+jarvis/03-the-voice/voice-cloning/recordings/
+jarvis/03-the-voice/voice-cloning/quality_check/
+jarvis/03-the-voice/voice-cloning/test_output/
+jarvis/03-the-voice/voice-cloning/checkpoints/
+jarvis/03-the-voice/voice-cloning/dataset/
+
 # Logs
 *.log
 .superpowers/
