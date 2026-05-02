@@ -278,10 +278,24 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
 
     setCurrentPersonality(id)
     setTokens((prev) => {
-      const next = structuredClone(prev)
-      // Merge personality tokens under the `personality` key,
-      // applying warm palette overrides for the new personality.
+      let next = structuredClone(prev)
+      // Replace personality block with the new personality's data + warm palette.
       next.personality = applyWarmPalette(personalityData, id)
+
+      // Re-apply any persisted token overrides on top, so user-chosen values
+      // (e.g. a custom avatarType, accent override) survive personality switches.
+      try {
+        const saved = localStorage.getItem(TOKEN_OVERRIDES_KEY)
+        if (saved) {
+          const overrides: Record<string, any> = JSON.parse(saved)
+          for (const [path, value] of Object.entries(overrides)) {
+            next = setNestedValue(next, path, value)
+          }
+        }
+      } catch {
+        // Corrupted localStorage — ignore
+      }
+
       return next
     })
   }, [])

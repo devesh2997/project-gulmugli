@@ -7,8 +7,7 @@
  * Horizontal scrollable row for many personalities.
  */
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import type { PersonalityInfo } from '../../types/assistant'
 import type { AvatarType } from '../../types/assistant'
 import { getAvatarTypes } from '../Avatar'
@@ -35,6 +34,10 @@ const AVATAR_LABELS: Record<string, string> = {
   light: 'Light',
   caricature: 'Sketch',
   cozmo: 'Cozmo',
+  'bubble-eyes': 'Bubble',
+  blob: 'Blob',
+  plasma: 'Plasma',
+  geo: 'Geo',
 }
 
 function getColor(id: string, index: number): string {
@@ -134,6 +137,91 @@ function MiniCozmo({ color, size }: { color: string; size: number }) {
   )
 }
 
+/** Mini BubbleEyes preview — glassy round eyes with specular highlights */
+function MiniBubbleEyes({ color, size }: { color: string; size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      {/* Left eye body */}
+      <circle cx="14" cy="20" r="7" fill={color} opacity="0.85" />
+      {/* Right eye body */}
+      <circle cx="26" cy="20" r="7" fill={color} opacity="0.85" />
+      {/* Left specular highlight */}
+      <circle cx="11.5" cy="17.5" r="2.2" fill="#fff" opacity="0.7" />
+      {/* Right specular highlight */}
+      <circle cx="23.5" cy="17.5" r="2.2" fill="#fff" opacity="0.7" />
+      {/* Tiny lower-right pin lights */}
+      <circle cx="16.5" cy="22" r="0.8" fill="#fff" opacity="0.7" />
+      <circle cx="28.5" cy="22" r="0.8" fill="#fff" opacity="0.7" />
+    </svg>
+  )
+}
+
+/** Mini Blob preview — soft 3D rounded body with two eyes */
+function MiniBlob({ color, size }: { color: string; size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      {/* Body — rounded square with subtle gradient feel via opacity layering */}
+      <rect x="6" y="7" width="28" height="26" rx="9" fill={color} opacity="0.85" />
+      <rect x="6" y="7" width="28" height="13" rx="9" fill="#fff" opacity="0.08" />
+      {/* Eyes */}
+      <circle cx="15" cy="19" r="2.4" fill="#1a120a" opacity="0.85" />
+      <circle cx="25" cy="19" r="2.4" fill="#1a120a" opacity="0.85" />
+      {/* Mouth */}
+      <path d="M16 26 Q20 28.5 24 26" fill="none" stroke="#1a120a" strokeWidth="1.4"
+        strokeLinecap="round" opacity="0.7" />
+      {/* Specular highlight */}
+      <ellipse cx="11" cy="11" rx="3" ry="1.6" fill="#fff" opacity="0.35" />
+    </svg>
+  )
+}
+
+/** Mini Plasma preview — irregular morphing blob with floating eye-spots */
+function MiniPlasma({ color, size }: { color: string; size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      {/* Outer glow */}
+      <circle cx="20" cy="20" r="15" fill={color} opacity="0.18" />
+      {/* Liquid blob path — irregular */}
+      <path
+        d="M 20 6
+           C 28 7  33 11  32 19
+           C 33 27  27 32  19 32
+           C 11 32  6 27  7 19
+           C 7 11  12 6  20 6 Z"
+        fill={color}
+        opacity="0.85"
+      />
+      {/* Floating darker eye-spots */}
+      <ellipse cx="15" cy="18" rx="2" ry="2.4" fill="#000" opacity="0.55" />
+      <ellipse cx="25" cy="18" rx="2" ry="2.4" fill="#000" opacity="0.55" />
+      {/* Internal turbulence speck */}
+      <circle cx="20" cy="25" r="1" fill="#fff" opacity="0.35" />
+      {/* Top specular */}
+      <ellipse cx="14" cy="11" rx="3" ry="1.6" fill="#fff" opacity="0.3" />
+    </svg>
+  )
+}
+
+/** Mini Geo preview — flat rounded square with bold geometric eyes */
+function MiniGeo({ color, size }: { color: string; size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      {/* Drop shadow */}
+      <rect x="6" y="9" width="28" height="26" rx="8" fill="#000" opacity="0.18" />
+      {/* Flat solid face */}
+      <rect x="6" y="7" width="28" height="26" rx="8" fill={color} />
+      {/* Eyes — solid filled circles for contrast */}
+      <circle cx="15" cy="19" r="2.4" fill="#fff8ee" />
+      <circle cx="25" cy="19" r="2.4" fill="#fff8ee" />
+      {/* Smile arc */}
+      <path d="M15 26 Q20 28.5 25 26" fill="none" stroke="#fff8ee" strokeWidth="1.4"
+        strokeLinecap="round" />
+      {/* Brand-mascot "+" badge top-right */}
+      <path d="M30 11 L30 13 M29 12 L31 12" stroke="#fff8ee" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function MiniAvatar({ id, avatarType, color, size }: { id: string; avatarType?: string; color: string; size: number }) {
   const type = avatarType || AVATAR_TYPES[id] || 'orb'
   switch (type) {
@@ -141,6 +229,10 @@ function MiniAvatar({ id, avatarType, color, size }: { id: string; avatarType?: 
     case 'light': return <MiniLight color={color} size={size} />
     case 'caricature': return <MiniCaricature color={color} size={size} />
     case 'cozmo': return <MiniCozmo color={color} size={size} />
+    case 'bubble-eyes': return <MiniBubbleEyes color={color} size={size} />
+    case 'blob': return <MiniBlob color={color} size={size} />
+    case 'plasma': return <MiniPlasma color={color} size={size} />
+    case 'geo': return <MiniGeo color={color} size={size} />
     case 'orb':
     default: return <MiniOrb color={color} size={size} />
   }
@@ -155,7 +247,6 @@ interface Props {
 }
 
 export function PersonalityPicker({ personalities, active, onSwitch, onAvatarChange, currentAvatarType }: Props) {
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const availableAvatars = getAvatarTypes()
 
   if (!personalities.length) return null
@@ -184,13 +275,7 @@ export function PersonalityPicker({ personalities, active, onSwitch, onAvatarCha
             <motion.button
               key={p.id}
               onClick={() => {
-                if (isActive) {
-                  // Tap active personality → toggle avatar picker
-                  setShowAvatarPicker(prev => !prev)
-                } else {
-                  onSwitch(p.id)
-                  setShowAvatarPicker(false)
-                }
+                if (!isActive) onSwitch(p.id)
               }}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
@@ -249,74 +334,77 @@ export function PersonalityPicker({ personalities, active, onSwitch, onAvatarCha
         })}
       </div>
 
-      {/* Avatar picker — appears below the active personality when tapped */}
-      <AnimatePresence>
-        {showAvatarPicker && onAvatarChange && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-            style={{ overflow: 'hidden', marginTop: 12 }}
-          >
-            <div style={{
-              fontSize: 9, fontWeight: 600, letterSpacing: 1.5,
-              textTransform: 'uppercase' as const,
-              color: 'var(--text-tertiary)',
-              marginBottom: 8,
-            }}>
-              Avatar Style
-            </div>
-            <div style={{
-              display: 'flex', gap: 8, flexWrap: 'wrap',
-            }}>
-              {availableAvatars.map(type => {
-                const isSelected = type === currentAvatarType
-                const activeColor = getColor(active, 0)
-                return (
-                  <motion.button
-                    key={type}
-                    onClick={() => {
-                      onAvatarChange(type)
-                      setShowAvatarPicker(false)
-                    }}
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.94 }}
-                    animate={{
-                      borderColor: isSelected ? activeColor : 'var(--border-subtle)',
-                      boxShadow: isSelected
-                        ? `0 0 14px ${activeColor}30`
-                        : 'none',
-                    }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      {/* Avatar picker — always visible, mirrors the personality picker UX */}
+      {onAvatarChange && (
+        <div style={{ marginTop: 22 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 600, letterSpacing: 2,
+            textTransform: 'uppercase' as const,
+            color: 'rgba(var(--personality-accent-rgb), 0.5)',
+            marginBottom: 14,
+          }}>
+            Avatar Style
+          </div>
+          <div style={{
+            display: 'flex', gap: 8,
+            overflowX: 'auto', overflowY: 'hidden',
+            paddingBottom: 4,
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}>
+            {availableAvatars.map(type => {
+              const isSelected = type === currentAvatarType
+              const activeColor = getColor(active, 0)
+              return (
+                <motion.button
+                  key={type}
+                  onClick={() => onAvatarChange(type)}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  animate={{
+                    y: isSelected ? -2 : 0,
+                    borderColor: isSelected ? activeColor : 'var(--border-subtle)',
+                    boxShadow: isSelected
+                      ? `0 0 18px ${activeColor}40, 0 4px 10px rgba(0,0,0,0.25)`
+                      : '0 2px 6px rgba(0,0,0,0.18)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  style={{
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    gap: 6,
+                    minWidth: 64, padding: '10px 8px 8px',
+                    borderRadius: 12,
+                    background: isSelected ? 'var(--surface-subtle)' : 'transparent',
+                    border: '1.5px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  <motion.div
+                    animate={{ opacity: isSelected ? 1 : 0.45 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <MiniAvatar id={active} avatarType={type} color={activeColor} size={32} />
+                  </motion.div>
+                  <motion.span
+                    animate={{ color: isSelected ? activeColor : 'var(--text-secondary)' }}
+                    transition={{ duration: 0.25 }}
                     style={{
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', gap: 4,
-                      padding: '8px 10px 6px',
-                      borderRadius: 12,
-                      background: isSelected ? 'var(--surface-subtle)' : 'transparent',
-                      border: '1.5px solid var(--border-subtle)',
-                      cursor: 'pointer',
-                      minWidth: 56,
+                      fontSize: 9, fontWeight: 600,
+                      letterSpacing: 0.5,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    <motion.div animate={{ opacity: isSelected ? 1 : 0.5 }}>
-                      <MiniAvatar id={active} avatarType={type} color={activeColor} size={28} />
-                    </motion.div>
-                    <span style={{
-                      fontSize: 8, fontWeight: 600,
-                      letterSpacing: 0.5,
-                      color: isSelected ? activeColor : 'var(--text-tertiary)',
-                    }}>
-                      {AVATAR_LABELS[type] || type}
-                    </span>
-                  </motion.button>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    {AVATAR_LABELS[type] || type}
+                  </motion.span>
+                </motion.button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
