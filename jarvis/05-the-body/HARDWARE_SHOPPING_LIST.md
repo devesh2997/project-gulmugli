@@ -55,22 +55,28 @@ The heart of JARVIS. 67 TOPS AI performance, 1024-core Ampere GPU, 6-core ARM CP
 
 ---
 
-## 3. Storage — NVMe SSD (M.2 2230)
+## 3. Storage — NVMe SSD (M.2 2280, primary slot)
 
-The Jetson Orin Nano has an M.2 2230 slot. 256GB is plenty for OS + all AI models.
+**Correction (May 2026):** The Jetson Orin Nano Super Developer Kit has TWO M.2 Key-M slots:
+- **M.2 2280** — PCIe Gen3 ×4 (4 lanes, ~3.5 GB/s) — the **primary NVMe slot**
+- **M.2 2230** — PCIe Gen3 ×2 (2 lanes, ~1.7 GB/s) — typically used for the WiFi/BT card
+
+Use the **2280 slot** for the OS NVMe SSD. It has double the bandwidth, which matters for cold-loading the LLM (2GB Q4 model loads in <1s vs ~2s on the 2230 slot). 256GB is plenty for OS + all AI models. An earlier version of this list said "must be 2230" — that was wrong, ignore it.
+
+> ⚠️ **Stale table below** — the original list recommended **2230** form-factor SSDs because of the form-factor error in this doc. Those listings stay here for history but **do not buy from them** for the OS disk; they're the wrong physical size. For 2280 cards in India, look at: **Amazon.in — Samsung 980 250GB 2280**, **WD Blue SN570 250GB 2280**, **Crucial P3 500GB 2280**, or any PCIe Gen3 ×4 2280 card. ~₹2,500–4,000 in May 2026.
 
 | # | Seller | Est. Price (₹) | Link | Trust | Notes |
 |---|--------|----------------|------|-------|-------|
-| 1 | **Amazon.in — EVM 256GB 2230** | ~2,499–5,499 | [amazon.in](https://www.amazon.in/EVM-256GB-M-2-NVMe-Internal/dp/B0D47LD32L) | ★★★★ | Indian brand. PCIe Gen 3x4, 3000MB/s read. 5-year warranty. Price fluctuates — check price history (lowest seen: ₹2,499). |
-| 2 | **PrimeABGB — EVM 256GB 2230** | ~2,500–3,500 | [primeabgb.com](https://www.primeabgb.com/online-price-reviews-india/evm-256gb-2230-nvme-ssd-evmnv30-256gb/) | ★★★★ | Reputable Indian PC hardware retailer (Mumbai-based). Good prices. |
-| 3 | **OnlySSD — EVM 256GB 2230** | ~2,500–3,500 | [onlyssd.com](https://onlyssd.com/buy/evm-256gb-2230-nvme-ssd-evmnv30-256gb/) | ★★★★ | Specialist SSD retailer in India. |
-| 4 | **Variety Infotech — EVM 256GB** | ~2,149 | [varietyinfotech.com](https://varietyinfotech.com/product/evm-m-2-nvme-pcie-2230-256gb-ssd/) | ★★★ | Cheapest found. Less well-known — verify return policy. |
-| 5 | **Amazon.in — Samsung PM991 256GB 2230** | ~3,500–5,000 | [amazon.in](https://www.amazon.in/S%D0%B0msu%D0%BFg-256GB-PCIe-NVMe-PM991/dp/B0BNPMHTV5) | ★★★ | Samsung OEM part (not retail). Reliable but pricier. Third-party seller — check ratings. |
-| 6 | **HUBTRONICS — EVM 256GB 2230** | ~3,000–4,000 | [hubtronics.in](https://hubtronics.in/evm-m2-nvme-pcie-2230-256gb) | ★★★★ | Indian electronics retailer. Bundles well with Jetson purchase. |
+| 1 | ~~Amazon.in — EVM 256GB **2230**~~ | ~2,499–5,499 | [amazon.in](https://www.amazon.in/EVM-256GB-M-2-NVMe-Internal/dp/B0D47LD32L) | ★★★★ | **Wrong form factor** — keep for reference only. |
+| 2 | ~~PrimeABGB — EVM 256GB **2230**~~ | ~2,500–3,500 | [primeabgb.com](https://www.primeabgb.com/online-price-reviews-india/evm-256gb-2230-nvme-ssd-evmnv30-256gb/) | ★★★★ | **Wrong form factor.** |
+| 3 | ~~OnlySSD — EVM 256GB **2230**~~ | ~2,500–3,500 | [onlyssd.com](https://onlyssd.com/buy/evm-256gb-2230-nvme-ssd-evmnv30-256gb/) | ★★★★ | **Wrong form factor.** |
+| 4 | ~~Variety Infotech — EVM 256GB **2230**~~ | ~2,149 | [varietyinfotech.com](https://varietyinfotech.com/product/evm-m-2-nvme-pcie-2230-256gb-ssd/) | ★★★ | **Wrong form factor.** |
+| 5 | ~~Amazon.in — Samsung PM991 256GB **2230**~~ | ~3,500–5,000 | [amazon.in](https://www.amazon.in/S%D0%B0msu%D0%BFg-256GB-PCIe-NVMe-PM991/dp/B0BNPMHTV5) | ★★★ | **Wrong form factor.** |
+| 6 | ~~HUBTRONICS — EVM 256GB **2230**~~ | ~3,000–4,000 | [hubtronics.in](https://hubtronics.in/evm-m2-nvme-pcie-2230-256gb) | ★★★★ | **Wrong form factor.** |
 
-**Recommendation:** EVM 256GB from Amazon.in or PrimeABGB — wait for a price drop to ~₹2,500 range. The EVM is a solid Indian brand with 5-year warranty.
+**Recommendation:** Any reputable PCIe Gen3/Gen4 ×4 M.2 2280 NVMe with DRAM cache. Samsung 980 / WD SN570 / Crucial P3 are all known good on JetPack 6.
 
-**Important:** Must be **M.2 2230** form factor (not 2242 or 2280). The Jetson Orin Nano Dev Kit only accepts 2230.
+**Important:** Use **M.2 2280** for the OS SSD. The dev kit also has a 2230 slot (PCIe ×2), but that's the wrong slot for this build — it has half the bandwidth and is typically reserved for the WiFi/BT module. The 2280 slot is the primary OS-disk slot (PCIe Gen3 ×4).
 
 ---
 
@@ -223,7 +229,7 @@ You already have Bluetooth speakers in the household — anything A2DP-compatibl
 | Component | Est. Price (₹) | Status / Priority |
 |-----------|----------------|---------------|
 | Jetson Orin Nano Super Dev Kit | 33,000–35,000 | ✅ **Owned** |
-| **NVMe SSD 256GB (M.2 2230)** | 2,500–3,500 | 🛒 **Buy now** — needed to flash JetPack |
+| **NVMe SSD 256GB+ (M.2 2280)** | 2,500–4,000 | 🛒 **Buy now** — needed to flash JetPack. Use the 2280 slot (PCIe Gen3 ×4), not the 2230 slot (PCIe ×2). |
 | **Power Supply (19V DC barrel 5.5×2.5mm)** | 600–1,500 | 🛒 **Buy now** — needed to power up |
 | **Micro HDMI cable** | 200–400 | 🛒 **Buy now** — initial setup |
 | **Active PWM Cooling Fan** | 600–1,200 | 🛒 **Buy now** — sustained AI workloads will throttle without it |
@@ -251,7 +257,7 @@ You already have Bluetooth speakers in the household — anything A2DP-compatibl
 
 | Phase | Items | Total ₹ | Why |
 |-------|-------|---------|-----|
-| **Phase 1A — TODAY** | NVMe 2230 SSD + 19V/5.5×2.5mm power supply + Micro HDMI cable | ~3,500–5,500 | Boot the Jetson with JetPack. Without these the dev kit is a brick. |
+| **Phase 1A — TODAY** | NVMe 2280 SSD + 19V/5.5×2.5mm power supply + Micro HDMI cable | ~3,500–5,500 | Boot the Jetson with JetPack. Without these the dev kit is a brick. |
 | **Phase 1B — TODAY** | PWM cooling fan + thermal pads | ~800–1,500 | Install during JetPack flash. Sustained Ollama runs will thermal-throttle without active cooling. |
 | **Phase 2 — This week** | ReSpeaker Mic Array v3.0 + USB-A→USB-C cable | ~7,500 | Test voice pipeline on Jetson hardware. Order from Robocraze. |
 | **Phase 3 — This week/next** | Waveshare 5.5" AMOLED touchscreen + case + Mini HDMI cable | ~10,500 | Get the actual dashboard experience running on the target screen. Can use HDMI monitor in the meantime. |
@@ -266,7 +272,7 @@ You already have Bluetooth speakers in the household — anything A2DP-compatibl
 
 1. **Pin size matters for power supply.** The Jetson barrel jack is 5.5mm × 2.5mm. Many laptop chargers look identical but have different inner diameters (1.7mm for Acer, 2.1mm for some). Using the wrong size can damage the board.
 
-2. **NVMe form factor must be 2230.** The Jetson dev kit physically cannot fit 2242 or 2280 SSDs. Triple-check before buying.
+2. **Use the M.2 2280 slot for the OS NVMe.** The dev kit has both 2280 and 2230 Key-M slots. The 2280 is PCIe Gen3 ×4 (~3.5 GB/s) and is the primary OS-disk slot. The 2230 is PCIe Gen3 ×2 (~1.7 GB/s) and is meant for the WiFi/BT card.
 
 3. **Avoid Amazon.in for the ReSpeaker.** Third-party sellers charge 2–3x the fair price and sometimes sell the older v2.0. Buy from Robocraze or ThinkRobotics.
 

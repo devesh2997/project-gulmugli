@@ -29,18 +29,23 @@
 
 **What you need:**
 - Jetson Orin Nano Super Developer Kit
-- M.2 2230 NVMe SSD (256GB EVM or Samsung PM991)
+- M.2 2280 NVMe SSD (256GB+, PCIe Gen3 ×4 — e.g. Samsung 980, WD SN570, Crucial P3)
 - A host PC (Mac or Linux) with a USB-C cable
 - Phillips screwdriver for the SSD mounting screw
 
+**The two M.2 slots:** The dev kit carrier board exposes **two** M.2 Key-M slots:
+- **2280 slot — PCIe Gen3 ×4** — this is the **primary NVMe slot for the OS**. ~3.5 GB/s.
+- **2230 slot — PCIe Gen3 ×2** — typically used for the WiFi/BT card (PCIe ×2, half the bandwidth).
+Use the **2280 slot** for the JetPack install.
+
 **Install the NVMe SSD:**
 
-The developer kit carrier board has an M.2 Key M slot on the underside. Before powering on for the first time:
+The developer kit carrier board has the M.2 Key-M 2280 slot on the underside. Before powering on for the first time:
 
 1. Flip the carrier board (careful -- the heatsink assembly is heavy).
-2. Locate the M.2 2230 slot. It is next to the SO-DIMM connector area, labeled J3 on the PCB silkscreen.
+2. Locate the M.2 2280 slot — it's the longer of the two M.2 slots, with a standoff screw pre-installed at the 2280 mounting position (~80mm from the connector).
 3. Insert the SSD at a ~30-degree angle into the connector.
-4. Press down and secure with the M2 standoff screw (included with the dev kit, pre-installed at the 2230 position).
+4. Press down on the SSD until it lies flat, then secure with the M2 standoff screw.
 5. Flip the board back.
 
 **Flash JetPack 6.x:**
