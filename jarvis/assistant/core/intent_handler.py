@@ -524,14 +524,18 @@ def handle_intent(assistant: dict, intent) -> str:
         return story_text
 
     elif intent.name == "chat":
-        # For chat, use the ORIGINAL user input — not the classified "message" param.
-        # The classifier sometimes generates a response as the message param
-        # (e.g., generating a story instead of just classifying "tell me a story"
-        # as a chat intent). Sending that generated text back to the LLM causes
-        # the LLM to respond to its own output instead of the user's request.
-        #
-        # Fall back to intent.params["message"] only if original_input isn't available
-        # (e.g., when called from a test without the full pipeline).
+        # FAST PATH: the classifier may have already produced a short reply
+        # in the top-level "response" field (single LLM call instead of two).
+        # If it did, just speak that and skip the second LLM round-trip.
+        # On Jetson this halves the chat-turn latency (~5s saved per turn).
+        if intent.response and intent.response.strip():
+            return intent.response.strip()
+
+        # SLOW PATH (fallback): classifier left "response" empty (e.g. for
+        # long-form requests like stories) — generate the reply now.
+        # Use the ORIGINAL user input — not the classified "message" param —
+        # because the classifier sometimes echoes its own pre-thought into
+        # the message field, which would loop back through the LLM.
         original_input = intent.meta.get("original_input", "")
         message = original_input or intent.params.get("message", "")
         p = personality_manager.active

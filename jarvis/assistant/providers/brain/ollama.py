@@ -161,11 +161,15 @@ Respond with valid JSON only. No explanation. No markdown.
    "Devesh ban ja" → personality: "devesh"
    "normal mode" / "default mode" / "Jarvis mode" → personality: "jarvis"
 
-6. "chat" — General question, conversation, stories, jokes, etc.
+6. "chat" — General question, conversation, jokes, factoids.
    Params: {{"message": "the user's question or request EXACTLY as said"}}
-   IMPORTANT: For chat intents, the "message" param should just be the user's original words.
-   Do NOT generate a story, answer, or any content in the message param — just echo what they said.
-   The actual response will be generated separately by a different system.
+   IMPORTANT: For chat intents, ALSO put a brief 1-2 sentence answer in the
+   top-level "response" field (not in params). Keep it concise — voice
+   replies should be short. For long-form requests like "tell me a story"
+   or "write an essay", leave "response" empty and the system will route
+   to a dedicated handler.
+   "message" should still just echo the user's original words (used for
+   long-form fallback). Do NOT enrich or rephrase the message param.
 
 7. "system" — System info (time, date, alarms)
    Params: {{"action": "time|date|alarm|reminder"}}
@@ -402,10 +406,19 @@ User: "normal mode"
 {{"intents": [{{"intent": "switch_personality", "params": {{"personality": "jarvis"}}}}], "response": "Back to normal."}}
 
 User: "what is the speed of light"
-{{"intents": [{{"intent": "chat", "params": {{"message": "what is the speed of light"}}}}], "response": ""}}
+{{"intents": [{{"intent": "chat", "params": {{"message": "what is the speed of light"}}}}], "response": "About 300,000 kilometres per second in vacuum."}}
 
 User: "explain quantum computing"
-{{"intents": [{{"intent": "chat", "params": {{"message": "explain quantum computing"}}}}], "response": ""}}
+{{"intents": [{{"intent": "chat", "params": {{"message": "explain quantum computing"}}}}], "response": "It uses qubits which can be 0 and 1 simultaneously, letting some problems be solved exponentially faster than on classical computers."}}
+
+User: "tell me a joke"
+{{"intents": [{{"intent": "chat", "params": {{"message": "tell me a joke"}}}}], "response": "Why don't scientists trust atoms? Because they make up everything."}}
+
+User: "what time is it"
+{{"intents": [{{"intent": "system", "params": {{"action": "time"}}}}], "response": ""}}
+
+User: "tell me a long story about a dragon"
+{{"intents": [{{"intent": "chat", "params": {{"message": "tell me a long story about a dragon"}}}}], "response": ""}}
 
 User: "what did I play yesterday"
 {{"intents": [{{"intent": "memory_recall", "params": {{"query": "play yesterday"}}}}], "response": "Let me check..."}}
@@ -663,11 +676,17 @@ class OllamaBrainProvider(BrainProvider):
         )
 
     def classify_intent(self, user_input: str) -> list[Intent]:
+        # max_tokens=200 caps the classifier output. The JSON itself is
+        # ~30-60 tokens; the embedded chat "response" field is the variable
+        # part. 200 is enough for a 1-2 sentence chat reply (~120-150 tokens
+        # of reply text + ~50 tokens of JSON overhead). On Jetson at 22 tok/s
+        # this caps classification at ~9s in the worst case (verbose chat).
         resp = self.generate(
             prompt=user_input,
             system=_build_system_prompt(),
             json_mode=True,
             temperature=self.temperature,
+            max_tokens=200,
         )
 
         meta = {
