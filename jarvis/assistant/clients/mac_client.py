@@ -297,8 +297,22 @@ def record_push_to_talk() -> bytes:
     return _record_chunks_to_wav(chunks)
 
 
-def record_vad(silence_seconds: float = 1.5, max_seconds: float = 12.0) -> bytes:
-    """Auto-stop after silence_seconds of silence. Returns WAV bytes."""
+def record_vad(silence_seconds: float = 0.7, max_seconds: float = 12.0) -> bytes:
+    """
+    Auto-stop after silence_seconds of silence. Returns WAV bytes.
+
+    Default 700ms matches the production voice-assistant range (Alexa ~600ms,
+    Google ~700ms, Siri ~800ms — research from LiveKit's voice latency blog).
+    Earlier this was 1500ms which added ~800ms of dead-air at end-of-speech
+    on every turn — invisible to a watch-the-bench developer but very
+    noticeable in real conversation.
+
+    Tradeoff: shorter silence threshold = lower latency, but risks cutting
+    off the user mid-thought. 700ms is the published industry sweet spot
+    for natural-pace English speech. Configurable per-call for users who
+    speak with longer natural pauses (older speakers, second-language
+    speakers, dictation-style usage).
+    """
     import numpy as np
     import sounddevice as sd
 
@@ -526,7 +540,8 @@ def text_loop(host: str, token: str):
         print(f"        ({wall:.2f}s)\n")
 
 
-def voice_loop_stream(host: str, token: str, no_play: bool, auto: bool):
+def voice_loop_stream(host: str, token: str, no_play: bool, auto: bool,
+                      silence_seconds: float = 0.7):
     """
     Streaming voice loop: hits /api/voice/stream and plays each sentence as
     its audio arrives, instead of waiting for the full reply.
@@ -545,7 +560,7 @@ def voice_loop_stream(host: str, token: str, no_play: bool, auto: bool):
     print("Ctrl+C to exit.\n")
     while True:
         try:
-            wav = record_vad() if auto else record_push_to_talk()
+            wav = record_vad(silence_seconds=silence_seconds) if auto else record_push_to_talk()
         except (EOFError, KeyboardInterrupt):
             print()
             stop_playback()
@@ -632,12 +647,13 @@ def voice_loop_stream(host: str, token: str, no_play: bool, auto: bool):
         print()
 
 
-def voice_loop(host: str, token: str, no_play: bool, auto: bool):
+def voice_loop(host: str, token: str, no_play: bool, auto: bool,
+               silence_seconds: float = 0.7):
     print(f"\nJARVIS @ {host}  (voice mode — Mac mic, Jetson brain, Mac speaker)")
     print("Ctrl+C to exit.\n")
     while True:
         try:
-            wav = record_vad() if auto else record_push_to_talk()
+            wav = record_vad(silence_seconds=silence_seconds) if auto else record_push_to_talk()
         except (EOFError, KeyboardInterrupt):
             print()
             stop_playback()
@@ -691,6 +707,10 @@ def main():
                    help="with --voice: use SSE /api/voice/stream and play each sentence as it arrives "
                         "(much lower time-to-first-audio)")
     p.add_argument("--auto", action="store_true", help="with --voice: VAD silence-stop instead of press-to-talk")
+    p.add_argument("--silence", type=float, default=0.7,
+                   help="with --voice --auto: seconds of silence before auto-stop "
+                        "(default 0.7s, matches Alexa/Google/Siri range; raise to "
+                        "1.0-1.5 if you naturally pause mid-sentence)")
     p.add_argument("--no-play", action="store_true", help="don't play the TTS audio response (text only)")
     p.add_argument("--host", default=DEFAULT_HOST, help="JARVIS host (default $JARVIS_HOST or http://192.168.1.8:8766)")
     p.add_argument("--token", default=DEFAULT_TOKEN, help="API token (default $JARVIS_TOKEN)")
@@ -715,9 +735,11 @@ def main():
     try:
         if args.voice:
             if args.stream:
-                voice_loop_stream(args.host, args.token, args.no_play, args.auto)
+                voice_loop_stream(args.host, args.token, args.no_play,
+                                  args.auto, silence_seconds=args.silence)
             else:
-                voice_loop(args.host, args.token, args.no_play, args.auto)
+                voice_loop(args.host, args.token, args.no_play,
+                           args.auto, silence_seconds=args.silence)
         else:
             text_loop(args.host, args.token)
     finally:
