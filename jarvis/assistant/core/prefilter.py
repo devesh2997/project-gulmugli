@@ -198,12 +198,49 @@ def _match_system(text: str) -> list[Intent] | None:
     """Match unambiguous system queries."""
     t = text.strip().lower()
 
-    if re.fullmatch(r"(what time is it|what'?s the time|time (bata(o)?|kya hai)|kitne baje hain?)", t):
+    # Time queries — broadened to catch the natural-speech variations real
+    # users actually say. Earlier the regex only matched "what time is it"
+    # and "what's the time"; on real mic input people say "what is the
+    # time right now", "tell me the time", "current time", "do you know
+    # the time", etc. Without these, the LLM was answering "I don't know
+    # your location" — a terrible UX since the assistant knows what time
+    # it is locally.
+    #
+    # Strategy: split into a "ask form" (what/can you/tell me/etc) and a
+    # "noun phrase" (the time, current time, the time right now). Combinatorial
+    # matching covers many natural phrasings without listing each variant.
+    time_re = re.compile(
+        r"(?:"
+        # Ask forms
+        r"what (time|the time) is it"
+        r"|what'?s? the (current )?time( right now)?"
+        r"|what is the (current )?time( right now)?"
+        r"|(could you |can you |do you (know |have ))?tell me the (current )?time"
+        r"|(could you |can you )?give me the (current )?time"
+        r"|do you (know|have) (the |current )?time"
+        r"|the (current )?time( please)?"
+        r"|current time"
+        # Hindi/Hinglish
+        r"|time (bata(o)?|kya hai|please)|kitne baje hain?"
+        r"|abhi kya (baj raha hai|time hai)"
+        r")"
+    )
+    if time_re.fullmatch(t):
         return [Intent(name="system", params={"action": "time"},
                        response="", confidence=1.0,
                        meta={"source": "prefilter"})]
 
-    if re.fullmatch(r"(what'?s the date|what date is it|aaj (kya )?date (hai|bata(o)?)|aaj kya (tarikh|taareekh) hai)", t):
+    date_re = re.compile(
+        r"(?:"
+        r"what (date|the date) is it"
+        r"|what'?s? (the (current )?date|today'?s date)"
+        r"|what is (the (current )?date|today'?s? date)"
+        r"|what day is (it|today)"
+        r"|(tell me |give me )?today'?s? date"
+        r"|aaj (kya )?date (hai|bata(o)?)|aaj kya (tarikh|taareekh) hai"
+        r")"
+    )
+    if date_re.fullmatch(t):
         return [Intent(name="system", params={"action": "date"},
                        response="", confidence=1.0,
                        meta={"source": "prefilter"})]

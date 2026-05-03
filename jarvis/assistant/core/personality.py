@@ -61,6 +61,10 @@ class PersonalityManager:
                 voice_provider=pdata.get("voice_provider", ""),
                 voice_model=pdata.get("voice_model", ""),
                 fallback_voice=pdata.get("fallback_voice", ""),
+                # use_fast_voice: explicit opt-in/out for the Piper fast path
+                # in /api/voice/stream. Read as None when unset → automatic
+                # (Piper for generic voices, personality voice for cloned).
+                use_fast_voice=pdata.get("use_fast_voice"),
                 music_preferences=pdata.get("music_preferences", {}),
                 wake_word=pdata.get("wake_word", ""),
                 avatar_type=pdata.get("avatar_type", "orb"),

@@ -82,6 +82,13 @@ class Personality:
     voice_provider: str = ""          # TTS provider: "piper", "xtts", "" = use default
     voice_model: str = ""             # TTS model ID (empty = use default from voice config)
     fallback_voice: str = ""          # voice to use when preferred provider unavailable
+    use_fast_voice: bool | None = None  # explicit opt-in/out for the fast English Piper
+                                        # path. None = automatic (use Piper unless this
+                                        # personality uses voice cloning). False = always
+                                        # use this personality's own voice (e.g., for a
+                                        # cloned-voice personality where identity matters
+                                        # more than synth speed). True = force fast path
+                                        # even if voice_provider is XTTS.
     music_preferences: dict = field(default_factory=dict)  # override global prefs, empty = use global
     wake_word: str = ""               # optional per-personality wake word
     avatar_type: str = "orb"          # dashboard avatar: orb, pixel, light, caricature (extensible)

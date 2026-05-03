@@ -576,14 +576,23 @@ class OllamaBrainProvider(BrainProvider):
         self.temperature = brain_config.get("temperature", 0.3)
 
         # keep_alive controls how long Ollama keeps the model loaded in GPU/RAM
-        # after the last request. Default is "5m" which means after 5 minutes of
-        # inactivity, Ollama unloads the model. Reloading a 3B model takes 5-15
-        # seconds on edge hardware — catastrophic for perceived latency.
+        # after the last request. Default values in Ollama land:
+        #   "5m"  → unload after 5 min idle (Ollama default)
+        #   "-1"  → never unload (keeps the model hot forever)
+        #   <int> → seconds (e.g., 600 = 10 min)
         #
-        # We set it to -1 (forever) so the model stays hot. On a Jetson with 8GB
-        # shared memory, this is the right trade-off: we'd rather use the RAM
-        # than make the user wait 10 seconds after a bathroom break.
-        self._keep_alive = brain_config.get("keep_alive", -1)
+        # On Jetson 8GB shared NvMap, "-1" is dangerous: the model's KV
+        # cache fragments NvMap over hours of use until allocations fail
+        # ("llama runner process has terminated"). A periodic unload-reload
+        # gives the allocator a clean slate. Cost: 5-15s reload on next
+        # request after the idle window, which is fine — voice assistant
+        # users don't notice an occasional long warm-up if they've been
+        # away for 10 min.
+        #
+        # 600s (10 min) is the sweet spot: user chatting through a
+        # conversation never sees a reload; overnight idle resets state
+        # cleanly. Tunable via config.brain.keep_alive.
+        self._keep_alive = brain_config.get("keep_alive", 600)
 
         # Reusable HTTP session — avoids TCP handshake + connection setup per request.
         # On localhost this saves ~2-5ms per call, which adds up across
@@ -604,30 +613,145 @@ class OllamaBrainProvider(BrainProvider):
 
     def warm_up(self):
         """
-        Force Ollama to load the model into memory at startup.
+        Force Ollama to load the model into memory AND pre-process the
+        long classifier system prompt so its KV cache is hot.
 
-        Sends a minimal generate request with num_predict=1 so the model
-        gets loaded but barely any computation happens. This turns a 10-second
-        first-request delay into a 0.5-second startup cost.
+        Why this matters: Ollama's prompt processing is ~0.5 ms/token on
+        Jetson. Our classifier system prompt is ~24,000 characters (~6,000
+        tokens) — that's ~3 seconds of prompt processing on every cold
+        request. If we pre-send the prompt with `num_predict=1`, Ollama
+        keeps the KV cache for those 6,000 tokens around (controlled by
+        OLLAMA_KEEP_ALIVE). Next request that reuses the same prefix gets
+        the cache hit instead of reprocessing — dropping classifier TTFT
+        from ~3-4 s to ~1 s.
+
+        For the chat fast-path, we also warm the smaller model with its
+        own short system prompt so first-token latency on chat queries
+        stays consistent.
         """
+        # 1. Default model + classifier prompt
         try:
             log.info("Warming up Ollama model %s...", self.model)
             start = time.time()
+            classifier_prompt = _build_system_prompt()
             self._session.post(
                 f"{self.endpoint}/api/generate",
                 json={
                     "model": self.model,
                     "prompt": "hi",
+                    "system": classifier_prompt,
                     "stream": False,
                     "keep_alive": self._keep_alive,
                     "options": {"num_predict": 1},
                 },
-                timeout=60,  # model loading can take a while on first boot
+                timeout=120,  # large prompt + first model load
             )
             elapsed = time.time() - start
-            log.info("Ollama model warm (%.1fs).", elapsed)
+            log.info("Ollama %s warm (%.1fs, classifier prompt cached).",
+                     self.model, elapsed)
         except Exception as e:
             log.warning("Ollama warm-up failed: %s. First request will be slow.", e)
+
+        # 2. Chat fast-path model — warm it too. Default matches voice.py
+        # so the first chat-fast request doesn't pay model-load cost.
+        from core.config import config as _cfg
+        chat_fast_model = _cfg.get("brain", {}).get(
+            "chat_fast_model", "qwen2.5:1.5b"
+        )
+        if chat_fast_model and chat_fast_model != self.model:
+            try:
+                log.info("Warming up chat-fast model %s...", chat_fast_model)
+                start = time.time()
+                self._session.post(
+                    f"{self.endpoint}/api/generate",
+                    json={
+                        "model": chat_fast_model,
+                        "prompt": "hi",
+                        "system": (
+                            "You are a helpful voice assistant. Reply concisely."
+                        ),
+                        "stream": False,
+                        "keep_alive": self._keep_alive,
+                        "options": {"num_predict": 1},
+                    },
+                    timeout=120,
+                )
+                elapsed = time.time() - start
+                log.info("Ollama %s warm (%.1fs).", chat_fast_model, elapsed)
+            except Exception as e:
+                log.warning("Chat-fast model warm-up failed: %s.", e)
+
+    def generate_stream(self, prompt: str, system: str = "", json_mode: bool = False,
+                        temperature: float = None, max_tokens: int | None = None,
+                        model: str | None = None):
+        """
+        Stream tokens from Ollama as they're generated. Yields strings (not chunks
+        of bytes) — each yield is the new text since the last yield.
+
+        `model` overrides the configured default for this single call. We use
+        this to route the chat fast-path to a smaller model (e.g.,
+        qwen2.5:1.5b) for ~3x lower TTFT, while keeping intent classification
+        on the more accurate llama3.2:3b.
+
+        This is what powers /api/voice's "stream first sentence to TTS while the
+        model is still generating" pattern. Total wall time isn't reduced, but
+        time-to-first-audio drops dramatically because we don't wait for the
+        full reply before starting synthesis.
+
+        After the generator exhausts, the final iteration's value (caught via
+        StopIteration.value) is the LLMResponse with timing metadata. Most
+        callers can ignore it; the streaming consumer cares about the tokens.
+        """
+        options = {"temperature": temperature or self.temperature}
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+
+        chosen_model = model or self.model
+        payload = {
+            "model": chosen_model,
+            "prompt": prompt,
+            "stream": True,
+            "keep_alive": self._keep_alive,
+            "options": options,
+        }
+        if system:
+            payload["system"] = system
+        if json_mode:
+            payload["format"] = "json"
+
+        start = time.time()
+        # stream=True keeps the response open as a chunked HTTP stream.
+        resp = self._session.post(f"{self.endpoint}/api/generate", json=payload, stream=True)
+        full_text = ""
+        eval_count = 0
+        eval_duration = 0
+        for raw_line in resp.iter_lines():
+            if not raw_line:
+                continue
+            try:
+                chunk = json.loads(raw_line)
+            except json.JSONDecodeError:
+                continue
+            piece = chunk.get("response", "")
+            if piece:
+                full_text += piece
+                yield piece
+            if chunk.get("done"):
+                eval_count = chunk.get("eval_count", 0)
+                eval_duration = chunk.get("eval_duration", 1)
+                break
+        latency = time.time() - start
+        # Stash final stats on the generator for the caller to retrieve via
+        # `.gi_frame.f_locals` in tests if they care, but the primary contract
+        # is the yielded tokens.
+        return LLMResponse(
+            text=full_text,
+            model=chosen_model,
+            latency=latency,
+            tokens_generated=eval_count,
+            tokens_per_second=(eval_count * 1e9 / eval_duration) if eval_duration > 0 else 0,
+            raw={"streamed": True},
+        )
 
     def generate(self, prompt: str, system: str = "", json_mode: bool = False,
                  temperature: float = None, max_tokens: int | None = None) -> LLMResponse:

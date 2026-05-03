@@ -152,6 +152,27 @@ def build_assistant() -> dict:
         except Exception as e:
             log.warning("Brain warm-up failed: %s. First request will be slow.", e)
 
+    # Eager-load the active personality's voice provider. Why now, after the
+    # LLM warm-up: on Jetson all three (Whisper, Ollama, Kokoro) live in the
+    # shared NvMap pool. Loading order: small ↑ large is the safe sequence —
+    # Whisper (~250MB) → Ollama KV cache (variable, ~2-3GB) → Kokoro
+    # (~350MB). Lazy-loading Kokoro on the first voice request fragmented
+    # NvMap on dev hardware AND added ~3.5s to the first response. With
+    # eager loading + a one-shot warmup synth, the first voice call hits
+    # steady-state TTS latency (~0.7s for a typical sentence on Ampere) from
+    # the very first request.
+    try:
+        from core.personality import personality_manager
+        active = personality_manager.active
+        provider_name = getattr(active, "voice_provider", None) or \
+                        config.get("voice", {}).get("fallback_provider", "kokoro")
+        # Touch the provider to force model load + warmup.
+        provider = assistant["voice_router"]._get_provider(provider_name)
+        if provider is None:
+            log.warning("Voice provider '%s' not loaded. First voice call will be slow.", provider_name)
+    except Exception as e:
+        log.warning("Voice provider eager-load failed: %s", e)
+
     # Memory — interaction logging and recall
     memory_cfg = config.get("memory", {})
     if memory_cfg.get("enabled", True):

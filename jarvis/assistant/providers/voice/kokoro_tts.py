@@ -78,6 +78,47 @@ except ImportError:
     log.debug("kokoro-onnx not installed. Install with: pip install kokoro-onnx")
 
 
+def _detect_onnx_providers(prefer: str = "auto") -> list[str]:
+    """
+    Pick the best ONNX Runtime execution providers for this host.
+
+    On Jetson Orin Nano with `onnxruntime-gpu` installed, CUDAExecutionProvider
+    runs Kokoro at ~6-10x realtime on the Ampere GPU vs ~1.6x on the 6-core
+    Cortex-A78 CPU. That's a 5x reduction in TTFA — the single biggest win
+    on this hardware after fixing the streaming pipeline.
+
+    On Mac, only CPUExecutionProvider is available (CoreML EP exists but
+    onnxruntime's Mac wheel doesn't compile it for ARM Silicon by default,
+    and Kokoro's tiny shape needs zero-copy CPU-friendly graphs anyway).
+
+    `prefer`: "auto" picks the best available; "cuda" forces CUDA (errors
+    if not available); "cpu" forces CPU.
+    """
+    try:
+        import onnxruntime as ort
+    except ImportError:
+        log.warning("onnxruntime not installed — falling back to default providers")
+        return []
+
+    available = ort.get_available_providers()
+    log.debug("ONNX Runtime providers available: %s", available)
+
+    if prefer == "cpu":
+        return ["CPUExecutionProvider"]
+    if prefer == "cuda":
+        if "CUDAExecutionProvider" not in available:
+            log.warning("CUDAExecutionProvider requested but not available; using CPU")
+            return ["CPUExecutionProvider"]
+        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
+    # auto: CUDA if available, else CPU. We deliberately skip TensorRT EP —
+    # building TRT engines from the Kokoro graph takes 30-60s on cold start
+    # and the win over CUDA EP on this model is small (~10-20%).
+    if "CUDAExecutionProvider" in available:
+        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+    return ["CPUExecutionProvider"]
+
+
 # ═══════════════════════════════════════════════════════════════
 # Voice → language mapping
 # ═══════════════════════════════════════════════════════════════
@@ -205,6 +246,8 @@ class KokoroVoiceProvider(VoiceProvider):
         self._models_dir = _get_models_dir()
         self._model_name = voice_cfg.get("kokoro_model", "kokoro-v1.0.onnx")
         self._default_voice = voice_cfg.get("kokoro_default_voice", "af_heart")
+        # device: "auto" (CUDA if available, else CPU), "cuda", "cpu"
+        self._device = voice_cfg.get("kokoro_device", "auto")
 
         # Eager-load the model at init time. On edge hardware (Jetson, Pi),
         # lazy-loading adds 3-5 seconds to the first TTS response — unacceptable
@@ -212,6 +255,7 @@ class KokoroVoiceProvider(VoiceProvider):
         # the variant (fp16 vs fp32), which fits comfortably alongside Whisper
         # and a 3B LLM in 8GB shared memory.
         self._kokoro = None
+        self._providers = []
         try:
             self._ensure_model()
         except FileNotFoundError as e:
@@ -221,7 +265,16 @@ class KokoroVoiceProvider(VoiceProvider):
         log.info("Kokoro TTS ready. Models dir: %s", self._models_dir)
 
     def _ensure_model(self):
-        """Lazy-load the Kokoro ONNX model on first use."""
+        """
+        Build (or reuse) the Kokoro ONNX session, picking the best EP for
+        this host. On Jetson with onnxruntime-gpu installed, this puts the
+        whole TTS pipeline on the Ampere GPU (~6-10x realtime). On Mac/Pi
+        without CUDA, falls back to the optimized CPU EP.
+
+        We use Kokoro.from_session() instead of the simple Kokoro(model_path,
+        voices_path) constructor so we can pass `providers=` to the underlying
+        InferenceSession. The simple constructor doesn't expose this hook.
+        """
         if self._kokoro is not None:
             return self._kokoro
 
@@ -249,9 +302,40 @@ class KokoroVoiceProvider(VoiceProvider):
                 f"  https://github.com/thewh1teagle/kokoro-onnx/releases"
             )
 
-        log.info("Loading Kokoro model: %s", model_path.name)
-        self._kokoro = Kokoro(str(model_path), str(voices_path))
-        log.info("Kokoro model loaded.")
+        self._providers = _detect_onnx_providers(self._device)
+        log.info("Loading Kokoro model: %s on %s",
+                 model_path.name,
+                 self._providers[0] if self._providers else "default")
+
+        try:
+            import onnxruntime as ort
+            session = ort.InferenceSession(str(model_path), providers=self._providers)
+            actual_providers = session.get_providers()
+            self._kokoro = Kokoro.from_session(session, str(voices_path))
+            log.info("Kokoro model loaded (providers=%s).", actual_providers)
+        except Exception as e:
+            # CUDA wheel may be present but session build can fail (e.g., NvMap
+            # pressure on Jetson if too many CUDA users). Fall back to CPU.
+            if self._providers and "CUDA" in (self._providers[0] if self._providers else ""):
+                log.warning("Kokoro CUDA session failed (%s); falling back to CPU.", e)
+                self._providers = ["CPUExecutionProvider"]
+                self._kokoro = Kokoro(str(model_path), str(voices_path))
+                log.info("Kokoro model loaded on CPU.")
+            else:
+                raise
+
+        # Warm the model with a no-op synth — first inference includes
+        # CUDNN kernel autotune (~1-2s) which we don't want to pay on the
+        # first user request.
+        try:
+            import time as _t
+            t0 = _t.time()
+            self._kokoro.create(text="hi", voice=self._default_voice,
+                               speed=1.0, lang=_detect_lang(self._default_voice))
+            log.info("Kokoro warmed up in %.2fs.", _t.time() - t0)
+        except Exception as e:
+            log.warning("Kokoro warmup failed (non-fatal): %s", e)
+
         return self._kokoro
 
     def speak(self, text: str, voice_model: str = "") -> bytes:

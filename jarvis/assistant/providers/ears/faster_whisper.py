@@ -166,13 +166,23 @@ class FasterWhisperProvider(EarsProvider):
         # we prime it with common Hindi words, Bollywood terms, and the kinds
         # of phrases our users actually say. This dramatically improves
         # Hindi transcription accuracy without any fine-tuning.
+        #
+        # IMPORTANT: keep this BALANCED across English and Hindi. Earlier
+        # versions had an all-Hindi prompt; on noisy/compressed real-mic
+        # input, Whisper would hallucinate Hindi words (e.g., "what is the
+        # speed of light" → "Kya sam sam"). The fix is to seed examples in
+        # both languages so the decoder doesn't drift toward Devanagari
+        # transliteration when uncertain.
         self._initial_prompt = ears_cfg.get("initial_prompt", (
-            "Namaste. Gaana bajao. Lights band karo. Volume kam karo. "
-            "Arijit Singh ka gaana lagao. Kya time ho raha hai? "
-            "Chaiya Chaiya sun-na hai. Romantic mode laga do. "
-            "Sajni gaana bajao. Light ka colour red karo. "
-            "Abhi kya baj raha hai? Gaana rok do. Aage ka gaana lagao. "
-            "Hindi, English, Hinglish."
+            # English chat / questions
+            "What is the speed of light? Who invented the telephone? "
+            "Tell me about black holes. How does photosynthesis work? "
+            # English commands
+            "Lights off. Volume up. Pause the music. "
+            "Play Sajni by Arijit Singh. Set lights to blue. "
+            # Hindi / Hinglish (kept lighter than before)
+            "Gaana bajao. Lights band karo. Kya time ho raha hai? "
+            "Sajni ka gaana lagao. Romantic mode."
         ))
 
         # Model identifier: can be a standard size ("base", "small", "medium")
@@ -212,6 +222,12 @@ class FasterWhisperProvider(EarsProvider):
         Converts to a float32 numpy array and passes directly to faster-whisper,
         avoiding temp file I/O entirely. faster-whisper accepts numpy arrays
         natively — this saves ~1-2ms per transcription vs the file path.
+
+        OOM resilience: on Jetson 8GB shared NvMap, Whisper occasionally hits
+        "CUDA failed with error out of memory" when other CUDA users (Ollama,
+        Kokoro) have fragmented the pool. We catch that, build a CPU fallback
+        model on demand, and retry. The CPU model is cached after the first
+        OOM so subsequent OOMs reuse it without rebuild cost.
         """
         if audio_data[:4] == b'RIFF':
             # WAV file — parse header to extract raw PCM samples
@@ -227,7 +243,109 @@ class FasterWhisperProvider(EarsProvider):
         # faster-whisper expects for numpy input.
         samples = np.frombuffer(raw_pcm, dtype=np.int16).astype(np.float32) / 32768.0
 
-        return self._transcribe_audio(samples, sample_rate)
+        try:
+            return self._transcribe_audio(samples, sample_rate)
+        except Exception as e:
+            err = str(e).lower()
+            is_oom = "out of memory" in err or "nvmap" in err or (
+                "cuda" in err and "failed" in err
+            )
+            if not is_oom or self._device != "cuda":
+                raise
+            # Strategy: rebuild the CUDA Whisper model from scratch. On Jetson
+            # 8GB shared NvMap, OOM is almost always fragmentation rather than
+            # genuine exhaustion — releasing the model and reallocating gives
+            # the allocator a clean slate. CPU fallback is unreliable on
+            # aarch64 (CTranslate2's "No SGEMM backend on CPU" error has bitten
+            # us) so we prefer to retry on CUDA.
+            log.warning(
+                "Whisper CUDA OOM — rebuilding model on CUDA (NvMap fragmentation). "
+                "Error: %s", e,
+            )
+            return self._rebuild_and_retry(samples, sample_rate)
+
+    def _rebuild_and_retry(self, samples: np.ndarray, sample_rate: int,
+                           attempts: int = 2) -> TranscriptionResult:
+        """
+        Drop the existing CUDA Whisper model, free its memory, build a fresh
+        one, and retry. Falls back to CPU only if all CUDA rebuilds fail.
+        """
+        import gc
+        for attempt in range(attempts):
+            try:
+                # Drop existing model — its CUDA buffers will be freed on GC
+                self._model = None
+                gc.collect()
+                # Hint CUDA to release cached blocks (works for ctranslate2's
+                # CUDA backend if torch is also installed; safe no-op otherwise)
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                except Exception:
+                    pass
+
+                log.info(
+                    "Rebuilding Whisper %s on CUDA (attempt %d/%d)...",
+                    self._model_size, attempt + 1, attempts,
+                )
+                self._model = WhisperModel(
+                    self._model_size,
+                    device=self._device,
+                    compute_type=self._compute_type,
+                )
+                # Try the transcription on the fresh model
+                return self._transcribe_audio(samples, sample_rate)
+            except Exception as e:
+                log.warning(
+                    "Rebuild attempt %d failed: %s", attempt + 1, e,
+                )
+                continue
+
+        # All CUDA rebuild attempts failed — last-ditch CPU fallback.
+        log.error(
+            "All CUDA rebuild attempts failed; trying CPU fallback. "
+            "If you see 'No SGEMM backend on CPU' next, this Jetson's "
+            "CTranslate2 wheel doesn't support CPU inference for this model."
+        )
+        return self._transcribe_with_cpu_fallback(samples, sample_rate)
+
+    def _transcribe_with_cpu_fallback(self, samples: np.ndarray,
+                                      sample_rate: int) -> TranscriptionResult:
+        """
+        Build a CPU-only Whisper model on first OOM, cache it, and run on CPU.
+
+        On Jetson 8GB this is a last-ditch path. CPU compute_types depend on
+        what BLAS the CTranslate2 wheel was built against — on aarch64 stock
+        wheels often don't ship a SGEMM backend, in which case all of these
+        will fail and we re-raise.
+        """
+        if not hasattr(self, "_cpu_model") or self._cpu_model is None:
+            log.info("Building Whisper %s CPU fallback...", self._model_size)
+            last_err = None
+            for ct in ("int8_float32", "int16", "float32"):
+                try:
+                    self._cpu_model = WhisperModel(
+                        self._model_size, device="cpu", compute_type=ct,
+                    )
+                    log.info("Whisper CPU fallback ready (compute_type=%s).", ct)
+                    break
+                except Exception as e:
+                    log.warning("CPU compute_type=%s failed: %s", ct, e)
+                    last_err = e
+            else:
+                self._cpu_model = None
+                raise RuntimeError(
+                    f"All CPU compute_types failed for Whisper fallback. "
+                    f"Last error: {last_err}"
+                )
+
+        gpu_model = self._model
+        self._model = self._cpu_model
+        try:
+            return self._transcribe_audio(samples, sample_rate)
+        finally:
+            self._model = gpu_model
 
     def transcribe_file(self, file_path: str) -> TranscriptionResult:
         """
