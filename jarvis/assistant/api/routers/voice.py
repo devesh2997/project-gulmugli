@@ -784,7 +784,15 @@ async def voice_stream(
             # response as a fallback and let the handler override if it
             # finishes in time.
             from core.intent_handler import handle_intent
-            from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+            from concurrent.futures import TimeoutError as FuturesTimeout
+            # Reuse the shared intent executor from pipeline.py — bounded
+            # to max_workers=4. Per-request executors leaked threads when
+            # background hardware calls outlived the request: a 30-second
+            # Tuya hang would keep an executor + worker thread alive for
+            # 30s, and 100 such hangs would be 100 stuck threads. The
+            # shared pool caps total in-flight at 4; further submissions
+            # queue rather than spawn.
+            from core.pipeline import _intent_executor
 
             HARDWARE_VALIDATION_TIMEOUT = 0.2  # match HA exactly
 
@@ -796,14 +804,7 @@ async def voice_stream(
                     log.warning("Intent %s handler raised: %s", intent.name, e)
                     return None
 
-            # Kick off all intent handlers in parallel — most prefilter intents
-            # are fast (mpv IPC, regex extractions) and can be batched.
-            intent_pool = ThreadPoolExecutor(
-                max_workers=max(1, len(intents)),
-                thread_name_prefix="prefilter-intent",
-            )
-            futures = [intent_pool.submit(run_intent, i) for i in intents]
-            intent_pool.shutdown(wait=False)  # workers continue regardless
+            futures = [_intent_executor.submit(run_intent, i) for i in intents]
 
             # Collect results inside the validation window. Anything beyond
             # the window keeps running but its result is discarded — we use
