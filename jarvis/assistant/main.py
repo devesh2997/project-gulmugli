@@ -173,6 +173,26 @@ def build_assistant() -> dict:
     except Exception as e:
         log.warning("Voice provider eager-load failed: %s", e)
 
+    # Also eager-load the chat-fast English TTS provider (typically Piper).
+    # Without this, the first English chat reply pays a one-time ~2s cost
+    # loading the Piper ONNX model + warming the voice. With it, the first
+    # chat reply hits steady-state synth latency immediately.
+    fast_provider_name = config.get("voice", {}).get("fast_voice_provider", "piper")
+    fast_voice_model = config.get("voice", {}).get("fast_voice_model", "en_US-amy-low")
+    if fast_provider_name and fast_provider_name != provider_name:
+        try:
+            fast_provider = assistant["voice_router"]._get_provider(fast_provider_name)
+            if fast_provider:
+                # Warm the actual voice model (loading + first inference)
+                try:
+                    _ = fast_provider.speak("warm up", voice_model=fast_voice_model)
+                    log.info("Fast voice provider '%s' warmed (model=%s).",
+                             fast_provider_name, fast_voice_model)
+                except Exception as e:
+                    log.warning("Fast voice provider warmup failed: %s", e)
+        except Exception as e:
+            log.info("Fast voice provider '%s' not loaded: %s", fast_provider_name, e)
+
     # Memory — interaction logging and recall
     memory_cfg = config.get("memory", {})
     if memory_cfg.get("enabled", True):
