@@ -190,15 +190,57 @@ def handle_intent(assistant: dict, intent) -> str:
             elif not raw_query:
                 return "I don't have anything to play. Tell me what you'd like to hear."
 
-        # Step 2: Enrich the raw query (separate from classification)
-        enriched_query = assistant["brain"].enrich_query(raw_query)
+        # Step 2: Enrich + search IN PARALLEL.
+        #
+        # The naive flow is serial:
+        #   enrich (LLM, ~2-3s) → search (network, ~3s) → play
+        # …which compounds to ~6s of dead air between the prefilter's
+        # spoken "Playing Sajni" ack and the actual song starting. By
+        # kicking off enrichment AND a raw-query search concurrently,
+        # the wall-clock collapses to max(enrich, raw_search) ≈ 3s. If
+        # enrichment changes the query, we issue ONE more search with
+        # the enriched form and reconcile via the existing dual-search
+        # picker logic in the music provider. If enrichment yields the
+        # same query (low-information short titles like "Sajni"), we
+        # skip the redundant second search entirely.
+        #
+        # Pattern source: OVOS Common Play (parallel skill query) +
+        # Pipecat tool-use (background work behind a spoken ack).
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2,
+                                thread_name_prefix="music-search") as pool:
+            enrich_fut = pool.submit(assistant["brain"].enrich_query, raw_query)
+            # Bypass the music provider's own dual-search wrapper for the
+            # raw side — we want JUST the raw results, then we'll let the
+            # provider's picker reconcile if needed.
+            raw_search_fut = pool.submit(
+                getattr(assistant["music"], "_raw_search",
+                        lambda q, n: assistant["music"].search(q, limit=n)),
+                raw_query, 3,
+            )
+            try:
+                enriched_query = enrich_fut.result(timeout=8)
+            except Exception as e:
+                log.warning("Enrichment failed (%s) — using raw query only", e)
+                enriched_query = raw_query
+            try:
+                raw_results = raw_search_fut.result(timeout=10)
+            except Exception as e:
+                log.warning("Raw search failed: %s", e)
+                raw_results = []
 
         log.debug('Raw query: "%s"', raw_query)
         if enriched_query != raw_query:
             log.debug('Enriched query: "%s"', enriched_query)
-
-        # Dual search: enriched for primary, raw for fallback
-        results = assistant["music"].search(enriched_query, limit=3, raw_input=raw_query)
+            # Enrichment changed the query — do the enriched search and
+            # let the provider's picker reconcile both result sets.
+            results = assistant["music"].search(
+                enriched_query, limit=3, raw_input=raw_query,
+            )
+        else:
+            # Enrichment was a no-op (or failed and fell back to raw).
+            # Save a network round-trip and use the parallel raw_results.
+            results = raw_results
         if results:
             song = results[0]
             log.info('Playing: "%s" by %s%s', song.title, song.artist,
