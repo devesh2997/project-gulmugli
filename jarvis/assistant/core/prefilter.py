@@ -138,6 +138,92 @@ def _match_lights_simple(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_music_play(text: str) -> list[Intent] | None:
+    """
+    Match "play X" / "put on X" / "start X" / "Hindi: X bajao" style requests.
+
+    Why this exists: routing music queries through the LLM classifier costs
+    3-4s of JSON-mode generation, then enrichment is another 2-3s, then
+    YouTube search is 3-5s, then mpv launch — total user-perceived latency
+    of 12-20s before any feedback. Industry pattern (HA, OVOS, Mycroft,
+    Pipecat, Snips, Picovoice) is to grammar-match the obvious forms and
+    skip the classifier entirely:
+
+      Snips/Picovoice: domain-restricted grammar, ~30ms intent classification
+      HA Voice: YAML templates handle 90% of music queries, LLM only on miss
+      OVOS Common Play: regex/Padatious vocab matches before any heavy work
+
+    By prefiltering "play X" patterns, the response field "Playing X." is
+    spoken IMMEDIATELY (within ~600ms of end-of-speech) via the streaming
+    endpoint's prefilter path, while the actual ytmusicapi search +
+    enrichment + mpv launch run in the background (HA-style 200ms
+    validation window — the heavy work doesn't block the spoken ack).
+
+    Conservative by design: we only match patterns that are unambiguously
+    "play music" (the verbs play/put on/start/baja are music-specific in
+    common usage). Anything that could be ambiguous (e.g., bare "X" or
+    "I want to listen to X") falls through to the LLM classifier.
+
+    Order matters: this runs AFTER `_match_video_music` so "play X with
+    video" routes there first and gets the with_video: true flag.
+    """
+    t = text.strip().lower()
+
+    # Strip trailing punctuation that STT adds.
+    t = re.sub(r'[.!?]+$', '', t)
+
+    # English: "play <song>", "put on <song>", "start playing <song>"
+    # Be careful with "start" — only match "start playing X" or
+    # "start X for me" not bare "start X" (could be a timer, etc.).
+    patterns = [
+        # English play verbs
+        (r"^play\s+(.+)$", "english"),
+        (r"^put\s+on\s+(.+)$", "english"),
+        (r"^start\s+playing\s+(.+)$", "english"),
+        (r"^play\s+me\s+(.+)$", "english"),
+        # Hindi/Hinglish: "X bajao", "X chalao", "X laga do"
+        (r"^(.+?)\s+baja(?:o)?$", "hinglish"),
+        (r"^(.+?)\s+chala(?:o)?$", "hinglish"),
+        (r"^(.+?)\s+laga\s+do$", "hinglish"),
+        (r"^(.+?)\s+lagao$", "hinglish"),
+        # Hinglish prefix: "bajao X", "chalao X"
+        (r"^baja(?:o)?\s+(.+)$", "hinglish"),
+        (r"^chala(?:o)?\s+(.+)$", "hinglish"),
+        (r"^lagao\s+(.+)$", "hinglish"),
+    ]
+
+    for pattern, _kind in patterns:
+        m = re.match(pattern, t)
+        if not m:
+            continue
+        query = m.group(1).strip()
+        if not query:
+            continue
+
+        # Filter out obvious non-music queries that contain a "play" verb
+        # but mean something else. E.g., "play quiz", "play game".
+        if re.match(r"^(quiz|game|trivia|movie|video games?)\b", query):
+            return None
+
+        # Filter out very short queries that might be commands
+        # (e.g., "play it" → continue current playback, not new music)
+        if query in {"it", "this", "that", "music"}:
+            # Bare "play music" or "play it" — ambiguous, let LLM handle
+            return None
+
+        # Capitalize for the spoken response (looks better than lowercase)
+        spoken_query = query.title()
+        return [Intent(
+            name="music_play",
+            params={"query": query, "with_video": False},
+            response=f"Playing {spoken_query}.",
+            confidence=0.9,  # not 1.0 — LLM can still override on miss
+            meta={"source": "prefilter"},
+        )]
+
+    return None
+
+
 def _match_video_music(text: str) -> list[Intent] | None:
     """
     Detect "with video" / "video mein" / "video mode" / "video chalao" in music requests.
@@ -758,7 +844,8 @@ PREFILTER_CHAIN = [
     _match_reminder,
     _match_quiz,
     _match_youtube_search,
-    _match_video_music,
+    _match_video_music,    # "play X with video" — must come BEFORE _match_music_play
+    _match_music_play,     # "play X" — fast-track music to bg execution
     _match_video_control,
     _match_music_control,
     _match_volume,
