@@ -169,3 +169,74 @@ Architecture is the SoTA pattern: Whisper-tiny CUDA + Ollama llama3.2:3b
 CUDA + Piper CPU + Kokoro CPU + filler audio + 200ms validation window +
 out-of-band audio fetch. The 9 commits + docs make this maintainable for
 the next agent who touches the code.
+
+## Second shift — Jetson down (power outage), Mac-only work
+
+After the power outage, I continued on Mac-only items that don't need the
+Jetson up. Five more commits:
+
+| Commit | What | Notes |
+|---|---|---|
+| `a2276cd` | Prefilter tests + 5 real bug fixes | Replaced the stale 28-case file with 140-case suite. Caught 5 production false positives in the music matcher: pattern-order bug ("play me X" extracted "me X"), light-scene FP ("party mode laga do"), Hindi mood FP ("kuch sad sa bajao"), chained-command FP ("play X and Y"), missing "skip this" form. All fixed in the same commit. Tests run in 11ms, CI-ready. |
+| `12670ed` | mac_client robustness | We hit this exact failure mode tonight: `_classify_connection_error` turns raw exceptions into {auth, host_down, timeout, other} with actionable messages; `_wait_for_server` retries 0.3→2.5s exponential backoff for 10s; mid-conversation network blip → friendly error + retry on next prompt instead of stacktrace; explicit Ctrl+C cleanup. Tested live against the down Jetson — gives a useful diagnosis. |
+| `ff21a1a` | Music handler parallelization | `enrich_query()` (LLM, ~3s) and `raw_search` now run concurrently in a ThreadPoolExecutor. If enrichment yields the same query (most short titles), we skip the redundant 2nd search. Pattern from OVOS Common Play + Pipecat tool-use. Expected user-visible improvement: ~3s less silence between spoken ack and song starting. |
+| `20f4858` | `tools/healthcheck.py` | Nagios-style liveness probe (exit codes 0=OK, 1=WARN, 2=CRIT, 3=UNKNOWN). Probes JARVIS + Ollama tags + Ollama generate(num_predict=1) — the last one specifically catches the silent-NvMap-fragmentation crash where /api/tags works but generate returns empty. Cron-friendly via `--quiet`. |
+| `7037520` | Eval framework rewrite | v3 imports the production `OllamaBrainProvider` and exercises the real `classify_intent → enrich_query → dual-search` path. Reports per-step contribution (classification accuracy, enrichment changed query?, raw-search hit rate, enriched-search hit rate, final dual-pick hit rate) plus per-step latency. Catches the regression from CLAUDE.md tech debt: v2 always reported "query_enriched: 0%" because the current classifier deliberately doesn't enrich. |
+
+## Combined morning checklist (all 14 commits since 40795a2)
+
+When power returns and Jetson boots:
+
+```bash
+# 1. Sync code to Jetson
+ssh devesh@192.168.1.8 'cd ~/project-gulmugli && git pull'
+
+# 2. Restart Ollama (clear NvMap state from before the outage)
+ssh devesh@192.168.1.8 'sudo systemctl restart ollama'
+
+# 3. Restart JARVIS (with all today's improvements)
+ssh devesh@192.168.1.8 '/tmp/start_jarvis.sh'
+
+# 4. Smoke test from Mac (will retry until Jetson responds, max 10s)
+cd ~/Projects/project-gulmugli/jarvis/assistant
+python3 tools/healthcheck.py --quiet      # exit 0 = ready
+
+# 5. Run prefilter regression tests (no Jetson needed, just regex)
+PYTHONPATH=. python3 tests/test_prefilter.py
+# Expect: 140/140 passed in ~11ms
+
+# 6. Run streaming voice bench (pre-Piper-warm so first run is slow)
+JARVIS_HOST=http://192.168.1.8:8766 \
+JARVIS_TOKEN=<from ssh devesh@192.168.1.8 'grep "API token" /tmp/jarvis.log | tail -1'> \
+python3 tools/bench_voice_e2e.py --suite chat --runs 5 --warmup
+# Expect: 25/25 sub-1s perceived TTFA
+
+# 7. Run song disambiguation eval (full 3-step pipeline)
+cd ~/Projects/project-gulmugli/jarvis/01-the-brain/experiments
+python3 eval_song_disambiguation.py llama3.2:3b
+# Expect: similar pass rate to baseline (93%) but with per-step
+# breakdown so regressions are easy to localize
+
+# 8. Real-mic test
+cd ~/Projects/project-gulmugli/jarvis/assistant
+python3 clients/mac_client.py --voice --stream --auto --silence 0.7
+```
+
+## Production hardening recommendations (do once, applies forever)
+
+For a deployed JARVIS on a Jetson that can lose power, get fragmented
+NvMap, etc., these landed items + suggestions form a defense-in-depth:
+
+* **JARVIS systemd unit with `Restart=on-failure`** — so a crashed
+  process auto-recovers without manual `/tmp/start_jarvis.sh`.
+* **Ollama keep_alive=600** — already in code default, also worth setting
+  in `/etc/systemd/system/ollama.service.d/override.conf`.
+* **Cron healthcheck**: every 5min, `tools/healthcheck.py --quiet || wall ...`
+  catches Ollama runner crashes, alerts before the user notices.
+* **mac_client retry-with-backoff** — already landed, hides brief
+  Jetson reboots from the user.
+* **140-case prefilter regression suite** — run before any change to
+  `core/prefilter.py`. Catches false-positive misroutes in 11ms.
+* **UPS for the Jetson** — if power is unreliable at the deployment
+  site. Small APC BE600M1 = 10min runtime on a Jetson Orin Nano = clean
+  shutdown buffer.
