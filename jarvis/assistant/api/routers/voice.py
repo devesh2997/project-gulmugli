@@ -366,31 +366,6 @@ def _is_obvious_chat(text: str) -> bool:
     return bool(_CHAT_HEURISTIC_RE.match(cleaned))
 
 
-def _emit_sentence_or_none(buffer: str, last_emitted_idx: int) -> tuple[str | None, int]:
-    """
-    Walk `buffer` from index `last_emitted_idx` looking for the next sentence
-    boundary. If we find one, return (sentence_text, new_idx). Else (None, old_idx).
-    Sentences shorter than 20 chars are merged with the next; we wait for more.
-    """
-    pending = buffer[last_emitted_idx:]
-    matches = list(_SENTENCE_END_RE.finditer(pending))
-    if not matches:
-        return None, last_emitted_idx
-
-    # Take the first boundary that gives us at least 20 chars of content
-    for m in matches:
-        sentence = pending[: m.end()].strip()
-        if len(sentence) >= 20:
-            return sentence, last_emitted_idx + m.end()
-    return None, last_emitted_idx
-
-
-def _flush_remaining(buffer: str, last_emitted_idx: int) -> str | None:
-    """Return whatever's left in the buffer that hasn't been emitted."""
-    remaining = buffer[last_emitted_idx:].strip()
-    return remaining if remaining else None
-
-
 # ─── Non-streaming endpoint (kept for simple JSON consumers) ─────────────
 
 @router.post("/api/voice", response_model=VoiceResponse)
@@ -866,7 +841,6 @@ async def voice_stream(
         response_done = False  # set true once closing `"` of "response": "..." seen
         response_start_idx = -1
         first_chunk_emitted = False  # chat-fast: first sub-sentence chunk fired
-        first_token_emitted_chat = False  # placeholder (tracked separately above)
         already_emitted_texts: set[str] = set()  # dedupe — never fire same sentence twice
 
         # Run the streaming generator in a worker thread, push tokens into a queue
@@ -1015,11 +989,6 @@ async def voice_stream(
                 # audio so a slightly later second chunk doesn't matter for
                 # perceived latency.
                 pending = buffer[last_emitted:]
-
-                if not first_token_emitted_chat:
-                    # We track this separately because `first_token_emitted`
-                    # above means "first LLM token" not "first chunk".
-                    pass  # placeholder, defined below
 
                 while True:
                     if not first_chunk_emitted:
