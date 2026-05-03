@@ -128,6 +128,11 @@ def build_assistant() -> dict:
     assistant["voice_router"] = VoiceRouter()
 
     # Ears (STT) — optional, needed for voice mode
+    # IMPORTANT: load BEFORE warming up the LLM. On Jetson (8GB shared NvMap),
+    # Whisper-on-CUDA wants ~250MB and the LLM wants ~2GB. Allocating Whisper's
+    # small chunk first leaves a clean ~6GB block for the LLM. Reverse order
+    # fragments NvMap and the LLM's per-request KV cache allocations start
+    # failing mid-request ("llama runner process has terminated").
     ears_cfg = config.get("ears", {})
     try:
         assistant["ears"] = get_provider(
@@ -137,6 +142,15 @@ def build_assistant() -> dict:
     except Exception as e:
         log.info("Ears (STT) not available (%s). Voice input disabled, text mode only.", e)
         assistant["ears"] = None
+
+    # Now that Whisper has its NvMap chunk (or didn't need one on CPU),
+    # warm up the LLM. Catches an OllamaBrainProvider with a deferred warm_up();
+    # other brain providers may not implement it — that's fine, skip silently.
+    if hasattr(assistant["brain"], "warm_up"):
+        try:
+            assistant["brain"].warm_up()
+        except Exception as e:
+            log.warning("Brain warm-up failed: %s. First request will be slow.", e)
 
     # Memory — interaction logging and recall
     memory_cfg = config.get("memory", {})

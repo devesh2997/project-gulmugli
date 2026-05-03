@@ -535,8 +535,29 @@ def handle_intent(assistant: dict, intent) -> str:
         original_input = intent.meta.get("original_input", "")
         message = original_input or intent.params.get("message", "")
         p = personality_manager.active
-        system = f"You are {p.display_name}. {p.tone}\nRespond naturally and concisely."
-        resp = assistant["brain"].generate(prompt=message, system=system, temperature=0.7)
+        # Voice-assistant-friendly system prompt: keep replies SHORT for short
+        # questions (1-2 sentences). Longer answers only when the question
+        # genuinely calls for them (e.g. "explain how black holes work").
+        # The hard num_predict cap (max_tokens=120) bounds latency at ~5s on
+        # Jetson regardless of how chatty the model gets, but the prompt does
+        # most of the work; max_tokens is a safety net, not the main mechanism.
+        system = (
+            f"You are {p.display_name}. {p.tone}\n"
+            "REPLY RULES:\n"
+            "- Match reply length to question depth.\n"
+            "- 1 sentence for greetings, factoids, simple questions.\n"
+            "- 2-3 sentences max for normal questions.\n"
+            "- Skip filler ('Sure!', 'Great question!', 'Let me explain'). Just answer.\n"
+            "- For follow-up details, wait for the user to ask."
+        )
+        # Cap output at 60 tokens (~45 words). For voice assistant turns this
+        # is plenty — typical helpful replies fit in 1-2 spoken sentences.
+        # On Jetson at ~22 tok/s this caps chat-handler generation at ~3s,
+        # vs >5s when uncapped. We let the model stop earlier on its own
+        # for short factoids ("It's 6:30 PM" = 5 tokens, ~0.2s).
+        resp = assistant["brain"].generate(
+            prompt=message, system=system, temperature=0.7, max_tokens=60,
+        )
         return resp.text
 
     elif intent.name == "memory_recall" and assistant.get("memory"):

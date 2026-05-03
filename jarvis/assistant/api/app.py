@@ -95,12 +95,14 @@ def create_api(assistant: dict) -> Optional["FastAPI"]:
     from api.routers.volume import router as volume_router
     from api.routers.personality import router as personality_router
     from api.routers.chat import router as chat_router
+    from api.routers.voice import router as voice_router_api
     app.include_router(intents_router, tags=["intents"])
     app.include_router(music_router, tags=["music"])
     app.include_router(lights_router, tags=["lights"])
     app.include_router(volume_router, tags=["volume"])
     app.include_router(personality_router, tags=["personality"])
     app.include_router(chat_router, tags=["chat"])
+    app.include_router(voice_router_api, tags=["voice"])
 
     # ── Phase 3 routers ──────────────────────────────────────
     from api.routers.weather import router as weather_router

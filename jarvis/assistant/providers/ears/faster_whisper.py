@@ -76,6 +76,24 @@ def _detect_device() -> str:
     if device_cfg != "auto":
         return device_cfg
 
+    # On Jetson 8GB, both Whisper (when on CUDA) and the Ollama LLM live in
+    # the same shared NvMap pool. Loading order matters: if Whisper allocates
+    # before the LLM gets its full KV cache, NvMap fragments enough that new
+    # LLM allocations (per-request KV cache for incoming queries) fail with
+    # "llama runner process has terminated" mid-request.
+    #
+    # We dodge this by detecting via CTranslate2 directly (not torch — the
+    # stock pip torch wheel is CPU-only on aarch64) AND by ensuring at the
+    # service level that Ollama is fully warmed before JARVIS starts (the
+    # systemd ordering: ollama.service before jarvis-assistant.service).
+    try:
+        import ctranslate2
+        if ctranslate2.get_cuda_device_count() > 0:
+            return "cuda"
+    except Exception:
+        pass
+
+    # Fallback: torch (covers x86 Linux + dGPU machines)
     try:
         import torch
         if torch.cuda.is_available():
@@ -100,7 +118,13 @@ def _detect_compute_type(device: str) -> str:
         return compute_cfg
 
     if device == "cuda":
-        return "float16"
+        # int8_float16 cuts Whisper VRAM roughly in half (~250MB vs ~470MB
+        # for "small") with negligible accuracy cost on short voice commands.
+        # On Jetson 8GB shared memory the saving matters — it leaves room for
+        # the LLM's KV cache to grow under multi-turn conversations without
+        # hitting NvMap allocation failures.
+        # Override to "float16" via config if VRAM isn't constrained (dGPU box).
+        return "int8_float16"
     else:
         return "int8"
 

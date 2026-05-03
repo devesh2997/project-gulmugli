@@ -580,13 +580,16 @@ class OllamaBrainProvider(BrainProvider):
         # Prompts are NOT cached — they rebuild each call to reflect the active personality.
         # _build_system_prompt() and _build_enrichment_prompt() read from personality_manager.active.
 
-        # Warm up: send a tiny request to force Ollama to load the model into
-        # GPU/RAM NOW, at startup, rather than on the first user request.
-        # Without this, the first "Hey Jarvis" after boot takes 10+ seconds
-        # while the model loads. The warm-up request is fast (~100ms for 1 token).
-        self._warm_up()
+        # NOTE: warm-up is deferred — call self.warm_up() explicitly AFTER
+        # other CUDA-using providers (e.g. faster-whisper on Jetson) have
+        # claimed their memory. On the 8GB Jetson, the LLM's ~2GB allocation
+        # combined with Whisper's ~250MB on the same NvMap pool can fragment
+        # memory if loaded in the wrong order. Loading Whisper first (small
+        # contiguous chunk), then the LLM (large chunk in remaining contiguous
+        # space), keeps both happy. On Mac / discrete GPU machines, order
+        # doesn't matter — but the deferred call still works there.
 
-    def _warm_up(self):
+    def warm_up(self):
         """
         Force Ollama to load the model into memory at startup.
 
@@ -614,13 +617,26 @@ class OllamaBrainProvider(BrainProvider):
             log.warning("Ollama warm-up failed: %s. First request will be slow.", e)
 
     def generate(self, prompt: str, system: str = "", json_mode: bool = False,
-                 temperature: float = None) -> LLMResponse:
+                 temperature: float = None, max_tokens: int | None = None) -> LLMResponse:
+        """
+        Generate a response from the LLM.
+
+        max_tokens: hard cap on output length (Ollama's `num_predict`). The model
+            stops generating after this many tokens. Use this for chat-style replies
+            on edge hardware to keep latency bounded — at 22 tok/s on Jetson, an
+            80-token cap means the chat call returns in <4s no matter how chatty
+            the model wants to be. None = no cap (default).
+        """
+        options = {"temperature": temperature or self.temperature}
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": False,
             "keep_alive": self._keep_alive,
-            "options": {"temperature": temperature or self.temperature},
+            "options": options,
         }
         if system:
             payload["system"] = system
