@@ -57,6 +57,105 @@ def http_get(url, token, timeout=5):
         return json.loads(r.read().decode())
 
 
+def _classify_connection_error(exc) -> tuple[str, str]:
+    """
+    Turn a raw connection error into (kind, friendly_message). Three buckets:
+      - "host_down"  : ConnectionRefused / no route — Jetson is off or wrong IP
+      - "auth"       : 401/403 — token is wrong or stale
+      - "timeout"    : connect or read timeout — Jetson is slow / overloaded
+      - "other"      : something else; show the raw error
+    """
+    import socket
+    import urllib.error
+
+    if isinstance(exc, urllib.error.HTTPError):
+        if exc.code in (401, 403):
+            return ("auth",
+                    f"HTTP {exc.code}: API token rejected. Token might be stale "
+                    f"(JARVIS regenerates one on each restart). Get the current token:\n"
+                    f"  ssh devesh@<jetson-ip> 'grep \"API token\" /tmp/jarvis.log | tail -1'")
+        return ("other", f"HTTP {exc.code}: {exc.reason}")
+
+    if isinstance(exc, urllib.error.URLError):
+        reason = exc.reason
+        if isinstance(reason, ConnectionRefusedError):
+            return ("host_down",
+                    "Connection refused. JARVIS isn't running or isn't listening on "
+                    "this port. Check on the Jetson:\n"
+                    "  ssh devesh@<jetson-ip> 'ss -tnlp | grep 8766'\n"
+                    "If empty, restart JARVIS:\n"
+                    "  ssh devesh@<jetson-ip> '/tmp/start_jarvis.sh'")
+        if isinstance(reason, (TimeoutError, socket.timeout)):
+            return ("timeout",
+                    "Connection timed out. The Jetson is reachable on the network "
+                    "but isn't responding to /api/system/status within the timeout. "
+                    "JARVIS may be wedged or overloaded. Try restarting it.")
+        # OSError 65 (no route to host) or similar
+        if hasattr(reason, "errno"):
+            if reason.errno in (51, 65, 113):  # ENETUNREACH, EHOSTUNREACH variants
+                return ("host_down",
+                        f"No route to host. The Jetson appears to be off, "
+                        f"on a different network, or the IP changed. "
+                        f"Check: ping <jetson-ip>")
+        return ("other", str(reason))
+
+    if isinstance(exc, (TimeoutError,)):
+        return ("timeout", "Request timed out.")
+
+    return ("other", f"{type(exc).__name__}: {exc}")
+
+
+def _wait_for_server(host: str, token: str, timeout: float = 10.0) -> bool:
+    """
+    Probe /api/system/status with retry-and-backoff. Returns True if the
+    server responds within `timeout` seconds, False otherwise. On failure,
+    prints a friendly diagnosis (one of: host down, auth, timeout, other)
+    so the user knows what to fix without parsing a stacktrace.
+
+    Used instead of a single http_get on startup so that brief network
+    blips, mid-restart races, and "Jetson booting up" cases recover
+    automatically rather than failing the user immediately.
+    """
+    deadline = time.time() + timeout
+    attempt = 0
+    last_kind = ""
+    last_msg = ""
+    while time.time() < deadline:
+        attempt += 1
+        try:
+            s = http_get(f"{host}/api/system/status", token, timeout=3)
+            sys.stderr.write(
+                f"[mac_client] connected to {s.get('name','?')} v{s.get('version','?')}, "
+                f"personality={s.get('personality','?')}, "
+                f"uptime={s.get('uptime_seconds','?')}s\n"
+            )
+            return True
+        except Exception as e:
+            kind, msg = _classify_connection_error(e)
+            last_kind, last_msg = kind, msg
+            # Auth errors don't get better with retries — stop immediately
+            if kind == "auth":
+                sys.stderr.write(f"\nERROR: {msg}\n\n")
+                return False
+            # On the first failure, tell the user we're retrying — they may
+            # have just started JARVIS and want to know we're waiting.
+            if attempt == 1:
+                sys.stderr.write(
+                    f"\n[mac_client] Couldn't reach {host} ({kind}). "
+                    f"Retrying for up to {timeout:.0f}s...\n"
+                )
+            # Exponential-ish backoff: 0.3, 0.6, 1.2, 2.4, ...
+            time.sleep(min(2.5, 0.3 * (2 ** min(attempt - 1, 4))))
+
+    # Exhausted retries — final friendly message
+    sys.stderr.write(
+        f"\nERROR: can't reach {host} after {attempt} attempts ({timeout:.0f}s).\n"
+        f"  Diagnosis: {last_kind}\n"
+        f"  {last_msg}\n\n"
+    )
+    return False
+
+
 def http_post_json(url, body, token, timeout=120):
     import urllib.request, urllib.error
     req = urllib.request.Request(
@@ -584,62 +683,96 @@ def voice_loop_stream(host: str, token: str, no_play: bool, auto: bool,
         transcribed = ""
         wall_start = time.time()
 
-        for event, data, t_off in http_post_audio_stream(
-            f"{host}/api/voice/stream", wav, token
-        ):
-            if event == "transcribed":
-                transcribed = data.get("text", "")
-                print(f"\nyou ▸ {transcribed}")
-                sys.stderr.write(
-                    f"  [stt] {data.get('stt_ms', 0):.0f}ms "
-                    f"(\"{transcribed[:60]}\")\n"
-                )
-            elif event == "response_text":
-                txt = data.get("text", "")
-                if sent_count == 0:
-                    print("jarvis ◂ ", end="", flush=True)
-                print(txt, end=" ", flush=True)
-                sent_count += 1
-            elif event == "audio_chunk":
-                # Two paths supported for forward/backward compat:
-                #   - new server: data has `url` (and `chunk_id`); fetch out-of-band
-                #   - old server: data has `wav_b64`; decode inline
-                if not no_play:
-                    if first_audio_wall is None:
-                        first_audio_wall = t_off
-                        sys.stderr.write(
-                            f"\n  ▶ first audio (announced) at {first_audio_wall:.2f}s "
-                            f"(sentence {data.get('index', 0)}, "
-                            f"{data.get('bytes', '?')} bytes)\n"
-                        )
-                    url = data.get("url")
-                    if url:
-                        # Resolve relative URL against the SSE host
-                        full_url = url if url.startswith("http") else f"{host}{url}"
-                        future = fetch_audio_async(full_url, token)
-                        stream_play_enqueue_future(future)
-                    else:
-                        wav_b64 = data.get("wav_b64")
-                        if wav_b64:
-                            stream_play_enqueue(base64.b64decode(wav_b64))
-            elif event == "done":
-                print()
-                t = data.get("timings", {}) or {}
-                wall = time.time() - wall_start
-                msg = (
-                    f"  [done] wall {wall:.2f}s | "
-                    f"stt {t.get('stt_ms', 0):.0f}ms | "
-                    f"first_token {t.get('first_token_ms', 0):.0f}ms | "
-                    f"first_audio {t.get('first_audio_ms', 0):.0f}ms | "
-                    f"total {t.get('total_ms', 0):.0f}ms"
-                )
-                sys.stderr.write(msg + "\n")
-                if first_audio_wall is not None:
+        # Iterate the SSE stream defensively — if the Jetson goes down or
+        # restarts mid-conversation, we don't want to crash the whole loop.
+        # Catch the connection error, classify it, tell the user clearly,
+        # and loop back to the next prompt instead of dying.
+        sse_iter = http_post_audio_stream(
+            f"{host}/api/voice/stream", wav, token,
+        )
+        try:
+            event_iter = iter(sse_iter)
+        except Exception as e:
+            sys.stderr.write(f"\n  [error] couldn't open SSE stream: {e}\n")
+            if not no_play:
+                stream_play_stop(wait=False)
+            continue
+
+        try:
+            while True:
+                try:
+                    event, data, t_off = next(event_iter)
+                except StopIteration:
+                    break
+                except (KeyboardInterrupt, EOFError):
+                    raise
+                except Exception as e:
+                    kind, msg = _classify_connection_error(e) if hasattr(
+                        sys.modules[__name__], "_classify_connection_error"
+                    ) else ("other", str(e))
                     sys.stderr.write(
-                        f"  [client] first audio (Mac wall): {first_audio_wall:.2f}s\n"
+                        f"\n  [error] connection lost mid-turn ({kind}): {msg}\n"
+                        f"  Will retry on next prompt.\n"
                     )
-            elif event == "error":
-                print(f"\n  [error] {data.get('message', data)}")
+                    break
+
+                if event == "transcribed":
+                    transcribed = data.get("text", "")
+                    print(f"\nyou ▸ {transcribed}")
+                    sys.stderr.write(
+                        f"  [stt] {data.get('stt_ms', 0):.0f}ms "
+                        f"(\"{transcribed[:60]}\")\n"
+                    )
+                elif event == "response_text":
+                    txt = data.get("text", "")
+                    if sent_count == 0:
+                        print("jarvis ◂ ", end="", flush=True)
+                    print(txt, end=" ", flush=True)
+                    sent_count += 1
+                elif event == "audio_chunk":
+                    # Two paths for forward/backward compat:
+                    #   - new server: `url` (+ chunk_id) — fetch out-of-band
+                    #   - old server: `wav_b64` — decode inline
+                    if not no_play:
+                        if first_audio_wall is None:
+                            first_audio_wall = t_off
+                            sys.stderr.write(
+                                f"\n  ▶ first audio (announced) at {first_audio_wall:.2f}s "
+                                f"(sentence {data.get('index', 0)}, "
+                                f"{data.get('bytes', '?')} bytes)\n"
+                            )
+                        url = data.get("url")
+                        if url:
+                            full_url = url if url.startswith("http") else f"{host}{url}"
+                            future = fetch_audio_async(full_url, token)
+                            stream_play_enqueue_future(future)
+                        else:
+                            wav_b64 = data.get("wav_b64")
+                            if wav_b64:
+                                stream_play_enqueue(base64.b64decode(wav_b64))
+                elif event == "done":
+                    print()
+                    t = data.get("timings", {}) or {}
+                    wall = time.time() - wall_start
+                    msg = (
+                        f"  [done] wall {wall:.2f}s | "
+                        f"stt {t.get('stt_ms', 0):.0f}ms | "
+                        f"first_token {t.get('first_token_ms', 0):.0f}ms | "
+                        f"first_audio {t.get('first_audio_ms', 0):.0f}ms | "
+                        f"total {t.get('total_ms', 0):.0f}ms"
+                    )
+                    sys.stderr.write(msg + "\n")
+                    if first_audio_wall is not None:
+                        sys.stderr.write(
+                            f"  [client] first audio (Mac wall): {first_audio_wall:.2f}s\n"
+                        )
+                elif event == "error":
+                    print(f"\n  [error] {data.get('message', data)}")
+        except (KeyboardInterrupt, EOFError):
+            sys.stderr.write("\n[interrupted]\n")
+            stop_playback()
+            stream_play_stop(wait=False)
+            return
 
         # Wait for queued audio to finish playing before next prompt
         if not no_play:
@@ -722,14 +855,11 @@ def main():
                          "  ssh devesh@192.168.1.8 'grep \"API token\" /tmp/jarvis.log | tail -1'\n")
         sys.exit(2)
 
-    try:
-        s = http_get(f"{args.host}/api/system/status", args.token)
-        sys.stderr.write(
-            f"[mac_client] connected to {s.get('name','?')} v{s.get('version','?')}, "
-            f"personality={s.get('personality','?')}, uptime={s.get('uptime_seconds','?')}s\n"
-        )
-    except Exception as e:
-        sys.stderr.write(f"ERROR: can't reach {args.host}: {e}\n")
+    # Connection pre-flight with retry + friendly errors. When the Jetson is
+    # off (power outage, reboot, etc.) we wait up to ~10 seconds for it to
+    # come back rather than failing immediately, and we tell the user which
+    # specific failure mode they're seeing rather than a raw stacktrace.
+    if not _wait_for_server(args.host, args.token, timeout=10.0):
         sys.exit(1)
 
     try:
