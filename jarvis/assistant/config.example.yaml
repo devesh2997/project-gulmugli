@@ -27,6 +27,24 @@ brain:
   temperature: 0.3 # lower = more consistent intent parsing
   json_mode: true # constrain output to valid JSON
 
+  # Optional: dedicated chat-fast-path model. When the streaming voice
+  # endpoint detects a clearly-chat question (e.g., "what is X"), it
+  # bypasses the JSON-mode classifier and streams a free-form reply.
+  # By default we use the same model as classification. To use a
+  # smaller/faster model for chat replies (e.g., qwen2.5:1.5b), set
+  # this to that tag. NOTE: with OLLAMA_MAX_LOADED_MODELS=1, switching
+  # between this and the classifier model adds reload overhead — only
+  # set if you've configured Ollama to keep multiple models loaded
+  # (OLLAMA_MAX_LOADED_MODELS=2).
+  # chat_fast_model: "llama3.2:3b"
+
+  # keep_alive: seconds Ollama holds the loaded model in memory after
+  # the last request. -1 = forever, but on Jetson 8GB shared NvMap that
+  # accumulates KV-cache fragmentation over hours and crashes the
+  # llama runner. 600 (10 min) is the sweet spot — within-conversation
+  # turns stay hot, overnight idle resets state cleanly.
+  keep_alive: 600
+
   # Song resolution: when the user describes a song vaguely,
   # the LLM produces search keywords. It does NOT need to know
   # the actual song — the music provider's search handles that.
@@ -36,11 +54,20 @@ brain:
 # How spoken words become text.
 ears:
   provider: "faster_whisper" # options: faster_whisper, whisper_cpp, google_cloud, azure, custom
-  model_size: "medium" # tiny, base, small, medium, large-v3 (medium recommended for Hindi)
+  # model_size — accuracy vs memory tradeoff:
+  #   tiny    — ~75MB, fastest, fine for clear English commands. RECOMMENDED on
+  #             Jetson 8GB to leave NvMap headroom for the LLM.
+  #   base    — ~250MB, better accuracy on accented/code-switched speech.
+  #             OK on Mac, fragile on Jetson alongside Ollama 3B + Kokoro CUDA.
+  #   small   — ~470MB, noticeably better Hindi/Hinglish; good on dGPU machines.
+  #   medium  — ~1.5GB, best multilingual; requires dGPU or beefy CPU.
+  #   large-v3 — ~3GB, premium quality; only on workstations.
+  model_size: "tiny"
   language: "auto" # auto-detect, or force: "en", "hi"
   device: "auto" # auto (picks GPU if available), cpu, cuda, metal
   # initial_prompt: Biases Whisper's decoder toward expected vocabulary.
-  # Default includes Hindi/Hinglish phrases. Override to add domain-specific terms.
+  # Default balances English + Hindi examples to prevent decoder drift toward
+  # Hindi when input is unclear English. Override to add domain-specific terms.
   # Set to "" to disable.
 
 # --- Voice (Text-to-Speech) ---
@@ -59,6 +86,23 @@ voice:
   model: "en_US-lessac-medium" # Piper default model (used when falling back to piper)
   speed: 1.0
   output_device: "default" # "default", "bluetooth", or specific device name
+
+  # --- Fast English path (drops chat-fast TTS time from ~4s to ~0.4s) ---
+  # When set, the streaming endpoint synthesizes English chat replies
+  # via this provider instead of the personality's default voice. Cloned-
+  # voice personalities (voice_provider: "xtts" or use_fast_voice: false)
+  # bypass this and always use their own voice. Trained Piper voices
+  # (voice_provider: "piper" with custom voice_model) use the fast path
+  # AT their custom model — preserves the voice identity AND speed.
+  fast_voice_provider: "piper"
+  fast_voice_model: "en_US-amy-low"  # download: https://huggingface.co/rhasspy/piper-voices
+
+  # --- Kokoro device hint (only relevant when kokoro is loaded) ---
+  # On Jetson 8GB shared NvMap, Kokoro CUDA + Whisper CUDA + Ollama CUDA
+  # together fragment NvMap and crash Ollama under sustained load. With
+  # Piper handling English (above), Kokoro is used only for Hindi voices
+  # and CPU is the safe choice. Set "auto" on dGPU/Mac.
+  kokoro_device: "cpu"  # "auto", "cuda", "cpu"
 
 # --- Hands (Skills/Actions) ---
 # What the assistant can actually DO.
