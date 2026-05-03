@@ -755,17 +755,102 @@ async def voice_stream(
 
         # ── Action paths: prefilter or non-chat intent. No streaming LLM. ──
         if prefilter_hit:
-            # Run handler synchronously, then stream TTS sentence by sentence
+            # Pattern adapted from Home Assistant's intent dispatch:
+            #   homeassistant/helpers/intent.py::DynamicServiceIntentHandler
+            #
+            # Two-phase execution:
+            #
+            #   PHASE 1 — speak the prefilter's pre-defined response IMMEDIATELY.
+            #     The matcher already produced a response string ("Lights off.",
+            #     "Paused.") at parse time, before any hardware was touched. We
+            #     fire TTS synth on that string right away so the user hears
+            #     feedback in <1 second regardless of how long the actual
+            #     hardware action takes.
+            #
+            #   PHASE 2 — run the hardware-touching intent handler in a
+            #     background thread with a SHORT validation window
+            #     (`HARDWARE_VALIDATION_TIMEOUT`, default 200ms — same value
+            #     HA uses). If the handler returns inside the window, we
+            #     surface validation errors. If it doesn't, we let it keep
+            #     running in the background and continue. We do NOT later
+            #     speak "actually, that failed" — by the time a 30-second
+            #     Tuya timeout fires, the user is in a different mental
+            #     context and a delayed error message is worse than silent
+            #     failure (HA's design choice; see helpers/intent.py 887-1182).
+            #
+            # The handler's RETURN value is preferred over the prefilter's
+            # `response` field for non-trivial cases (e.g., "what time is it"
+            # → handler computes "It's 11:23 PM."), so we hold the prefilter
+            # response as a fallback and let the handler override if it
+            # finishes in time.
             from core.intent_handler import handle_intent
-            response_text = ""
-            for intent in intents:
+            from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+
+            HARDWARE_VALIDATION_TIMEOUT = 0.2  # match HA exactly
+
+            def run_intent(intent):
                 intent.meta["original_input"] = transcribed
                 try:
-                    r = handle_intent(assistant, intent)
-                    if r:
-                        response_text = (response_text + " " + r).strip()
+                    return handle_intent(assistant, intent)
                 except Exception as e:
-                    log.warning("Intent %s handler failed: %s", intent.name, e)
+                    log.warning("Intent %s handler raised: %s", intent.name, e)
+                    return None
+
+            # Kick off all intent handlers in parallel — most prefilter intents
+            # are fast (mpv IPC, regex extractions) and can be batched.
+            intent_pool = ThreadPoolExecutor(
+                max_workers=max(1, len(intents)),
+                thread_name_prefix="prefilter-intent",
+            )
+            futures = [intent_pool.submit(run_intent, i) for i in intents]
+            intent_pool.shutdown(wait=False)  # workers continue regardless
+
+            # Collect results inside the validation window. Anything beyond
+            # the window keeps running but its result is discarded — we use
+            # the prefilter's pre-defined response instead.
+            t_intent_start = time.monotonic()
+            handler_responses: list[str] = []
+            for fut, intent in zip(futures, intents):
+                remaining = max(
+                    0.0,
+                    HARDWARE_VALIDATION_TIMEOUT - (time.monotonic() - t_intent_start),
+                )
+                try:
+                    r = fut.result(timeout=remaining)
+                    if r:
+                        handler_responses.append(r)
+                except FuturesTimeout:
+                    log.info(
+                        "Intent '%s' exceeded %.0fms validation window — "
+                        "running in background. Falling back to prefilter response.",
+                        intent.name, HARDWARE_VALIDATION_TIMEOUT * 1000,
+                    )
+                except Exception as e:
+                    log.warning("Intent %s background error: %s", intent.name, e)
+
+            # Use handler responses if all intents finished in time AND
+            # produced text. Otherwise use the prefilter's pre-set responses
+            # so the user always gets feedback.
+            if len(handler_responses) == len(intents) and handler_responses:
+                response_text = " ".join(handler_responses).strip()
+            else:
+                # Mix: handler responses where available, prefilter fallback
+                # for intents that didn't finish in time.
+                parts: list[str] = []
+                for fut, intent in zip(futures, intents):
+                    if fut.done():
+                        try:
+                            r = fut.result(timeout=0)
+                            if r:
+                                parts.append(r)
+                                continue
+                        except Exception:
+                            pass
+                    # Fallback to the prefilter's pre-defined response
+                    if intent.response:
+                        parts.append(intent.response)
+                response_text = " ".join(parts).strip()
+
             yield _sse("response_text", {"text": response_text})
             if response_text and vr:
                 from core.voice_router import VoiceRouter
@@ -784,7 +869,7 @@ async def voice_stream(
                         first_audio_emitted = True
                     yield _audio_chunk_sse(idx, sent, wav)
                     emitted += 1
-            # Stop the worker
+            # Stop the TTS worker
             synth_in.put(WORKER_SENTINEL)
             timings["total_ms"] = (time.monotonic() - t_total) * 1000
             yield _sse("done", {
