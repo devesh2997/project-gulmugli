@@ -61,7 +61,7 @@ def _match_music_control(text: str) -> list[Intent] | None:
 
     # Skip / next
     if re.fullmatch(
-        r"(skip|skip (this )?(one|song|track)|"
+        r"(skip|skip this|skip (this )?(one|song|track)|"
         r"next|next (song|track|one)|"
         r"agl[ae] (gaana|song|track)|"
         r"dusra gaana|"
@@ -173,15 +173,17 @@ def _match_music_play(text: str) -> list[Intent] | None:
     t = re.sub(r'[.!?]+$', '', t)
 
     # English: "play <song>", "put on <song>", "start playing <song>"
-    # Be careful with "start" — only match "start playing X" or
-    # "start X for me" not bare "start X" (could be a timer, etc.).
+    # Order matters — longer/more-specific patterns FIRST so they match
+    # before the generic "play X" catches everything.
     patterns = [
-        # English play verbs
-        (r"^play\s+(.+)$", "english"),
-        (r"^put\s+on\s+(.+)$", "english"),
-        (r"^start\s+playing\s+(.+)$", "english"),
+        # English play verbs (specific → general)
         (r"^play\s+me\s+(.+)$", "english"),
+        (r"^start\s+playing\s+(.+)$", "english"),
+        (r"^put\s+on\s+(.+)$", "english"),
+        (r"^play\s+(.+)$", "english"),
         # Hindi/Hinglish: "X bajao", "X chalao", "X laga do"
+        # Note: "laga do" is also used for light scenes ("party mode laga do"),
+        # filtered out below in scene-keyword guard.
         (r"^(.+?)\s+baja(?:o)?$", "hinglish"),
         (r"^(.+?)\s+chala(?:o)?$", "hinglish"),
         (r"^(.+?)\s+laga\s+do$", "hinglish"),
@@ -201,14 +203,36 @@ def _match_music_play(text: str) -> list[Intent] | None:
             continue
 
         # Filter out obvious non-music queries that contain a "play" verb
-        # but mean something else. E.g., "play quiz", "play game".
+        # but mean something else.
         if re.match(r"^(quiz|game|trivia|movie|video games?)\b", query):
             return None
 
-        # Filter out very short queries that might be commands
-        # (e.g., "play it" → continue current playback, not new music)
+        # Filter out very short ambiguous pronouns
         if query in {"it", "this", "that", "music"}:
-            # Bare "play music" or "play it" — ambiguous, let LLM handle
+            return None
+
+        # Light scene guard: "party mode", "study mode", "romantic mode" etc.
+        # ending in "laga do" / "lagao" are light-scene activations, not
+        # music. The classifier handles these correctly via light_control.
+        if re.search(r"\b(party|study|romantic|movie|sleep|reading|focus|"
+                     r"sunset|relax|chill|cinema|night|dim)\s+mode$", query,
+                     flags=re.IGNORECASE):
+            return None
+
+        # Mood-based / vague Hindi patterns: "kuch X sa" / "thoda X" require
+        # the LLM to map mood → genre and pick songs. Our prefilter would
+        # literally search "kuch sad sa" on YouTube which finds nothing.
+        # Reject these and let the classifier handle them.
+        if re.search(r"\b(kuch|thoda|aisa|kaisa|jaisa)\b", query, flags=re.IGNORECASE):
+            return None
+        if re.search(r"\bsa$", query, flags=re.IGNORECASE):
+            # ends in "sa" (Hindi mood marker, e.g., "sad sa", "romantic sa")
+            return None
+
+        # Chained command guard: "play X and Y" / "play X then Y" — these
+        # need the classifier to split into multiple intents. Otherwise we'd
+        # search YouTube for the entire chained string and get nothing useful.
+        if re.search(r"\s+(and|then|aur|phir|;)\s+", query, flags=re.IGNORECASE):
             return None
 
         # Capitalize for the spoken response (looks better than lowercase)
@@ -217,7 +241,7 @@ def _match_music_play(text: str) -> list[Intent] | None:
             name="music_play",
             params={"query": query, "with_video": False},
             response=f"Playing {spoken_query}.",
-            confidence=0.9,  # not 1.0 — LLM can still override on miss
+            confidence=0.9,  # not 1.0 — classifier can still override on miss
             meta={"source": "prefilter"},
         )]
 
