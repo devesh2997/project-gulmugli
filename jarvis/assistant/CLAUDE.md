@@ -228,6 +228,88 @@ On edge hardware: max_results is kept low (3) to limit context window usage. Eac
 
 - **Eval framework outdated**: `eval_song_disambiguation.py` still uses old single-LLM-call approach, needs updating for the separated 3-step pipeline
 - **AudioOutputProvider not implemented**: Volume currently routes through mpv. Interface is defined in interfaces.py.
-- **Chat responses use full LLM call**: For a voice assistant, these should be shorter/faster. May need a separate lighter model or prompt.
 - **No error recovery in text loop**: If Ollama is down, the assistant crashes instead of gracefully degrading.
 - **mpv IPC socket path**: Uses `tempfile.gettempdir()` which is platform-safe, but untested on Jetson.
+
+## Streaming voice pipeline (`/api/voice/stream`)
+
+The current state-of-the-art voice path. Adopted from research into how Home
+Assistant Voice / Pipecat / LiveKit / OVOS / Willow / Rhasspy solve this same
+problem. Key insights worth knowing before touching this code:
+
+### Architecture (Jetson 8GB shared NvMap)
+
+- **STT**: faster-whisper "tiny" on CUDA (~70MB) — small enough to leave NvMap
+  headroom for the LLM. "base" or larger fragments NvMap and crashes Ollama.
+- **LLM**: Ollama llama3.2:3b on CUDA, prompt-cached at startup
+  (`brain.warm_up()` sends the classifier system prompt with `num_predict=1`
+  so the KV cache for those 6000 tokens stays hot).
+- **TTS English**: Piper `en_US-amy-low` on CPU, ~10× realtime, ~0.4s per
+  sentence. Faster than Kokoro on GPU was. This is the industry pattern
+  (HA Voice / Wyoming / Willow all use Piper for English).
+- **TTS Hindi / cloned voices**: Kokoro on CPU, or XTTS for runtime cloning.
+  Voice-clone-aware routing (`voice.py::_synth`) detects cloned-voice
+  personalities and bypasses Piper for them.
+- **Filler audio**: pre-synthesized `[Mm-hmm., One moment., Let me see.]` in
+  the personality voice, played as the very first audio_chunk after STT.
+  Drops perceived TTFA to ~600ms regardless of backend latency. Pattern from
+  Pipecat's `on_function_calls_started` hook + Alexa/Siri.
+
+### Why each piece lives where it does
+
+- Audio body is fetched **out-of-band** via `/api/voice/audio/{chunk_id}`,
+  not embedded in SSE events. SSE multiplexes everything onto one TCP stream
+  — a 600KB base64 audio_chunk would head-of-line-block subsequent
+  response_text events. Out-of-band fetch via parallel HTTP/2 connections
+  removes this blocking.
+- The SSE generator coroutine **explicitly yields** to the asyncio loop via
+  `await asyncio.sleep(0)` between iterations. Without it, a long-running
+  LLM stream starves parallel HTTP handlers (audio body fetches stall).
+- **Prefilter intents** with hardware side-effects use a 200ms validation
+  window (HA pattern from `homeassistant/helpers/intent.py`): handler runs
+  in the shared `_intent_executor` thread pool, we wait 200ms, prefer the
+  handler's return value if it finished, else fall back to the prefilter's
+  pre-defined `response` field. Hardware actions that take longer keep
+  running in the background; we do NOT speak a follow-up error 30s later
+  (HA's design — by then the user has moved on).
+- **VAD silence threshold** is 0.7s (was 1.5s). Industry range:
+  Alexa ~600ms, Google ~700ms, Siri ~800ms.
+- **`OLLAMA_KEEP_ALIVE=600`** (was -1). Models unload after 10 min idle so
+  KV-cache fragmentation doesn't accumulate over hours.
+
+### Latency targets (validated)
+
+- **Filler perceived TTFA**: p50 0.57s, p95 0.71s
+- **Real answer audible**: p50 2.65s, p95 3.0s server-side
+- **Prefilter intent (hardware online)**: p50 0.5s
+- **Prefilter intent (hardware offline)**: p50 0.7s — was 36s before
+- **Music intent ("play X")**: 1.0s perceived ack — was ~20s before
+
+### Things to NOT do
+
+- Don't move Kokoro to CUDA on Jetson. Whisper CUDA + Ollama CUDA + Kokoro
+  CUDA fragments NvMap and crashes Ollama after ~50 sustained requests.
+- Don't put the chat-fast model on a different Ollama model than the
+  classifier UNLESS `OLLAMA_MAX_LOADED_MODELS≥2` (else swap thrashing).
+- Don't speak a follow-up error after a hardware action fails outside the
+  validation window. HA explicitly chose this; the user has moved on by
+  then and a delayed error message is worse than silent failure.
+- Don't add "preemptive LLM on partial transcript" with current Whisper
+  batch STT — it requires INTERIM transcript events Whisper doesn't emit.
+  Wait until streaming STT migration (post-demo).
+
+### Bench harness
+
+`tools/bench_voice_e2e.py` synthesizes queries via macOS `say`, posts to
+`/api/voice/stream`, measures both server-reported and client-perceived
+TTFA. `--play` flag (off by default) plays audio through afplay. Run it
+after any change touching the streaming pipeline.
+
+### References
+
+- Modal+Pipecat: https://modal.com/blog/low-latency-voice-bot
+- LiveKit Agents: https://github.com/livekit/agents
+- Pipecat: https://github.com/pipecat-ai/pipecat
+- HA helpers/intent.py (200ms timeout pattern): `homeassistant/helpers/intent.py`
+- OVOS Common Play (search/play decoupling): `ovos-workshop/.../common_play.py`
+- Piper voice models: https://huggingface.co/rhasspy/piper-voices
