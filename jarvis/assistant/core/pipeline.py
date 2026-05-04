@@ -271,16 +271,38 @@ def process_input(assistant: dict, user_input: str, interrupt_event=None,
         face_ui.set_state("speaking")
 
     # Log this interaction to memory (do this even if TTS gets cancelled —
-    # the action already happened, we want it in the log)
+    # the action already happened, we want it in the log).
+    #
+    # Phase 2.4 (year-over-year recall): if an event pack is active for
+    # today, tag the interaction with `event:<id>` and `year:<YYYY>`.
+    # This is what powers "Vesper, last year on my birthday kya kiya
+    # tha?" — a query for `year:2026 + event:astha-birthday` returns
+    # everything from May 14, 2026 onwards (and similarly for future
+    # years). Tagging only on event days keeps the index small.
     memory = assistant.get("memory")
     if memory:
         try:
+            interaction_tags: list[str] = []
+            try:
+                from core.event_manager import get_event_manager
+                from datetime import datetime as _dt
+                active = get_event_manager().current()
+                if active is not None and active.is_today:
+                    interaction_tags = [
+                        f"event:{active.pack_id}",
+                        f"year:{_dt.now().year}",
+                    ]
+            except Exception as e:
+                # Tagging failure must not block the interaction log.
+                log.debug("Memory event-tagging skipped: %s", e)
+
             interaction = Interaction(
                 user_id="default",
                 input_text=user_input,
                 intents=intents,
                 responses=responses,
                 outcome="success",
+                tags=interaction_tags,
             )
             memory.log_interaction(interaction)
         except Exception as e:

@@ -107,6 +107,21 @@ class SQLiteMemoryProvider(MemoryProvider):
                 VALUES (1, datetime('now'));
         """)
 
+        # Migration: add `tags_json` column for event-tagging (Phase 2.4 of
+        # the birthday roadmap — year-over-year recall via tags like
+        # ['event:astha-birthday', 'year:2026']). ALTER TABLE ADD COLUMN
+        # is idempotent in spirit — we check the column list first because
+        # SQLite raises if the column already exists.
+        cur = conn.execute("PRAGMA table_info(interactions)")
+        cols = {row[1] for row in cur.fetchall()}
+        if "tags_json" not in cols:
+            conn.execute("ALTER TABLE interactions ADD COLUMN tags_json TEXT")
+            conn.execute(
+                "INSERT OR IGNORE INTO schema_version (version, applied_at) "
+                "VALUES (2, datetime('now'))"
+            )
+            log.info("memory.sqlite: migrated to schema v2 (added tags_json)")
+
     def _get_conn(self) -> sqlite3.Connection:
         """
         Get the persistent database connection, creating it on first call.
@@ -154,12 +169,22 @@ class SQLiteMemoryProvider(MemoryProvider):
             else:
                 intents_data.append({"name": str(intent)})
 
+        # Phase 2.4: tags_json carries event-pack labels like
+        # ['event:astha-birthday', 'year:2026']. Empty list serializes to
+        # '[]' rather than null so query-by-tag never has to special-case
+        # "tags column was null vs empty list."
+        tags_json = json.dumps(
+            list(getattr(interaction, "tags", []) or []),
+            ensure_ascii=False,
+        )
+
         with self._connect() as conn:
             cursor = conn.execute(
                 """
                 INSERT INTO interactions
-                    (timestamp, user_id, input_text, intents_json, responses_json, outcome, feedback)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (timestamp, user_id, input_text, intents_json,
+                     responses_json, outcome, feedback, tags_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     timestamp,
@@ -169,6 +194,7 @@ class SQLiteMemoryProvider(MemoryProvider):
                     json.dumps(interaction.responses, ensure_ascii=False),
                     interaction.outcome,
                     interaction.feedback,
+                    tags_json,
                 ),
             )
             interaction_id = cursor.lastrowid
@@ -289,7 +315,8 @@ class SQLiteMemoryProvider(MemoryProvider):
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT id, timestamp, user_id, input_text, intents_json, responses_json, outcome
+                SELECT id, timestamp, user_id, input_text, intents_json,
+                       responses_json, outcome, tags_json
                 FROM interactions
                 WHERE user_id = ?
                 ORDER BY timestamp DESC
@@ -299,6 +326,52 @@ class SQLiteMemoryProvider(MemoryProvider):
             ).fetchall()
 
         return [self._row_to_memory(row) for row in rows]
+
+    def find_by_tag(self, tag: str, user_id: str = "default",
+                    limit: int = 50) -> list[Memory]:
+        """
+        Return interactions whose tags include the given tag.
+
+        Used by Phase 2.4 year-over-year recall: passing
+        `tag="event:astha-birthday"` plus filtering by year on the
+        caller side gives "what did we do on her birthday last year."
+
+        Implementation note: SQLite's JSON1 extension is available on
+        most platforms but not guaranteed on Jetson's bundled python3.
+        We do a substring match on the tags_json string instead — the
+        tag wraps in quotes so 'event:x' won't match 'event:xy'.
+        """
+        # Wrap in quotes so partial matches don't bleed across tag boundaries.
+        # Stored JSON looks like ["event:astha-birthday","year:2026"]
+        needle = f'"{tag}"'
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, timestamp, user_id, input_text, intents_json,
+                       responses_json, outcome, tags_json
+                FROM interactions
+                WHERE user_id = ?
+                  AND tags_json IS NOT NULL
+                  AND instr(tags_json, ?) > 0
+                ORDER BY timestamp DESC
+                LIMIT ?
+                """,
+                (user_id, needle, limit),
+            ).fetchall()
+        return [self._row_to_memory(row) for row in rows]
+
+    def find_event_memories(self, event_id: str, year: int,
+                            user_id: str = "default",
+                            limit: int = 50) -> list[Memory]:
+        """
+        Convenience: return interactions tagged with both the given
+        event_id and year. Used by `memory_recall_event` intent.
+        """
+        # Find by year tag first (typically narrower) — every year-tagged
+        # interaction also has an event tag, so we filter the smaller set.
+        candidates = self.find_by_tag(f"year:{year}", user_id=user_id, limit=limit * 2)
+        wanted_event = f"event:{event_id}"
+        return [m for m in candidates if wanted_event in (m.raw.get("tags") or [])][:limit]
 
     def get_stats(self, user_id: str = "default") -> dict:
         """Summary stats about stored interactions."""
@@ -369,6 +442,22 @@ class SQLiteMemoryProvider(MemoryProvider):
 
         content = " → ".join(parts)
 
+        # tags_json is nullable for rows that pre-date the v2 migration —
+        # treat absent as []. Some queries don't SELECT it (older callers);
+        # row["tags_json"] raises in those cases, so guard with hasattr.
+        tags: list[str] = []
+        try:
+            raw_tags = row["tags_json"]
+        except (IndexError, KeyError):
+            raw_tags = None
+        if raw_tags:
+            try:
+                parsed = json.loads(raw_tags)
+                if isinstance(parsed, list):
+                    tags = [str(t) for t in parsed]
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         return Memory(
             content=content,
             category="interaction",
@@ -381,5 +470,6 @@ class SQLiteMemoryProvider(MemoryProvider):
                 "intents": intents,
                 "responses": responses,
                 "outcome": row["outcome"],
+                "tags": tags,
             },
         )

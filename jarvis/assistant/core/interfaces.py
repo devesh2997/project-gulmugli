@@ -138,6 +138,15 @@ class Interaction:
     timestamp: str = ""               # ISO 8601 — filled automatically if empty
     outcome: str = ""                 # "success", "no_results", "error", etc.
     feedback: Optional[str] = None    # user feedback if any ("wrong song", thumbs up)
+    tags: list[str] = field(default_factory=list)
+    """
+    Free-form labels attached to the interaction. Used for cross-cutting
+    queries that don't fit input_text/intent semantics — most notably
+    event-pack tagging like ['event:astha-birthday', 'year:2026'] so a
+    future "what did we do on her birthday last year?" query can scope
+    to those interactions cheaply. Defaults to [] for back-compat with
+    interactions that pre-date this field.
+    """
 
 
 @dataclass

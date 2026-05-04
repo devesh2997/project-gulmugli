@@ -137,14 +137,21 @@ def run_suite(suite_name: str, brain) -> dict:
         # lookup, available_from gating, parser edge cases. Runs in <1s.
         from tests.test_voice_memos import run_voice_memos_tests
         return run_voice_memos_tests()
+    elif suite_name == "memory_event_recall":
+        # Phase 2.4 — year-over-year event tagging on the SQLite memory
+        # provider. Round-trip log + find_by_tag + find_event_memories
+        # + back-compat with pre-v2 rows + migration idempotency.
+        from tests.test_memory_event_recall import run_memory_event_recall_tests
+        return run_memory_event_recall_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
 ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
               "birthday_quiz", "trigger_state", "astha_angry_prefilter",
-              "custom_playlist", "voice_memos", "prefilter", "intent",
-              "enrichment", "personality", "knowledge", "latency", "integration"]
+              "custom_playlist", "voice_memos", "memory_event_recall",
+              "prefilter", "intent", "enrichment", "personality", "knowledge",
+              "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:
