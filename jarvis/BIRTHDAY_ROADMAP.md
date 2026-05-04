@@ -933,8 +933,29 @@ Append a one-line entry per session.
               rename girlfriend→astha, 0.2 event_manager + 16/16 tests, 0.3
               event pack tree, 0.5a voice trigger NLU intent + handler. Backend
               of 0.4 (events router + tests, 11/11 api_smoke) and 0.5b (trigger
-              endpoint) shipped; dashboard hook delegated to a sub-agent.
-              Open questions Q1-Q5 logged for next user batch.
+              endpoint) shipped; dashboard hook delegated to a sub-agent
+              (verified clean — lint/tsc/build all green). Open questions
+              Q1-Q5 logged for next user batch.
+
+- 2026-05-05 (late PM) — Mac intent eval after Phase 0: **70/93 = 75.3%**.
+              All 3 new event_trigger cases PASS. Other failures are the
+              usual Mac-stochastic pattern (`resume`, `next song`, `I'm tired`
+              → sleep false positive). However, this is at the LOWER EDGE of
+              the historical band [75-84]/90 — the same Mac scored 80/90
+              just before adding the event_trigger description block to the
+              system prompt. **Possible regression — needs verification.**
+
+              Hypothesis: the event_trigger description in the classifier
+              prompt (~7 lines, with inline examples) is shifting attention
+              from other intents. To verify: (a) re-run intent suite once
+              more to rule out one-shot stochastic noise, (b) if still 70-75,
+              trim the event_trigger block to 2-3 lines without inline
+              examples, (c) re-eval. Also worth running on Jetson — Jetson
+              is more deterministic and gives a clearer signal.
+
+              Action queued for next session. Not a launch blocker (event
+              trigger itself works perfectly, and the regressed cases are
+              all known-stochastic), but flag-worthy.
 - 2026-05-05 — Roadmap created. Foundation phase queued. Decision: rename
               `girlfriend` → `astha` is in Phase 0; Astha jokes is a
               year-round feature with NLU-classified trigger.
