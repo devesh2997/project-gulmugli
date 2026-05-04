@@ -31,8 +31,8 @@ Usage:
   python tools/bench_voice_e2e.py --query "what is photosynthesis" --runs 3
 
 Env:
-  JARVIS_HOST  default http://192.168.1.8:8766
-  JARVIS_TOKEN required
+  ASSISTANT_HOST  default http://192.168.1.8:8766 (legacy JARVIS_HOST also accepted)
+  ASSISTANT_TOKEN required (legacy JARVIS_TOKEN also accepted)
 """
 
 from __future__ import annotations
@@ -49,8 +49,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-DEFAULT_HOST = os.environ.get("JARVIS_HOST", "http://192.168.1.8:8766")
-TOKEN = os.environ.get("JARVIS_TOKEN", "")
+DEFAULT_HOST = (
+    os.environ.get("ASSISTANT_HOST")
+    or os.environ.get("JARVIS_HOST")  # legacy
+    or "http://192.168.1.8:8766"
+)
+TOKEN = os.environ.get("ASSISTANT_TOKEN") or os.environ.get("JARVIS_TOKEN") or ""
 
 
 # ─── Audio synthesis (macOS `say`) ──────────────────────────────────────
@@ -421,10 +425,11 @@ def main():
     args = ap.parse_args()
 
     if not args.token:
-        sys.stderr.write("ERROR: set JARVIS_TOKEN or pass --token\n")
+        sys.stderr.write("ERROR: set ASSISTANT_TOKEN or pass --token\n")
         sys.exit(2)
 
-    cache = Path(tempfile.gettempdir()) / "jarvis_bench_audio"
+    # Brand-agnostic cache dir name so this tool works across any rebrand.
+    cache = Path(tempfile.gettempdir()) / "assistant_bench_audio"
     cache.mkdir(exist_ok=True)
 
     if args.query:

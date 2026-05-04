@@ -87,15 +87,18 @@
 	     local network (any LAN IP). The string here is what the user sees;
 	     keep it user-friendly and explain the *why* in two short clauses. -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Jarvis Companion connects to your Jarvis on the local network so it can show what music is playing and control your smart lights.</string>
+	<string>Connects to your assistant on the local network to show what music is playing and control your smart lights.</string>
 
 	<!-- Bonjour / mDNS service types this app will browse for. Without this,
 	     iOS blocks the nsd plugin's discovery silently — no error, no log,
-	     just no devices ever appear. Match the type registered server-side
-	     by jarvis/assistant/api/discovery.py: '_jarvis._tcp.local.'. -->
+	     just no devices ever appear. Must match exactly:
+	       * server: assistant.protocol_id in jarvis/assistant/config.yaml
+	         (used by api/discovery.py to register `_<protocol_id>._tcp`)
+	       * Flutter: kMdnsServiceType in lib/config/constants.dart
+	     Change one → change all three, then rebuild + reinstall. -->
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_jarvis._tcp</string>
+		<string>_gulmugli._tcp</string>
 	</array>
 </dict>
 </plist>

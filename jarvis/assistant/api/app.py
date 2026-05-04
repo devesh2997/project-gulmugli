@@ -15,6 +15,7 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Optional
 
+from core.branding import brand
 from core.logger import get_logger
 
 log = get_logger("api.server")
@@ -59,8 +60,8 @@ def create_api(assistant: dict) -> Optional["FastAPI"]:
         log.info("API server shutting down.")
 
     app = FastAPI(
-        title="JARVIS Companion API",
-        description="Local API for the JARVIS voice assistant companion app.",
+        title=f"{brand.name} Companion API",
+        description=f"Local API for the {brand.name} voice assistant companion app.",
         version="1.0.0",
         lifespan=lifespan,
         # Serve docs at /api/docs (not root /docs)

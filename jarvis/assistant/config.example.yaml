@@ -7,11 +7,21 @@
 # ═══════════════════════════════════════════════════════════════
 
 # --- Identity ---
-# Change these to rename/rebrand the assistant.
-# Every module reads from here — no "Jarvis" hardcoded anywhere.
+# Change `name` to rebrand the assistant. Every module reads from here
+# via core.branding.brand — no name strings hardcoded anywhere.
+#
+# `protocol_id` is the STABLE network identifier (used in mDNS service
+# type and Flutter discovery). NEVER user-visible. Decoupled from `name`
+# on purpose: rebrands don't change `protocol_id`, so existing client
+# installs keep discovering the assistant. See core/branding.py.
 assistant:
-  name: "Jarvis"
-  wake_word: "jarvis"
+  name: "Vesper"
+  protocol_id: "gulmugli"    # Stable network id (mDNS / Flutter discovery).
+                             # Changing this requires updating constants.dart
+                             # + iOS Info.plist + reinstalling the app on
+                             # every device. See core/branding.py.
+  wake_word: "hey jarvis"    # OOTB OpenWakeWord model. Train a custom one
+                             # for the new brand and update this when ready.
   personality: >
     You are a smart, friendly voice assistant. You speak concisely
     and have a warm personality. You understand Hindi, English,
@@ -365,7 +375,10 @@ api:
   token: ""                     # Bearer token. Empty = auto-generate at startup (logged at INFO).
   discovery:
     enabled: true               # Register via mDNS/Zeroconf so the app can find us
-    service_name: "jarvis"      # mDNS service name: _jarvis._tcp.local.
+    # Optional. If omitted, defaults to assistant.protocol_id. The mDNS
+    # service TYPE is always _<protocol_id>._tcp.local.; this only sets
+    # the service INSTANCE label inside that type.
+    # service_name: "jarvis"
 
 # --- UI (Face Display) ---
 # Browser-based animated face that shows assistant state.

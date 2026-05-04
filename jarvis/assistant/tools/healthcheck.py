@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-healthcheck.py — JARVIS liveness and degradation probe.
+healthcheck.py — assistant liveness and degradation probe.
 
-Pings JARVIS and Ollama, classifies state, exits with a Nagios-style code:
+Pings the assistant and Ollama, classifies state, exits with a Nagios-style code:
 
     0  OK         — both healthy, recent voice request worked
     1  WARNING    — degraded (Ollama slow, model hot-reload, etc.)
-    2  CRITICAL   — JARVIS or Ollama unreachable, runner crashed, etc.
+    2  CRITICAL   — assistant or Ollama unreachable, runner crashed, etc.
     3  UNKNOWN    — can't even reach the host (network down, Jetson off)
 
 Designed to be cron-friendly. Quiet on success, verbose on failure (so
@@ -15,10 +15,10 @@ fast). Suggested cron entries:
 
   # Every 5 min, log a one-liner status; alert if CRITICAL or UNKNOWN
   */5 * * * * /usr/bin/python3 /path/to/healthcheck.py --quiet || \\
-              /usr/bin/wall "JARVIS health: $(/usr/bin/python3 /path/to/healthcheck.py)"
+              /usr/bin/wall "Assistant health: $(/usr/bin/python3 /path/to/healthcheck.py)"
 
   # Once an hour, full report to a logfile (for trend analysis)
-  0 * * * *   /usr/bin/python3 /path/to/healthcheck.py --verbose >> /var/log/jarvis_health.log
+  0 * * * *   /usr/bin/python3 /path/to/healthcheck.py --verbose >> /var/log/assistant_health.log
 
 If you have systemd, prefer a Timer + Service unit instead of cron.
 
@@ -30,9 +30,14 @@ Usage:
     healthcheck.py --json         # machine-readable output
 
 Env:
-    JARVIS_HOST   default http://192.168.1.8:8766
-    JARVIS_TOKEN  required for full /api/voice probe; status endpoint is open
-    OLLAMA_HOST   default http://localhost:11434 (must run on the same box)
+    ASSISTANT_HOST   default http://192.168.1.8:8766
+                     (legacy JARVIS_HOST also accepted)
+    ASSISTANT_TOKEN  required for full /api/voice probe; status endpoint is open
+                     (legacy JARVIS_TOKEN also accepted)
+    OLLAMA_HOST      default http://localhost:11434 (must run on the same box)
+
+Note: this tool is intentionally brand-agnostic — uses generic "assistant"
+terminology so it survives any future rebrand without code changes.
 """
 
 from __future__ import annotations
@@ -63,9 +68,9 @@ def _http_get(url: str, token: str | None = None, timeout: float = 5.0):
         return r.status, r.read()
 
 
-def check_jarvis_status(host: str, token: str | None) -> dict[str, Any]:
+def check_assistant_status(host: str, token: str | None) -> dict[str, Any]:
     """Probe /api/system/status. Captures uptime + which providers loaded."""
-    out: dict[str, Any] = {"name": "jarvis_status", "ok": False}
+    out: dict[str, Any] = {"name": "assistant_status", "ok": False}
     t0 = time.time()
     try:
         status, body = _http_get(f"{host}/api/system/status", token, timeout=5.0)
@@ -76,6 +81,10 @@ def check_jarvis_status(host: str, token: str | None) -> dict[str, Any]:
         data = json.loads(body.decode())
         out.update({
             "ok": True,
+            # `brand_name` lets the summary line greet the user with the
+            # current brand ("Vesper", "Jarvis", etc.) without baking it
+            # into this script. Falls back to "assistant" if absent.
+            "brand_name": data.get("name"),
             "version": data.get("version"),
             "personality": data.get("personality"),
             "uptime_seconds": data.get("uptime_seconds"),
@@ -140,24 +149,24 @@ def check_ollama(ollama_host: str = "http://localhost:11434",
     return out
 
 
-def classify(jarvis: dict, ollama: dict) -> tuple[int, str]:
+def classify(assistant: dict, ollama: dict) -> tuple[int, str]:
     """
     Combine probes into a single Nagios state + summary line.
 
     Logic:
-      - JARVIS unreachable → UNKNOWN (host down, network split, etc.)
-      - Ollama unreachable → CRITICAL (JARVIS will fail every chat request)
+      - Assistant unreachable → UNKNOWN (host down, network split, etc.)
+      - Ollama unreachable → CRITICAL (assistant will fail every chat request)
       - Ollama runner crashed (empty response or "terminated") → CRITICAL
       - Ollama gen latency > 10s → WARNING (degraded but limping along)
       - Otherwise → OK
     """
-    if not jarvis.get("ok"):
-        err = jarvis.get("error", "")
-        # Distinguish "host unreachable" (unknown) vs "JARVIS responded
+    if not assistant.get("ok"):
+        err = assistant.get("error", "")
+        # Distinguish "host unreachable" (unknown) vs "assistant responded
         # with an error" (critical).
         if "ConnectionRefused" in err or "Host is down" in err or "URLError" in err:
-            return EXIT_UNKNOWN, f"JARVIS unreachable: {err}"
-        return EXIT_CRITICAL, f"JARVIS error: {err}"
+            return EXIT_UNKNOWN, f"assistant unreachable: {err}"
+        return EXIT_CRITICAL, f"assistant error: {err}"
 
     if not ollama.get("ok"):
         err = ollama.get("error", "")
@@ -172,9 +181,12 @@ def classify(jarvis: dict, ollama: dict) -> tuple[int, str]:
     if gen_ms > 10_000:
         return EXIT_WARNING, f"Ollama slow: gen {gen_ms}ms"
 
+    # Show the assistant's brand name in the summary if the API reported
+    # it, otherwise fall back to "assistant".
+    label = assistant.get("brand_name") or "assistant"
     summary = (
-        f"OK | jarvis uptime={jarvis.get('uptime_seconds', '?')}s "
-        f"personality={jarvis.get('personality', '?')} "
+        f"OK | {label} uptime={assistant.get('uptime_seconds', '?')}s "
+        f"personality={assistant.get('personality', '?')} "
         f"ollama gen={gen_ms}ms models={len(ollama.get('models_loaded', []))}"
     )
     return EXIT_OK, summary
@@ -182,30 +194,39 @@ def classify(jarvis: dict, ollama: dict) -> tuple[int, str]:
 
 def run_once(host: str, token: str | None, ollama_host: str,
              ollama_model: str) -> tuple[int, dict, dict, str]:
-    j = check_jarvis_status(host, token)
+    a = check_assistant_status(host, token)
     o = check_ollama(ollama_host, ollama_model)
-    code, summary = classify(j, o)
-    return code, j, o, summary
+    code, summary = classify(a, o)
+    return code, a, o, summary
 
 
-def fmt_human(code: int, jarvis: dict, ollama: dict, summary: str,
+def fmt_human(code: int, assistant: dict, ollama: dict, summary: str,
               verbose: bool) -> str:
     label = {EXIT_OK: "OK", EXIT_WARNING: "WARNING",
              EXIT_CRITICAL: "CRITICAL", EXIT_UNKNOWN: "UNKNOWN"}[code]
     lines = [f"[{label}] {summary}"]
     if verbose:
-        lines.append(f"  jarvis: {json.dumps(jarvis, default=str)}")
+        lines.append(f"  assistant: {json.dumps(assistant, default=str)}")
         lines.append(f"  ollama: {json.dumps(ollama, default=str)}")
     return "\n".join(lines)
 
 
 def main():
     p = argparse.ArgumentParser(
-        description="JARVIS + Ollama liveness probe (Nagios-style exit codes)"
+        description="Assistant + Ollama liveness probe (Nagios-style exit codes)"
     )
-    p.add_argument("--host", default=os.environ.get("JARVIS_HOST",
-                                                     "http://192.168.1.8:8766"))
-    p.add_argument("--token", default=os.environ.get("JARVIS_TOKEN"))
+    # ASSISTANT_HOST is the canonical env var; JARVIS_HOST kept as fallback
+    # so cron entries that already use the old name keep working.
+    default_host = (
+        os.environ.get("ASSISTANT_HOST")
+        or os.environ.get("JARVIS_HOST")
+        or "http://192.168.1.8:8766"
+    )
+    default_token = (
+        os.environ.get("ASSISTANT_TOKEN") or os.environ.get("JARVIS_TOKEN")
+    )
+    p.add_argument("--host", default=default_host)
+    p.add_argument("--token", default=default_token)
     p.add_argument("--ollama-host", default=os.environ.get(
         "OLLAMA_HOST", "http://localhost:11434"))
     p.add_argument("--ollama-model", default="llama3.2:3b",
@@ -221,20 +242,20 @@ def main():
     args = p.parse_args()
 
     def one_pass():
-        code, jarvis, ollama, summary = run_once(
+        code, assistant, ollama, summary = run_once(
             args.host, args.token, args.ollama_host, args.ollama_model,
         )
         if args.json:
             print(json.dumps({
                 "code": code, "summary": summary,
-                "jarvis": jarvis, "ollama": ollama,
+                "assistant": assistant, "ollama": ollama,
                 "ts": time.time(),
             }))
         elif args.quiet:
             if code != EXIT_OK:
-                print(fmt_human(code, jarvis, ollama, summary, verbose=True))
+                print(fmt_human(code, assistant, ollama, summary, verbose=True))
         else:
-            print(fmt_human(code, jarvis, ollama, summary,
+            print(fmt_human(code, assistant, ollama, summary,
                             verbose=args.verbose))
         return code
 

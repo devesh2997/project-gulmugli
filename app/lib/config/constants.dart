@@ -7,8 +7,16 @@ library;
 /// Default API port (matches config.yaml → api.port)
 const int kDefaultApiPort = 8766;
 
-/// mDNS service type for auto-discovery
-const String kMdnsServiceType = '_jarvis._tcp';
+/// mDNS service type for auto-discovery.
+///
+/// MUST match the server's `assistant.protocol_id` config (which builds
+/// `_<protocol_id>._tcp.local.` in jarvis/assistant/api/discovery.py),
+/// AND the iOS Info.plist NSBonjourServices entry. All three values are
+/// the same string in different syntaxes — change one and you must
+/// change all three or discovery silently breaks.
+///
+/// See jarvis/assistant/core/branding.py for the full rationale.
+const String kMdnsServiceType = '_gulmugli._tcp';
 
 /// WebSocket reconnect timing
 const Duration kWsReconnectInitial = Duration(seconds: 1);

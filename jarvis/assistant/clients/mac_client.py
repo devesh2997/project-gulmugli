@@ -1,5 +1,5 @@
 """
-mac_client.py — pure mic+speaker bridge for the JARVIS Jetson.
+mac_client.py — pure mic+speaker bridge for the assistant Jetson.
 
 The Mac contributes ZERO inference. All STT, intent classification, LLM,
 and TTS happen on the Jetson. The Mac just captures audio bytes and plays
@@ -23,9 +23,11 @@ Modes:
   --voice --auto  auto-stop after silence (VAD)
 
 Usage:
-  export JARVIS_TOKEN=a8c5824c-1723-4b18-80f8-274386b0c1fc
-  export JARVIS_HOST=http://192.168.1.8:8766
+  export ASSISTANT_TOKEN=a8c5824c-1723-4b18-80f8-274386b0c1fc
+  export ASSISTANT_HOST=http://192.168.1.8:8766
   python clients/mac_client.py --voice
+
+(Legacy JARVIS_TOKEN / JARVIS_HOST env vars still work as a fallback.)
 """
 
 import argparse
@@ -39,8 +41,12 @@ import threading
 import time
 import wave
 
-DEFAULT_HOST = os.environ.get("JARVIS_HOST", "http://192.168.1.8:8766")
-DEFAULT_TOKEN = os.environ.get("JARVIS_TOKEN", "")
+DEFAULT_HOST = (
+    os.environ.get("ASSISTANT_HOST")
+    or os.environ.get("JARVIS_HOST")  # legacy fallback
+    or "http://192.168.1.8:8766"
+)
+DEFAULT_TOKEN = os.environ.get("ASSISTANT_TOKEN") or os.environ.get("JARVIS_TOKEN") or ""
 
 VOICE_RECORD_RATE = 16000
 VOICE_RECORD_CHANNELS = 1
@@ -72,24 +78,24 @@ def _classify_connection_error(exc) -> tuple[str, str]:
         if exc.code in (401, 403):
             return ("auth",
                     f"HTTP {exc.code}: API token rejected. Token might be stale "
-                    f"(JARVIS regenerates one on each restart). Get the current token:\n"
-                    f"  ssh devesh@<jetson-ip> 'grep \"API token\" /tmp/jarvis.log | tail -1'")
+                    f"(the assistant regenerates one on each restart). Get the current token:\n"
+                    f"  ssh devesh@<jetson-ip> 'grep \"API token\" /tmp/assistant.log | tail -1'")
         return ("other", f"HTTP {exc.code}: {exc.reason}")
 
     if isinstance(exc, urllib.error.URLError):
         reason = exc.reason
         if isinstance(reason, ConnectionRefusedError):
             return ("host_down",
-                    "Connection refused. JARVIS isn't running or isn't listening on "
-                    "this port. Check on the Jetson:\n"
+                    "Connection refused. The assistant isn't running or isn't listening "
+                    "on this port. Check on the Jetson:\n"
                     "  ssh devesh@<jetson-ip> 'ss -tnlp | grep 8766'\n"
-                    "If empty, restart JARVIS:\n"
-                    "  ssh devesh@<jetson-ip> '/tmp/start_jarvis.sh'")
+                    "If empty, restart the service:\n"
+                    "  ssh devesh@<jetson-ip> 'sudo systemctl restart jarvis-assistant'")
         if isinstance(reason, (TimeoutError, socket.timeout)):
             return ("timeout",
                     "Connection timed out. The Jetson is reachable on the network "
                     "but isn't responding to /api/system/status within the timeout. "
-                    "JARVIS may be wedged or overloaded. Try restarting it.")
+                    "The assistant may be wedged or overloaded. Try restarting it.")
         # OSError 65 (no route to host) or similar
         if hasattr(reason, "errno"):
             if reason.errno in (51, 65, 113):  # ENETUNREACH, EHOSTUNREACH variants

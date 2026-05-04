@@ -30,16 +30,17 @@ class DiscoveredServer {
   int get hashCode => Object.hash(name, host, port);
 }
 
-/// mDNS service discovery — finds JARVIS servers on the LAN.
+/// mDNS service discovery — finds the assistant server on the LAN.
 ///
-/// Uses the `nsd` package to discover `_jarvis._tcp` services advertised
-/// by the JARVIS API server (`api/discovery.py`). The server registers as
-/// `jarvis._jarvis._tcp.local.` at port 8766 by default.
+/// Uses the `nsd` package to discover `_<protocol_id>._tcp` services
+/// advertised by the assistant API (`api/discovery.py`). The current
+/// protocol id is "gulmugli" — see [kMdnsServiceType] for the source
+/// of truth and the rationale (jarvis/assistant/core/branding.py).
 ///
 /// Platform requirements (configured in this repo):
-///   - **iOS**: requires `NSBonjourServices` in Info.plist with the entry
-///     `_jarvis._tcp`. Without it the OS silently blocks browsing — no
-///     error, no log, no devices.
+///   - **iOS**: requires `NSBonjourServices` in Info.plist with the
+///     same `_<protocol_id>._tcp` entry. Without it the OS silently
+///     blocks browsing — no error, no log, no devices.
 ///   - **Android**: requires `CHANGE_WIFI_MULTICAST_STATE` permission so
 ///     the nsd plugin can hold a multicast lock. Discovery degrades to
 ///     "no results" without this.

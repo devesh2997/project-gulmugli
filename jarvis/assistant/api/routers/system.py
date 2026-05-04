@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends
 from api.auth import verify_token
 from api.deps import get_assistant
 from api.schemas import HealthResponse, SystemStatusResponse, TimeResponse
-from core.config import config
+from core.branding import brand
 from core.personality import personality_manager
 
 router = APIRouter()
@@ -31,8 +31,7 @@ def health_check():
     Used by mDNS discovery and the Flutter app's connection flow
     to verify the server is reachable before prompting for a token.
     """
-    name = config.get("assistant", {}).get("name", "Jarvis")
-    return HealthResponse(status="ok", name=name)
+    return HealthResponse(status="ok", name=brand.name)
 
 
 @router.get(
@@ -42,7 +41,7 @@ def health_check():
 )
 def system_status(assistant: dict = Depends(get_assistant)):
     """Full system status — requires authentication."""
-    name = config.get("assistant", {}).get("name", "Jarvis")
+    name = brand.name
 
     face_ui = assistant.get("face_ui")
     # Snapshot FaceUI attributes to avoid TOCTOU races — these could change

@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Jarvis</title>
+    <!-- This is a kiosk dashboard, so the browser tab is rarely seen. The
+         brand name shows up in /api/status (driven by core/branding.py).
+         For a future rebrand, this is the only hard-coded place — one
+         line edit. Don't bother runtime-overriding it from React. -->
+    <title>Vesper</title>
 
     <!-- Preload Inter font for crisp text -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

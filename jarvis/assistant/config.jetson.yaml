@@ -15,9 +15,16 @@
 # ===================================================================
 
 # --- Identity ---
+# `name` is the user-facing brand. `protocol_id` is the stable network
+# identifier (mDNS, Flutter discovery) — never changes across rebrands.
+# See core/branding.py for the full rationale.
 assistant:
-  name: "Jarvis"
-  wake_word: "jarvis"
+  name: "Vesper"
+  protocol_id: "gulmugli"   # Stable network id — see core/branding.py.
+                            # If changed, update Flutter constants.dart + iOS
+                            # Info.plist + rebuild/reinstall the app.
+  wake_word: "hey jarvis"   # OOTB model — replace with custom Vesper
+                            # wake-word model when trained.
   personality: >
     You are a smart, friendly voice assistant. You speak concisely
     and have a warm personality. You understand Hindi, English,

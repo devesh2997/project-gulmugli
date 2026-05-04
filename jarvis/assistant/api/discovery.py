@@ -1,8 +1,21 @@
 """
 mDNS/Zeroconf service registration — makes the API discoverable on LAN.
 
-Registers the JARVIS API as a `_jarvis._tcp.local.` service so the
-Flutter companion app can find the server without manual IP entry.
+Registers the assistant's API as `_<protocol_id>._tcp.local.` (e.g.
+`_gulmugli._tcp.local.`) so the Flutter companion app can find the
+server without manual IP entry.
+
+## Why protocol_id, not the brand name
+
+The mDNS service type is what clients on the network LOOK FOR. The
+Flutter app already in users' hands has `_gulmugli._tcp` baked into
+its discovery code. If we used `brand.name` here, a rebrand would
+silently break every existing client install — the app would announce
+itself under a new name that nothing knows to look for.
+
+So: brand can change ("Jarvis" → "Vesper" → ...), `protocol_id` stays
+"gulmugli". Same trick Apple uses with Bonjour — your AirPlay device's
+display name changes, but `_airplay._tcp` doesn't.
 
 Uses the `zeroconf` library (optional dependency). If not installed,
 discovery is silently skipped — consistent with the project's graceful
@@ -18,6 +31,7 @@ Usage (from main.py):
 import socket
 from typing import Optional
 
+from core.branding import brand
 from core.config import config
 from core.logger import get_logger
 
@@ -36,7 +50,7 @@ _service_info: Optional["ServiceInfo"] = None
 
 def register_service(api_cfg: Optional[dict] = None) -> bool:
     """
-    Register the JARVIS API as an mDNS service on the local network.
+    Register the assistant's API as an mDNS service on the local network.
 
     Args:
         api_cfg: The api section from config.yaml. If None, reads from config.
@@ -61,9 +75,12 @@ def register_service(api_cfg: Optional[dict] = None) -> bool:
         log.info("mDNS discovery disabled in config.")
         return False
 
-    service_name = discovery_cfg.get("service_name", "jarvis")
+    # Service instance name — what shows up in mDNS browsers. Defaults to
+    # the protocol id (so "gulmugli._gulmugli._tcp.local."), but can be
+    # overridden if you want a friendlier instance name.
+    service_name = discovery_cfg.get("service_name", brand.protocol_id)
     port = api_cfg.get("port", 8766)
-    assistant_name = config.get("assistant", {}).get("name", "Jarvis")
+    service_type = brand.mdns_service_type  # e.g. "_gulmugli._tcp.local."
 
     try:
         # Get the machine's LAN IP address
@@ -73,12 +90,15 @@ def register_service(api_cfg: Optional[dict] = None) -> bool:
             return False
 
         _service_info = ServiceInfo(
-            type_="_jarvis._tcp.local.",
-            name=f"{service_name}._jarvis._tcp.local.",
+            type_=service_type,
+            name=f"{service_name}.{service_type}",
             addresses=[socket.inet_aton(ip)],
             port=port,
             properties={
-                "name": assistant_name,
+                # `name` here is the brand — clients can show it in their
+                # picker UI ("Found: Vesper") even though they discover via
+                # the stable protocol_id.
+                "name": brand.name,
                 "version": "1.0.0",
                 "api": f"http://{ip}:{port}",
             },
@@ -89,8 +109,9 @@ def register_service(api_cfg: Optional[dict] = None) -> bool:
         _zeroconf.register_service(_service_info)
 
         log.info(
-            "mDNS service registered: %s._jarvis._tcp.local. at %s:%d",
+            "mDNS service registered: %s.%s at %s:%d",
             service_name,
+            service_type,
             ip,
             port,
         )
