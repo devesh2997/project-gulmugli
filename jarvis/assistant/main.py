@@ -467,6 +467,30 @@ def build_assistant() -> dict:
 
 # ── Run modes ────────────────────────────────────────────────────
 
+def _keep_api_alive(reason: str) -> None:
+    """
+    Block forever so daemon threads (API server, FaceUI, position poller)
+    keep running. Used when an interactive run mode can't proceed (e.g.,
+    --wake mode booted by systemd on a Jetson with no microphone plugged in)
+    but we still want the network API on port 8766 to serve the Mac client.
+
+    Returning from main() instead would let the process exit and tear down
+    the API thread, defeating the point of auto-start.
+    """
+    import signal
+    log.warning("Local input unavailable (%s). API server stays up. "
+                "Plug in a mic and restart the service to enable wake mode.",
+                reason)
+    print(f"[headless] {reason}. API server is serving on port 8766.")
+    print("[headless] Use Ctrl+C / SIGTERM to stop.")
+    # signal.pause() blocks until any signal arrives. systemd's stop sends
+    # SIGTERM, which raises KeyboardInterrupt-style exit cleanly.
+    try:
+        signal.pause()
+    except (KeyboardInterrupt, SystemExit):
+        pass
+
+
 def run_text_mode(assistant: dict):
     """Interactive text mode — for Mac simulation and testing."""
     name = assistant["name"]
@@ -520,11 +544,11 @@ def run_voice_mode(assistant: dict):
     ears = assistant["ears"]
 
     if not ears:
-        print("ERROR: No STT provider available. Use --text mode instead.")
+        _keep_api_alive("No STT provider available for voice mode")
         return
 
     if not check_mic_available():
-        print("ERROR: No microphone detected. Use --text mode instead.")
+        _keep_api_alive("No microphone detected for voice mode")
         return
 
     p = personality_manager.active
@@ -631,11 +655,14 @@ def run_wake_word_mode(assistant: dict):
     wake_word_provider = assistant.get("wake_word")
 
     if not ears:
-        print("ERROR: No STT provider available. Use --text mode instead.")
+        _keep_api_alive("No STT provider available for wake-word mode")
         return
 
     if not check_mic_available():
-        print("ERROR: No microphone detected. Use --text mode instead.")
+        # Common case on a headless Jetson without a USB mic plugged in.
+        # The Mac client can still reach the API, so keep it alive instead
+        # of exiting (which would also kill the API thread).
+        _keep_api_alive("No microphone detected for wake-word mode")
         return
 
     if not wake_word_provider:

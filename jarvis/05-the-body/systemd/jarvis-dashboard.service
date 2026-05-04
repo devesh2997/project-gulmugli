@@ -15,14 +15,17 @@
 
 [Unit]
 Description=JARVIS Dashboard (Chromium Kiosk)
-Documentation=file:///home/jarvis/jarvis/05-the-body/JETSON_SETUP.md
+Documentation=file:///home/devesh/project-gulmugli/jarvis/05-the-body/JETSON_SETUP.md
 After=jarvis-assistant.service graphical.target
 Wants=jarvis-assistant.service
+# Only start when the system is in graphical.target (display is up).
+# If the Jetson is set to multi-user.target (no GUI), this unit stays inert.
+ConditionPathExists=/usr/bin/chromium-browser
 
 [Service]
 Type=simple
-User=jarvis
-Group=jarvis
+User=devesh
+Group=devesh
 
 # Wait a few seconds for the WebSocket server to bind
 ExecStartPre=/bin/sleep 5
@@ -53,8 +56,8 @@ ExecStart=/usr/bin/chromium-browser \
 
 # Needs display access
 Environment=DISPLAY=:0
-Environment=XAUTHORITY=/home/jarvis/.Xauthority
-Environment=HOME=/home/jarvis
+Environment=XAUTHORITY=/home/devesh/.Xauthority
+Environment=HOME=/home/devesh
 
 # Restart if Chromium crashes
 Restart=always

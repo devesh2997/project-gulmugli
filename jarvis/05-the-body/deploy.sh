@@ -88,8 +88,10 @@ fi
 ok "SSH connection verified."
 
 # ── Remote directory setup ───────────────────────────────────────
-
-REMOTE_BASE="~/jarvis"
+# REMOTE_BASE matches the actual layout on the Jetson:
+# /home/devesh/project-gulmugli/jarvis/. Override with $JARVIS_REMOTE_BASE
+# if you ever switch to a different layout.
+REMOTE_BASE="${JARVIS_REMOTE_BASE:-~/project-gulmugli/jarvis}"
 
 ssh "$TARGET" "mkdir -p $REMOTE_BASE/assistant $REMOTE_BASE/05-the-body/systemd"
 

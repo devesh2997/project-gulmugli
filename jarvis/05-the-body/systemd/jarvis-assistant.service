@@ -1,6 +1,11 @@
 # jarvis-assistant.service -- Main JARVIS voice assistant
 #
 # Install:
+#   # The service runs as user `devesh` (UID 1000). For audio (PulseAudio
+#   # runtime dir at /run/user/1000) to be available at boot WITHOUT a graphical
+#   # login, you MUST enable user lingering once:
+#   sudo loginctl enable-linger devesh
+#
 #   sudo cp jarvis-assistant.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable jarvis-assistant
@@ -8,32 +13,42 @@
 #
 # Logs:
 #   journalctl -u jarvis-assistant -f
+#
+# Why these paths:
+#   - Project lives at /home/devesh/project-gulmugli/jarvis/ (synced via deploy.sh)
+#   - venv lives inside the assistant dir at .venv/
+#   - jetson_clocks must run as root, so we use the `+` prefix on ExecStartPre.
 
 [Unit]
 Description=JARVIS Voice Assistant
-Documentation=file:///home/jarvis/jarvis/05-the-body/JETSON_SETUP.md
-After=network.target sound.target ollama.service
+Documentation=file:///home/devesh/project-gulmugli/jarvis/05-the-body/JETSON_SETUP.md
+After=network.target sound.target ollama.service user@1000.service
 Wants=ollama.service
 
 [Service]
 Type=simple
-User=jarvis
-Group=jarvis
+User=devesh
+Group=devesh
 
-# Lock clocks to max before starting (does not persist across reboots)
-ExecStartPre=/usr/bin/jetson_clocks
+# Lock clocks to max before starting (does not persist across reboots).
+# `+` prefix runs this with full privileges regardless of User= (jetson_clocks
+# needs root). Without `+` it would fail as the unprivileged service user.
+ExecStartPre=+/usr/bin/jetson_clocks
 
-# Main process: run in wake word mode (fully hands-free)
-ExecStart=/home/jarvis/jarvis/.venv/bin/python /home/jarvis/jarvis/assistant/main.py --wake
+# Main process: run in wake word mode (fully hands-free).
+# main.py also launches the FastAPI server (port 8766) on a thread, so the
+# Mac client (clients/mac_client.py) can talk to it over the network.
+ExecStart=/home/devesh/project-gulmugli/jarvis/assistant/.venv/bin/python /home/devesh/project-gulmugli/jarvis/assistant/main.py --wake
 
-WorkingDirectory=/home/jarvis/jarvis/assistant
+WorkingDirectory=/home/devesh/project-gulmugli/jarvis/assistant
 
 # Environment
-Environment=PYTHONPATH=/home/jarvis/jarvis/assistant
+Environment=PYTHONPATH=/home/devesh/project-gulmugli/jarvis/assistant
 Environment=PYTHONUNBUFFERED=1
-Environment=HOME=/home/jarvis
+Environment=HOME=/home/devesh
 
-# PulseAudio needs the user's runtime dir to connect
+# PulseAudio runtime dir. Requires `loginctl enable-linger devesh` so the
+# user@1000.service starts at boot and creates /run/user/1000.
 Environment=XDG_RUNTIME_DIR=/run/user/1000
 Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
 
