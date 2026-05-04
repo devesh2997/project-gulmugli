@@ -17,6 +17,8 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useLightMode } from '../../hooks/useLightMode'
+import { useEventAccessories } from '../../hooks/useEventAccessories'
+import { PartyHat } from './PartyHat'
 import type { AssistantState, AssistantMood } from '../../types/assistant'
 
 export interface AvatarOrbProps {
@@ -116,6 +118,8 @@ function getTimeBrightness(): number {
 
 export function AvatarOrb({ size, state }: AvatarOrbProps) {
   const isLight = useLightMode()
+  const accessories = useEventAccessories()
+  const showPartyHat = accessories.includes('party_hat')
   const config = STATE_CONFIGS[state] ?? STATE_CONFIGS.idle
 
   // Read base duration once per render. TokenProvider updates the CSS var
@@ -464,6 +468,11 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           }}
         />
       )}
+
+      {/* Party hat — perched on the upper-right rim when the active event
+          declares `party_hat` in its accessories. Sits on top of every
+          other layer so it remains visible across all states. */}
+      {showPartyHat && <PartyHat size={size} />}
     </div>
   )
 }

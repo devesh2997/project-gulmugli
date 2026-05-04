@@ -28,6 +28,7 @@ import { ReminderNotification } from './components/ReminderNotification'
 import { TimerWidget } from './components/TimerWidget'
 import { WeatherWidget } from './components/WeatherWidget'
 import { AmbientIndicator } from './components/AmbientIndicator'
+import { ConfettiLayer } from './components/ConfettiLayer'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import type { TokenValue } from './types/assistant'
 
@@ -285,6 +286,11 @@ function AppContent() {
           />
         )}
       </AnimatePresence>
+
+      {/* Confetti / balloons celebratory layer — ambient on event days,
+          burst on `vesper:confetti-burst` window event. Pointer-events
+          none, sits above content but below the ErrorBoundary fallback. */}
+      <ConfettiLayer />
     </div>
   )
 }

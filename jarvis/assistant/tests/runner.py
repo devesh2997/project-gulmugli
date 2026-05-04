@@ -98,12 +98,19 @@ def run_suite(suite_name: str, brain) -> dict:
         # pack loading, edge cases. No Ollama, no network, runs in <1s.
         from tests.test_event_manager import run_event_manager_tests
         return run_event_manager_tests()
+    elif suite_name == "intro_runner":
+        # Pure unit tests for core/intro_runner.py — script execution,
+        # step types, error containment, cancellation. Audio playback is
+        # patched out so no subprocess is spawned. Runs in <1s.
+        from tests.test_intro_runner import run_intro_runner_tests
+        return run_intro_runner_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
-ALL_SUITES = ["api_smoke", "event_manager", "prefilter", "intent", "enrichment",
-              "personality", "knowledge", "latency", "integration"]
+ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "prefilter",
+              "intent", "enrichment", "personality", "knowledge", "latency",
+              "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:

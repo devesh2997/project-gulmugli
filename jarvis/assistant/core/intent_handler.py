@@ -1338,11 +1338,20 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
     via NLU — see events/<pack>/pack.yaml → trigger.manual_phrases for the
     per-pack training examples.
 
-    The actual launch sequence engine wires in at Phase 1.1; for now this
-    handler acknowledges and records the trigger so the API + dashboard see
-    it. The user gets a confirmation phrase back.
+    Behavior:
+      1. Look up the active event via event_manager.
+      2. If no event is active today, return a gentle no-op so the user
+         knows the command was heard but nothing matched.
+      3. If `first_year_only.intro_script` is set in pack.yaml AND the
+         file exists, run it via IntroRunner. The runner is best-effort:
+         each step that fails logs and continues; the launch sequence
+         won't crash the assistant.
+      4. The intro script does its own speaking, so the response we
+         return here is empty in the success case (the classifier's
+         ack would step on the script's audio).
     """
     from core.event_manager import get_event_manager
+    from core.intro_runner import IntroContext, IntroRunner
 
     em = get_event_manager()
     active = em.current()
@@ -1351,18 +1360,41 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
         # gentle no-op so the user knows the command was heard.
         return intent.response or "Aaj koi special event nahi hai."
 
-    # Phase 1.1 will plug in the intro_runner here. For now we just log
-    # and use either the classifier's response or a sensible fallback.
-    # TODO(roadmap 1.1): from core.intro_runner import run_intro
-    #                    run_intro(active.pack_dir / first_year_only.intro_script)
-    log = assistant.get("logger")
-    if log is not None:
-        try:
-            log.info("event_trigger fired: pack_id=%s", active.pack_id)
-        except Exception:
-            pass
+    log.info("event_trigger fired: pack_id=%s", active.pack_id)
 
-    return intent.response or f"{active.pack.display_name} shuru!"
+    # Look for the intro script. Path is declared per-pack at
+    # `first_year_only.intro_script` (year-1 only — see roadmap).
+    fy = active.pack.raw.get("first_year_only") or {}
+    script_rel = fy.get("intro_script") if isinstance(fy, dict) else None
+
+    if not isinstance(script_rel, str) or not script_rel:
+        log.info(
+            "event_trigger: pack %s has no first_year_only.intro_script — "
+            "falling back to spoken ack",
+            active.pack_id,
+        )
+        return intent.response or f"{active.pack.display_name} shuru!"
+
+    script_path = active.pack_dir / script_rel
+    runner = IntroRunner(script_path)
+    ctx = IntroContext(
+        pack_dir=active.pack_dir,
+        voice_router=assistant.get("voice_router"),
+        face_ui=assistant.get("face_ui"),
+        template_vars={
+            "event_name": active.pack.display_name,
+            "pack_id": active.pack_id,
+        },
+    )
+    result = runner.run(ctx)
+    log.info(
+        "event_trigger: intro completed=%d/%d, failures=%d, cancelled=%s",
+        result.completed, result.total_steps, len(result.failures), result.cancelled,
+    )
+
+    # Return empty: the intro script handles its own speaking, and we
+    # don't want the dispatcher to speak a follow-up ack over the audio.
+    return ""
 
 
 # ════════════════════════════════════════════════════════════════
