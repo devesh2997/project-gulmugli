@@ -143,13 +143,29 @@ _ACTION_SYNONYMS = {
         "dim": "brightness", "adjust": "brightness", "set": "brightness",
         "set_brightness": "brightness", "change_brightness": "brightness",
         "change": "color", "set_color": "color",
+        # Cross-intent leakage we've seen: model sometimes puts
+        # "volume" as a light action. Map to a sensible default.
+        "volume": "brightness",
     },
+}
+
+
+# Per-intent default action when the model returns an empty/missing one.
+# Observed model failure mode: produces `intent: ambient, params: {}` for
+# "play rain sounds" — schema didn't require `action`, model didn't fill
+# it. We default to the most common action so handlers can still dispatch.
+_DEFAULT_ACTIONS = {
+    "ambient": "play",
+    "sleep": "sleep",   # "good night" — default to sleep, not wake
+    "music_control": "pause",  # bare "music control" → pause is safest
+    "story": "start",
 }
 
 
 def _normalize_intent(name: str, params: dict) -> tuple[str, dict]:
     """
-    Apply synonym → canonical normalization on the action param.
+    Apply synonym → canonical normalization on the action param + fill
+    in default actions for intents where the model left it empty.
 
     Returns (intent_name, normalized_params). Pure function — does not mutate
     its inputs. We keep this defensive even with JSON-schema enforcement
@@ -157,15 +173,25 @@ def _normalize_intent(name: str, params: dict) -> tuple[str, dict]:
     """
     if not isinstance(params, dict):
         return name, {}
+
+    new = dict(params)
+
+    # Synonym normalization
     syn_table = _ACTION_SYNONYMS.get(name, {})
-    if not syn_table:
-        return name, params
-    action = params.get("action")
-    if isinstance(action, str) and action.lower() in syn_table:
-        new = dict(params)
-        new["action"] = syn_table[action.lower()]
-        return name, new
-    return name, params
+    if syn_table:
+        action = new.get("action")
+        if isinstance(action, str) and action.lower() in syn_table:
+            new["action"] = syn_table[action.lower()]
+
+    # Default action — only when missing/empty AND the intent has a
+    # known sensible default
+    default_action = _DEFAULT_ACTIONS.get(name)
+    if default_action:
+        action = new.get("action")
+        if not isinstance(action, str) or not action.strip():
+            new["action"] = default_action
+
+    return name, new
 
 
 def set_conversation_context(memory_provider) -> None:
@@ -223,52 +249,117 @@ These are the most common confusions. Resolve them in this order:
 
 2. **Date** ("what day is it", "aaj kya date hai", "today's date") → `system` action="date".
 
-3. **Ambient sounds** vs **music**:
-   - "play rain sounds", "thunderstorm sounds", "white noise", "ocean sounds",
-     "fireplace", "barish ki awaaz", "sleep sounds" → ALWAYS `ambient`.
-   - "play [song name]", "play [artist]", "play some [genre]" → `music_play`.
-   - If the user names a real song or artist → `music_play`. If they ask
-     for a nature/relaxation sound → `ambient`.
+3. **Weather** is its own intent — ALWAYS use `weather`, never `knowledge_search`,
+   even though weather is "current information":
+   - "what's the weather", "weather kaisi hai", "mausam kaisa hai",
+     "is it raining", "temperature", "barish hogi kya" → `weather`.
+   - "weather in Tokyo", "Delhi ka mausam" → `weather` with location.
 
-4. **Stories** vs **jokes**:
+4. **Volume vs ambient sounds — read the words carefully:**
+   - "awaaz kam karo", "awaaz badhao", "volume up/down" → `volume`. The
+     word "awaaz" means "sound/voice volume" here, NOT ambient noise.
+   - "rain sounds", "thunderstorm", "white noise", "ocean sounds",
+     "fireplace", "barish ki awaaz" (this exact phrase = rain sound),
+     "sleep sounds" → `ambient`.
+   - When in doubt: if the user is controlling EXISTING audio output
+     it's `volume` or `music_control`. If they want to START a new
+     environmental sound it's `ambient`.
+
+5. **Music vs ambient — songs always win**:
+   - Bare song name or "play <X>" / "<X> bajao" / "<X> sunaa do" /
+     "<X> sunna hai" / "<X> lagao" — where X is a recognizable song
+     name or artist — is ALWAYS `music_play` with query=X. Examples:
+     "Heeriye sunaa do" → music_play(query="Heeriye"),
+     "Pasoori bajao yaar" → music_play(query="Pasoori"),
+     "play Sajni" → music_play(query="Sajni"),
+     "Tum Hi Ho lagao" → music_play(query="Tum Hi Ho").
+   - "play something nice", "play music", "play some song" →
+     `music_play` (vague but real music intent).
+   - ONLY use `ambient` when the user explicitly asked for a nature /
+     relaxation / noise sound (rain, ocean, white noise, fireplace).
+   - A NAME (proper noun) is almost always a song. If you don't
+     recognize it, default to music_play, NOT chat.
+
+6. **Stories** vs **jokes**:
    - "tell me a story", "ek kahani sunao", "bedtime story" → `story`.
    - "tell me a joke", "ek joke sunao", "make me laugh" → `chat` (the
      personality replies with the joke in the `response` field).
-   - Jokes are short, told inline. Stories are long-form, routed elsewhere.
 
-5. **Knowledge search** vs **chat**:
+7. **Knowledge search** vs **chat**:
    - Time-sensitive ("current", "latest", "today", "this week", "abhi")
      about real-world facts → `knowledge_search`.
    - Stable knowledge ("what is photosynthesis", "explain gravity",
      "tell me about the Mughal empire") → `chat` — the LLM knows it.
-   - "Who is the current prime minister of UK" → `knowledge_search`
-     (changes over time).
+   - "Who is the current prime minister of UK" → `knowledge_search`.
    - "Who was the first PM of India" → `chat` (historical, stable).
 
-6. **Memory recall** vs **knowledge search**:
+8. **Memory recall** vs **knowledge search**:
    - About what the USER did with the assistant before → `memory_recall`.
-   - "what songs did I play yesterday" → memory_recall.
    - About facts in the world → `knowledge_search` or `chat`.
-   - "Who is the PM" is NEVER memory_recall — the user isn't asking
-     what they discussed before.
 
-7. **Personality switch** vs **chat**:
-   - User says "talk like X", "switch to X", "be X", "X bana de",
-     where X is one of {_get_personality_names_for_prompt()}.
-   - Otherwise → chat / the appropriate intent.
+9. **Personality switch** vs **chat**:
+   - User says "talk like X", "switch to X", "be X", "X bana de", "X mode",
+     "act like X", where X is one of {_get_personality_names_for_prompt()}.
+   - DO NOT reply in character first — return `switch_personality` with
+     the matching name. Replying as the new character is the system's
+     job after the switch, not the classifier's.
 
-8. **Reminder** vs **timer**:
-   - Reminder = action at a specific time/date with a description ("call mom at 5pm",
-     "buy groceries tomorrow"). → `reminder`.
-   - Timer = countdown duration without a description ("5 minute timer",
-     "10 second timer", "30 minute timer for pasta"). → `timer`.
-   - "Remind me in 2 hours to check the oven" has BOTH a description AND
-     a duration — the description ("check the oven") makes this `reminder`,
-     not timer.
+10. **Reminder** vs **timer**:
+    - Reminder = action at a specific time/date with a description.
+    - Timer = countdown duration without a description ("5 minute timer").
+    - "Remind me in 2 hours to check the oven" → `reminder` (has
+      a description "check the oven").
+    - "yaad dilana" / "yaad rakhna" / "remind me" / "reminder set karo"
+      → `reminder`. NOT `memory_recall`. memory_recall is asking ABOUT
+      the past; reminder is creating a future notification.
 
-9. **Falling back to chat is OK.** When in doubt and the request doesn't
-   clearly fit any intent above, use `chat` with the user's full message
-   in `params.message`.
+10b. **"X mode" with a scene word** ("study mode", "party mode",
+    "sleep mode", "movie mode", "reading mode", "focus mode",
+    "romantic mode", "sunset mode") → `light_control` action="scene".
+    NOT `switch_personality`. switch_personality is ONLY for the
+    listed personality names.
+
+11. **NEGATIONS DO NOT CHANGE INTENT.** "don't turn off the lights"
+    is `chat` (the user is making conversation about lights, not
+    asking you to turn them off). "stop being annoying" is `chat`,
+    NOT `music_control`. Treat negated commands as chat by default.
+
+12. **False-friend traps — these are CHAT, not commands:**
+    - "let's play it safe" → chat (idiom)
+    - "lights, camera, action" → chat (movie cliché)
+    - "I love this song" → chat (reaction)
+    - "play with the dog/baby/kids" → chat (the verb is for an
+      activity, not music)
+    - "I'm tired" → chat (statement of state, not a sleep command)
+
+13. **CHAINS — capture EVERY action.** When the user says multiple
+    things separated by "and", ",", or "then", return ALL intents in
+    the array, in the order spoken. Do not stop after the first.
+
+    Examples:
+      "stop music and turn off lights"
+      → 2 intents: music_control(stop) AND light_control(off)
+
+      "play Heeriye and dim the lights to 30 percent"
+      → 2 intents: music_play("Heeriye") AND light_control(brightness, 30)
+
+      "switch to Devesh and tell me a joke"
+      → 2 intents: switch_personality(devesh) AND chat("tell me a joke")
+
+      "stop the music, turn off the lights, and set an alarm for 7am"
+      → 3 intents: music_control(stop) AND light_control(off) AND timer(set_alarm, 07:00)
+
+      "set volume to 30, switch to Chandler, and play Channa Mereya"
+      → 3 intents: volume(30) AND switch_personality(chandler) AND music_play("Channa Mereya")
+
+    Three intents at once is normal. Don't truncate.
+
+14. **Volume direction:** "up", "louder", "badhao" → 80. "down",
+    "softer", "kam karo" → 30. "a bit down" / "thoda kam" still means
+    DOWN — pick 30, not 70.
+
+15. **Fall back to chat** when nothing else fits. Better to chat than
+    invent.
 
 ## Intents
 
@@ -973,11 +1064,16 @@ class OllamaBrainProvider(BrainProvider):
         # change addresses ~30 of the 50 failures in the intent test suite
         # baseline (model used to invent names like `joke_teller`,
         # `weather_report`, `sound_play`, etc.).
+        # Lower temperature for classification — we want deterministic
+        # intent picks, not creative ones. Chat replies inside chat
+        # intents come from a separate generation path with a higher
+        # temperature, so the classifier being deterministic doesn't
+        # make conversation feel robotic.
         resp = self.generate(
             prompt=user_input,
             system=_build_system_prompt(),
             format_schema=_INTENT_SCHEMA,
-            temperature=self.temperature,
+            temperature=0.1,
             max_tokens=200,
         )
 
