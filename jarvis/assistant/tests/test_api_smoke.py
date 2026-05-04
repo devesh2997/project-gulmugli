@@ -278,6 +278,103 @@ def test_events_trigger_requires_auth():
     assert r.status_code == 401, f"expected 401, got {r.status_code}"
 
 
+def test_events_trigger_returns_409_outside_event_day():
+    """
+    With no active event today, POST /trigger returns 409.
+
+    The events router consults event_manager.current() — which is
+    real-time-driven. We monkey-patch the manager to report no active
+    event, regardless of the calendar.
+    """
+    from unittest.mock import patch
+    client, _ = _build_test_app(auth_enabled=False)
+    with patch("api.routers.events.get_event_manager") as mock_em:
+        mock_em.return_value.current.return_value = None
+        r = client.post("/api/events/trigger")
+        assert r.status_code == 409, f"expected 409, got {r.status_code}: {r.text}"
+
+
+def test_events_trigger_persists_state_and_current_reflects_it():
+    """
+    Full lifecycle:
+      1. Reset state (idempotent)
+      2. /current shows is_triggered=false (date matches but not fired)
+      3. POST /trigger → 200, freshly_triggered=true
+      4. /current now shows is_triggered=true
+      5. POST /trigger again → 200, freshly_triggered=false (idempotent)
+      6. POST /reset → was_set=true
+      7. /current reverts to is_triggered=false
+    """
+    from unittest.mock import MagicMock, patch
+    from datetime import datetime
+    import tempfile
+    from pathlib import Path
+
+    client, _ = _build_test_app(auth_enabled=False)
+
+    # Use an isolated trigger-state file so this test doesn't pollute
+    # the real one in data/.
+    with tempfile.TemporaryDirectory() as tmp_str:
+        from core.trigger_state import TriggerStateStore
+        isolated_store = TriggerStateStore(path=Path(tmp_str) / "triggers.json")
+
+        # Mock the active event so trigger has something to fire on.
+        fake_active = MagicMock()
+        fake_active.pack_id = "astha-birthday"
+        fake_active.pack_dir = Path(tmp_str)
+        fake_active.pack.display_name = "Astha's Birthday"
+        fake_active.pack.features = []
+        fake_active.pack.trigger_config = {}
+        fake_active.pack.raw = {}  # no first_year_only.intro_script
+        fake_active.is_today = True
+        fake_active.is_eve = False
+        fake_active.is_aftermath = False
+        fake_active.days_until = 0
+
+        with patch("api.routers.events.get_event_manager") as mock_em, \
+             patch("api.routers.events.get_trigger_store") as mock_store:
+            mock_em.return_value.current.return_value = fake_active
+            mock_em.return_value.list_packs.return_value = []
+            mock_store.return_value = isolated_store
+
+            # 1. State starts clean.
+            assert isolated_store.is_triggered("astha-birthday") is False
+
+            # 2. /current shows is_triggered=false on the day pre-trigger.
+            r = client.get("/api/events/current")
+            assert r.status_code == 200
+            body = r.json()
+            assert body is not None
+            assert body["is_triggered"] is False
+
+            # 3. POST /trigger fires fresh.
+            r = client.post("/api/events/trigger")
+            assert r.status_code == 200, f"got {r.status_code}: {r.text}"
+            data = r.json()
+            assert data["ok"] is True
+            assert data["is_triggered"] is True
+            assert data["freshly_triggered"] is True
+
+            # 4. /current now reflects the persisted state.
+            r = client.get("/api/events/current")
+            body = r.json()
+            assert body["is_triggered"] is True
+
+            # 5. Re-trigger is idempotent.
+            r = client.post("/api/events/trigger")
+            assert r.status_code == 200
+            assert r.json()["freshly_triggered"] is False
+
+            # 6. Reset clears the state.
+            r = client.post("/api/events/astha-birthday/reset")
+            assert r.status_code == 200
+            assert r.json()["was_set"] is True
+
+            # 7. /current reverts.
+            r = client.get("/api/events/current")
+            assert r.json()["is_triggered"] is False
+
+
 # ── Test: yaadein loader + endpoints ──────────────────────────────────
 
 
@@ -535,6 +632,8 @@ def run_api_smoke_tests() -> dict:
         ("events theme/tokens 404 for unknown pack", test_events_theme_tokens_endpoint_unknown_pack_404s),
         ("events theme/tokens 200 for known pack", test_events_theme_tokens_endpoint_known_pack_returns_json),
         ("events /trigger requires auth", test_events_trigger_requires_auth),
+        ("events /trigger 409 outside event day", test_events_trigger_returns_409_outside_event_day),
+        ("events /trigger lifecycle persists state", test_events_trigger_persists_state_and_current_reflects_it),
         ("CORS does not combine wildcard origin + credentials", test_cors_does_not_send_allow_credentials_with_wildcard_origin),
         ("yaadein loader orders + auto-includes",
          _wrap_tmp(test_yaadein_loader_orders_and_auto_includes)),
