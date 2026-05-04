@@ -155,6 +155,12 @@ def run_suite(suite_name: str, brain) -> dict:
         # mocked event_manager + trigger_store to avoid 60s sleeps.
         from tests.test_event_scheduler import run_event_scheduler_tests
         return run_event_scheduler_tests()
+    elif suite_name == "intent_dispatch":
+        # Meta-tests: every intent in _VALID_INTENTS has a handler in
+        # _DISPATCH and vice versa. Catches the "added intent, forgot
+        # the handler" class of bug at test time instead of at runtime.
+        from tests.test_intent_dispatch import run_intent_dispatch_tests
+        return run_intent_dispatch_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
@@ -162,8 +168,8 @@ def run_suite(suite_name: str, brain) -> dict:
 ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
               "birthday_quiz", "trigger_state", "astha_angry_prefilter",
               "custom_playlist", "voice_memos", "memory_event_recall",
-              "memory_log", "event_scheduler", "prefilter", "intent",
-              "enrichment", "personality", "knowledge", "latency",
+              "memory_log", "event_scheduler", "intent_dispatch", "prefilter",
+              "intent", "enrichment", "personality", "knowledge", "latency",
               "integration"]
 
 
