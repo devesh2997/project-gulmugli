@@ -263,10 +263,11 @@ async def voice_stream(
         except Exception as e:
             yield _sse("error", {"message": f"STT failed: {e}"})
             # Audible failure feedback — user shouldn't stare at silence.
+            # No transcript yet, so the error clip defaults to English.
             try:
                 active_p = personality_manager.active
                 _ensure_error_audio_for(assistant.get("voice_router"), active_p)
-                err_wav = _pick_error_wav(active_p.id)
+                err_wav = _pick_error_wav(active_p.id, None)
                 if err_wav:
                     yield _audio_chunk_sse(-2, "<error>", err_wav)
             except Exception:
@@ -304,7 +305,9 @@ async def voice_stream(
                 _ensure_filler_for(assistant["voice_router"], active_p)
             except Exception as e:
                 log.warning("Filler cache build failed: %s", e)
-            wav = _pick_filler_wav(active_p.id)
+            # Match filler language to the user's transcript so a Hindi
+            # speaker doesn't get an English "Mm-hmm" before her Hindi reply.
+            wav = _pick_filler_wav(active_p.id, transcribed)
             if wav:
                 # Special index -1 marks this as a filler vs an answer chunk
                 yield _audio_chunk_sse(-1, "<filler>", wav)
@@ -818,7 +821,7 @@ async def voice_stream(
                 try:
                     active_p = personality_manager.active
                     _ensure_error_audio_for(assistant.get("voice_router"), active_p)
-                    err_wav = _pick_error_wav(active_p.id)
+                    err_wav = _pick_error_wav(active_p.id, transcribed)
                     if err_wav:
                         yield _audio_chunk_sse(-2, "<error>", err_wav)
                         # Mark first_audio_emitted so the post-stream fallback
@@ -1013,11 +1016,11 @@ async def voice_stream(
                 ) or ""
             except Exception as e:
                 yield _sse("error", {"message": f"Pipeline failed: {e}"})
-                # Audible error too
+                # Audible error too — match user's language.
                 try:
                     active_p = personality_manager.active
                     _ensure_error_audio_for(assistant.get("voice_router"), active_p)
-                    err_wav = _pick_error_wav(active_p.id)
+                    err_wav = _pick_error_wav(active_p.id, transcribed)
                     if err_wav:
                         yield _audio_chunk_sse(-2, "<error>", err_wav)
                 except Exception:

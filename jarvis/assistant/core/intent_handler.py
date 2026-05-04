@@ -659,6 +659,8 @@ def _handle_chat(assistant: dict, intent: Intent) -> Optional[str]:
     system = (
         f"You are {p.display_name}. {p.tone}\n"
         "REPLY RULES:\n"
+        "- LANGUAGE: reply in the SAME language the user used (English/Hindi/Hinglish).\n"
+        "  Never translate the user's message into English before answering.\n"
         "- Match reply length to question depth.\n"
         "- 1 sentence for greetings, factoids, simple questions.\n"
         "- 2-3 sentences max for normal questions.\n"

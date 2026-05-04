@@ -439,7 +439,7 @@ A single conversational request is ONE chat intent (e.g. "tell me a joke and a r
 ## Response tone
 {p.tone}
 
-Always reply in ENGLISH only, even for Hindi/Hinglish requests. One short sentence.
+The `response` field MUST be in the SAME language the user used (English/Hindi/Hinglish — romanized Hindi is fine). One short sentence.
 
 ## Few-shot examples (covers the trickiest patterns)
 
