@@ -8,6 +8,7 @@ import { TokenProvider, useTokens } from './context/TokenProvider'
 import { useAssistant } from './hooks/useAssistant'
 import { useGesture } from './hooks/useGesture'
 import { useTimeOfDay } from './hooks/useTimeOfDay'
+import { useEventTheme } from './hooks/useEventTheme'
 import { Canvas } from './components/Canvas'
 import { Avatar } from './components/Avatar'
 import { Clock } from './components/Clock'
@@ -58,6 +59,7 @@ function AppContent() {
   }, [assistant.personality, currentPersonality, setPersonality])
 
   useTimeOfDay()
+  useEventTheme()
 
   // -- Panel state --
   const [openPanel, setOpenPanel] = useState<PanelId>(null)

@@ -1,0 +1,52 @@
+# Year-1 launch sequence for Astha's Birthday.
+#
+# Read by core/intro_runner.py (Phase 1.1). Each list entry is a "step"; the
+# runner executes them in order. Steps are best-effort — if a step fails
+# (missing audio, TTS unavailable, dashboard offline), the runner logs and
+# continues to the next step. The whole sequence MUST NOT crash the assistant.
+#
+# Step types supported:
+#
+#   play_audio
+#     source: <path relative to the pack root, or absolute>
+#     wait_for_completion: <bool>   # if true, block until the clip finishes
+#                                    # before the next step
+#
+#   dashboard_event
+#     event: <string event name>     # pushed to the dashboard via WebSocket;
+#                                    # the dashboard reacts (e.g., confetti_burst,
+#                                    # theme_flip, hint_clear)
+#     payload: <object, optional>    # arbitrary JSON forwarded to the dashboard
+#
+#   speak
+#     personality: <profile id>      # which personality voice/tone to use
+#     text: <string>                 # rendered through that personality's TTS;
+#                                    # supports {{ template_vars }} (filled by
+#                                    # the runner's context)
+#
+#   dashboard_hint
+#     text: <string>                 # toast-style hint shown on the dashboard
+#     duration_s: <number>           # how long the hint stays before fading
+#
+# Everything below is a placeholder sequence — the audio files don't exist
+# yet (Phase 7.1 records them). The runner will skip missing files gracefully
+# so this is safe to leave checked in.
+
+- step: play_audio
+  source: media/sounds/devesh_intro.wav    # ~30s warm intro recorded by Devesh
+  wait_for_completion: true
+
+- step: dashboard_event
+  event: confetti_burst
+
+- step: speak
+  personality: astha
+  text: "Hi Astha. I'm Vesper. Devesh built me for you — happy birthday."
+
+- step: dashboard_hint
+  text: "Try: 'Vesper, mujhe yaadein dikhao'"
+  duration_s: 8
+
+- step: speak
+  personality: astha
+  text: "Try saying that, or anything else. I'm here."

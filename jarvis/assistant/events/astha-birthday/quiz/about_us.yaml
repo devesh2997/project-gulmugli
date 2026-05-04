@@ -1,0 +1,6 @@
+# Birthday quiz pack — questions about Astha, the relationship, inside jokes.
+# Final question has a recorded reveal answer.
+questions: []
+final_reveal:
+  audio_file: null   # path to your recorded answer
+  fallback_text: null

@@ -839,6 +839,32 @@ INTENT_TESTS = [
         "tier": "hard",
         "tags": ["boundary"],
     },
+
+    # ── Event trigger (manual launch of birthday / festival packs) ──
+    {
+        "input": "Vesper, project AG begins",
+        "intent": "event_trigger",
+        "params": {},
+        "desc": "Codename trigger phrase from pack.yaml manual_phrases",
+        "tier": "easy",
+        "tags": ["event_trigger"],
+    },
+    {
+        "input": "Vesper, ek surprise hai",
+        "intent": "event_trigger",
+        "params": {},
+        "desc": "Hinglish trigger phrase",
+        "tier": "easy",
+        "tags": ["event_trigger", "hinglish"],
+    },
+    {
+        "input": "Vesper, light it up",
+        "intent": "event_trigger",
+        "params": {},
+        "desc": "Short codename trigger",
+        "tier": "easy",
+        "tags": ["event_trigger"],
+    },
 ]
 
 

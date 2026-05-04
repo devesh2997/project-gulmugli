@@ -58,7 +58,7 @@ Every feature must clear all six before it gets `[x]`:
 
 These five tasks unlock everything else. Do them first, do them well.
 
-## 0.1 Personality rename: `girlfriend` → `astha` `[ ]`
+## 0.1 Personality rename: `girlfriend` → `astha` `[x]`
 
 **Why:** Astha is the actual person; "girlfriend" was a placeholder. Rename
 now so we don't have a late churn touching every personality reference.
@@ -86,7 +86,7 @@ now so we don't have a late churn touching every personality reference.
 **Effort:** 45 min
 **Depends on:** none
 
-## 0.2 Event Manager core `[ ]`
+## 0.2 Event Manager core `[x]`
 
 **Why:** Single brain that knows what event (if any) is active today.
 Everything that auto-triggers on May 14 / Diwali / future packs reads from
@@ -131,7 +131,7 @@ datetime injection via the `now=` parameter
 **Effort:** 2-3 hours
 **Depends on:** 0.3 (pack structure must exist for tests)
 
-## 0.3 Event pack directory structure `[ ]`
+## 0.3 Event pack directory structure `[x]`
 
 **Why:** The pack is the unit of distribution. Each event is a self-contained
 folder with all its assets, theme, and feature manifests.
@@ -192,7 +192,10 @@ first_year_only:         # 2026 specifically
 **Effort:** 30 min
 **Depends on:** none
 
-## 0.4 Theme switching on dashboard `[ ]`
+## 0.4 Theme switching on dashboard `[~]`
+
+> Backend complete (API endpoints + tests, 11/11 api_smoke pass).
+> Dashboard hook delegated to a sub-agent — in flight at time of writing.
 
 **Why:** Birthday should look like a birthday, automatically, only on May 14.
 
@@ -231,7 +234,12 @@ is done and everyone has settled in.
 
 **Two trigger paths:**
 
-### 0.5a Voice trigger (NLU intent) `[ ]`
+### 0.5a Voice trigger (NLU intent) `[x]`
+
+Done. New `event_trigger` intent added to `_VALID_INTENTS` enum and
+classifier prompt; handler `_handle_event_trigger` in
+`core/intent_handler.py`; 3 test cases added to `tests/test_intent.py`.
+Live-eval confirmation deferred to the next intent-suite run.
 
 - New intent in `providers/brain/ollama.py`: `event_trigger`
 - Add to `_INTENT_SCHEMA` enum
@@ -245,7 +253,13 @@ is done and everyone has settled in.
 - Handler in `core/intent_handler.py`: `_handle_event_trigger` →
   fires the active event's intro script (via event_manager API)
 
-### 0.5b Flutter app trigger `[ ]`
+### 0.5b Flutter app trigger `[~]`
+
+Backend done — `POST /api/events/trigger` exists, auth-protected,
+returns 409 if no active event today; smoke test added (api_smoke
+11/11 green). Flutter UI button: pending — logged in OPEN QUESTIONS.
+Needs your preferred entry point (long-press logo, hidden screen,
+dev menu) before the Flutter side gets built.
 
 - Add `/api/events/trigger` POST endpoint (auth-protected)
 - Hidden screen in Flutter app (long-press app icon, or 3-tap title bar)
@@ -886,21 +900,28 @@ deadline pressure. Each one gets the same quality bar as the rest.
 
 # OPEN QUESTIONS / DECISIONS DEFERRED
 
-Track here so we don't lose context across sessions.
+Track here so we don't lose context across sessions. When you give the
+go-ahead, I'll surface these via AskUserQuestion in batch.
 
-- [ ] **Where will the Jetson physically live on May 14?** Hidden until
-      moment-of-trigger? Set up the night before? Wrapped as a gift?
-      Affects whether the trigger needs to also include a "lights on" /
-      "wake up" cue.
-- [ ] **Astha personality voice** — Kokoro preset vs XTTS-cloned? XTTS
-      needs her recorded voice + her consent (later). Kokoro is faster
-      to ship.
-- [ ] **What's the trigger phrase you want?** Pick one of: "Vesper, project
-      AG begins" / "Vesper, light it up" / "Vesper, ek surprise hai" /
-      "Vesper, [your invention]".
-- [ ] **Year-2+ auto-midnight?** For May 14, 2027 onwards: do we want
-      auto-trigger at 12:00 AM, or always manual? Default in pack.yaml
-      is currently `false` — flip later if desired.
+**Q1.** **Where will the Jetson physically live on May 14?** Hidden until
+moment-of-trigger? Set up the night before? Wrapped as a gift? Affects
+whether the trigger needs to also include a "lights on" / "wake up" cue.
+
+**Q2.** **Astha personality voice** — Kokoro preset vs XTTS-cloned? XTTS
+needs her recorded voice + her consent (later). Kokoro is faster to ship.
+
+**Q3.** **Final trigger phrase** — pick one of: *"Vesper, project AG begins"*
+/ *"Vesper, light it up"* / *"Vesper, ek surprise hai"* / *"Vesper, [your
+invention]"*. The current `pack.yaml` lists 5 candidates — narrowing to
+one (or two) makes the LLM more confident.
+
+**Q4.** **Year-2+ auto-midnight?** For May 14, 2027 onwards: do we want
+auto-trigger at 12:00 AM, or always manual? Default in pack.yaml is
+currently `false` — flip later if desired.
+
+**Q5.** **Flutter trigger button entry point** — long-press app icon? 3-tap
+on the title bar? Hidden settings page? Dev menu only? Determines where
+in `app/lib/` the button lives.
 
 ---
 
@@ -908,6 +929,12 @@ Track here so we don't lose context across sessions.
 
 Append a one-line entry per session.
 
+- 2026-05-05 (PM) — Phase 0 implementation in progress. Done: 0.1 personality
+              rename girlfriend→astha, 0.2 event_manager + 16/16 tests, 0.3
+              event pack tree, 0.5a voice trigger NLU intent + handler. Backend
+              of 0.4 (events router + tests, 11/11 api_smoke) and 0.5b (trigger
+              endpoint) shipped; dashboard hook delegated to a sub-agent.
+              Open questions Q1-Q5 logged for next user batch.
 - 2026-05-05 — Roadmap created. Foundation phase queued. Decision: rename
               `girlfriend` → `astha` is in Phase 0; Astha jokes is a
               year-round feature with NLU-classified trigger.

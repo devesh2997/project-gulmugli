@@ -231,7 +231,54 @@ def test_audio_cache_ttl_eviction():
         cache_module._AUDIO_CACHE_TTL = original_ttl
 
 
-# ── Test 5: CORS headers configured safely ────────────────────────────
+# ── Test 5: events endpoints ────────────────────────────────────────
+
+
+def test_events_current_returns_active_or_null():
+    """
+    GET /api/events/current is unauthenticated (the dashboard polls it
+    without a token) and returns either the active event JSON or null.
+    """
+    client, _ = _build_test_app(auth_enabled=False)
+    r = client.get("/api/events/current")
+    assert r.status_code == 200, f"got {r.status_code}: {r.text}"
+    # Response is either null or a dict with the expected shape.
+    body = r.json()
+    if body is not None:
+        assert "event_id" in body
+        assert "is_today" in body
+        assert "is_eve" in body
+        assert "is_aftermath" in body
+        assert "features" in body
+        assert "theme_url" in body
+
+
+def test_events_theme_tokens_endpoint_unknown_pack_404s():
+    """A pack id that doesn't exist should 404, not 500."""
+    client, _ = _build_test_app(auth_enabled=False)
+    r = client.get("/api/events/no-such-pack/theme/tokens")
+    assert r.status_code == 404, f"expected 404, got {r.status_code}: {r.text}"
+
+
+def test_events_theme_tokens_endpoint_known_pack_returns_json():
+    """A known pack returns the tokens.json contents (or empty {})."""
+    client, _ = _build_test_app(auth_enabled=False)
+    r = client.get("/api/events/astha-birthday/theme/tokens")
+    assert r.status_code == 200, f"got {r.status_code}: {r.text}"
+    # Must be valid JSON dict (might be empty if file is just `{}`)
+    body = r.json()
+    assert isinstance(body, dict)
+
+
+def test_events_trigger_requires_auth():
+    """POST /api/events/trigger is auth-protected."""
+    token = "trigger-test-token"
+    client, _ = _build_test_app(auth_enabled=True, token=token)
+    r = client.post("/api/events/trigger")
+    assert r.status_code == 401, f"expected 401, got {r.status_code}"
+
+
+# ── Test 6: CORS headers configured safely ────────────────────────────
 
 def test_cors_does_not_send_allow_credentials_with_wildcard_origin():
     """The CORS middleware was configured with allow_origins=['*']
@@ -271,6 +318,10 @@ def run_api_smoke_tests() -> dict:
         ("_is_obvious_chat classifications", test_is_obvious_chat_classifications),
         ("audio cache put/pop one-shot", test_audio_cache_put_and_pop),
         ("audio cache TTL eviction", test_audio_cache_ttl_eviction),
+        ("events /current returns active or null", test_events_current_returns_active_or_null),
+        ("events theme/tokens 404 for unknown pack", test_events_theme_tokens_endpoint_unknown_pack_404s),
+        ("events theme/tokens 200 for known pack", test_events_theme_tokens_endpoint_known_pack_returns_json),
+        ("events /trigger requires auth", test_events_trigger_requires_auth),
         ("CORS does not combine wildcard origin + credentials", test_cors_does_not_send_allow_credentials_with_wildcard_origin),
     ]
 

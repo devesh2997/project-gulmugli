@@ -98,6 +98,11 @@ _VALID_INTENTS = [
     "switch_personality", "chat", "system", "weather",
     "knowledge_search", "memory_recall", "memory_stats", "sleep",
     "quiz", "youtube_search", "reminder", "story", "timer", "ambient",
+    # Event-pack intents — manually firing the active event's launch
+    # sequence (birthday surprise, Diwali kickoff, etc.). NLU-classified,
+    # not regex-locked. See events/<pack>/pack.yaml → trigger.manual_phrases
+    # for the per-pack training examples the prompt seeds with.
+    "event_trigger",
 ]
 
 _INTENT_SCHEMA = {
@@ -429,6 +434,14 @@ These are the most common confusions. Resolve them in this order:
                         "sound": "rain"|"ocean"|"thunderstorm"|"white_noise"|"pink_noise"|"brown_noise"|"fireplace"|"forest"|"birds"|"wind"|"cafe"|"fan",
                         "level": 0..100}}.
   Nature/relaxation sounds ONLY. NEVER for music or volume control.
+
+- `event_trigger` — params: {{}}. Used to manually fire a special-day
+  launch sequence (birthday surprise, festival kickoff, etc.). Phrases
+  are deliberately codename-y and unusual: "project AG begins",
+  "ek surprise hai", "light it up", "kick it off", "<assistant>, shuru
+  karo". These phrases ONLY make sense as triggers — they never look
+  like a chat or song request. When in doubt about a generic phrase
+  ("start", "begin"), prefer `chat` instead.
 
 ## Format
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}

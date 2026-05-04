@@ -1,0 +1,4 @@
+# Recorded singing clips by Devesh, played via "Vesper, sing for me" intent.
+# Each entry: { file, title, note (optional), duration_s (optional) }.
+# Drop WAV/MP3 files into this directory and add metadata here.
+clips: []

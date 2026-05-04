@@ -95,6 +95,11 @@ def create_api(assistant: dict) -> Optional["FastAPI"]:
     from api.routers.system import router as system_router
     app.include_router(system_router, tags=["system"])
 
+    # Event packs — birthday, Diwali, etc. Mounted next to system because
+    # /api/events/current is polled by the dashboard for theme switching.
+    from api.routers.events import router as events_router
+    app.include_router(events_router)
+
     from api.ws import router as ws_router
     app.include_router(ws_router, tags=["websocket"])
 

@@ -1,0 +1,46 @@
+# Astha-jokes seed bank. Loaded once at startup by core/jokes/astha_engine.py
+# (Phase 4.2). Reload on file change for iteration speed.
+#
+# Each joke has a `type` that determines how the engine runs it:
+#
+#   single_turn         - delivered in one breath (pun + answer together).
+#                         Required: id, type, text, tags
+#
+#   setup_then_punchline - setup line(s), pause, punchline. Works in any room
+#                         (no STT dependency, no user response needed).
+#                         Required: id, type, turns (list[str]),
+#                         pause_between_turns_s, punchline, tags
+#                         Optional: laugh_audio (path to a laugh clip)
+#
+#   interactive         - setup, listen for user, punchline depends on what
+#                         they said. Falls back to wrong-answer punchline if
+#                         STT is unclear.
+#                         Required: id, type, setup, expected_wrong (list[str]),
+#                         punchline_correct, punchline_wrong, tags
+#
+# Tags drive filtering ([english | hindi | hinglish] required; topical tags
+# like phonetic / math / pun / bollywood are encouraged).
+
+- id: twe_twi_two
+  type: setup_then_punchline
+  turns:
+    - "T W E kya hota hai?"
+    - "T W I kya hota hai?"
+    - "T W O kya hota hai?"
+  pause_between_turns_s: 4
+  punchline: "Phans gaye! Wo two hai — the number 2!"
+  laugh_audio: media/sounds/laugh.wav
+  tags: [phonetic, hinglish]
+
+- id: bat_ball
+  type: interactive
+  setup: "Bat aur ball mil ke ₹110 ka aata hai. Bat ball se ₹100 mehenga hai. Ball kitne ka hua?"
+  expected_wrong: ["10", "ten", "das"]
+  punchline_correct: "Wow! Sahi guess. ₹5 — kyunki ₹105 + ₹5 = ₹110."
+  punchline_wrong: "Phans gaye! Sahi answer ₹5 hai — ₹105 + ₹5 = ₹110."
+  tags: [math, hinglish, classic]
+
+- id: salman_shadi
+  type: single_turn
+  text: "Salman Khan ki shadi kab hogi? — Na jaane kab."
+  tags: [pun, bollywood, hinglish]

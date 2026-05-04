@@ -82,7 +82,7 @@ _FILLER_PHRASES: dict[str, dict[str, list[str]]] = {
         "en": ["Riiiight.", "Could I be...", "Oh, *that*."],
         "hi": ["Acha, theek hai.", "Ek minute, yaar.", "Haan haan."],
     },
-    "girlfriend": {
+    "astha": {
         "en": ["Mmhm,", "One sec babe.", "Hmm,"],
         "hi": ["Hmm,", "Ek minute,", "Haan jaan,"],
     },
@@ -111,7 +111,7 @@ _ERROR_PHRASES: dict[str, dict[str, list[str]]] = {
         "hi": ["Yeh toh bilkul nahi chala. Phir bolo?",
                "Acha, yeh fail ho gaya. Ek baar aur?"],
     },
-    "girlfriend": {
+    "astha": {
         "en": ["Oops, something broke. Try again babe?",
                "Hmm, that didn't work. Say it again?"],
         "hi": ["Arey, kuch problem hui. Phir bolo na?",

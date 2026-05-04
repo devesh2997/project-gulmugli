@@ -1,0 +1,55 @@
+# Astha's Birthday — pack manifest.
+#
+# This file is the entry point the Event Manager (core/event_manager.py)
+# reads to decide whether the pack is active, what features to enable, and
+# what content to surface. See events/README.md for the full schema.
+
+# Stable identifier. Must match the directory name. Used in logs, memory
+# tags (`event=astha-birthday, year=2026`), and API responses.
+id: astha-birthday
+
+# Human-readable label shown in dashboards and logs.
+display_name: "Astha's Birthday"
+
+# When the pack is active. Yearly recurrence on May 14.
+date_rule:
+  recurs: yearly
+  month: 5
+  day: 14
+
+# How the pack switches into its triggered state.
+trigger:
+  # 2026: manual only — Devesh fires it when the moment is right (cake done,
+  # phone hidden, etc). For 2027+ this can flip to true once we trust the
+  # auto-midnight experience. Until then, the pack is "active by date" but
+  # not "triggered" until a voice phrase or app button fires it.
+  auto_midnight: false
+
+  # Example phrases for the NLU intent classifier (mapped to `event_trigger`).
+  # These are training examples, NOT regex patterns — the LLM generalizes from
+  # them. At least 3 are required so the classifier has variation to learn from.
+  manual_phrases:
+    - "vesper, project ag begins"
+    - "vesper, ek surprise hai"
+    - "vesper, light it up"
+    - "vesper, astha ka surprise shuru karo"
+    - "vesper, kick it off"
+
+# Features this pack enables. Each name resolves to an already-registered
+# handler in the assistant. Adding a name here doesn't implement it; it
+# turns on an existing capability for this pack.
+features:
+  - yaadein               # photo slideshow with voice-over captions
+  - besura                # recorded singing playback ("sing for me")
+  - voice_memos           # spoken letters with topic tags
+  - confetti              # dashboard confetti burst on trigger + ambient
+  - sing_happy_birthday   # plays the pre-recorded happy birthday clip
+  - custom_playlist       # auto-queues curated birthday playlist
+  - birthday_quiz         # interactive quiz with recorded reveal answer
+  - party_hat_avatar      # avatar wears a party hat while triggered
+
+# Year-1 (2026) only content. Removed automatically after the launch year.
+first_year_only:
+  # The intro script played on first trigger. Schema documented inside the
+  # file itself. Path is relative to this pack's root.
+  intro_script: first_year/intro_script.yaml

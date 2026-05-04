@@ -93,12 +93,17 @@ def run_suite(suite_name: str, brain) -> dict:
         # heavier suite spends 5min on the LLM).
         from tests.test_api_smoke import run_api_smoke_tests
         return run_api_smoke_tests()
+    elif suite_name == "event_manager":
+        # Pure unit tests for core/event_manager.py — date-rule logic,
+        # pack loading, edge cases. No Ollama, no network, runs in <1s.
+        from tests.test_event_manager import run_event_manager_tests
+        return run_event_manager_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
-ALL_SUITES = ["api_smoke", "prefilter", "intent", "enrichment", "personality",
-              "knowledge", "latency", "integration"]
+ALL_SUITES = ["api_smoke", "event_manager", "prefilter", "intent", "enrichment",
+              "personality", "knowledge", "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:

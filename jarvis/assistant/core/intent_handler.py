@@ -1330,6 +1330,41 @@ def _handle_system(assistant: dict, intent: Intent) -> Optional[str]:
     return intent.response or "I can't do that yet."
 
 
+def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Manually fire the active event's launch sequence (birthday, festival, etc.).
+
+    The classifier maps phrases like "Vesper, project AG begins" to this intent
+    via NLU — see events/<pack>/pack.yaml → trigger.manual_phrases for the
+    per-pack training examples.
+
+    The actual launch sequence engine wires in at Phase 1.1; for now this
+    handler acknowledges and records the trigger so the API + dashboard see
+    it. The user gets a confirmation phrase back.
+    """
+    from core.event_manager import get_event_manager
+
+    em = get_event_manager()
+    active = em.current()
+    if active is None:
+        # Trigger phrase spoken on a non-event day. Don't crash — speak a
+        # gentle no-op so the user knows the command was heard.
+        return intent.response or "Aaj koi special event nahi hai."
+
+    # Phase 1.1 will plug in the intro_runner here. For now we just log
+    # and use either the classifier's response or a sensible fallback.
+    # TODO(roadmap 1.1): from core.intro_runner import run_intro
+    #                    run_intro(active.pack_dir / first_year_only.intro_script)
+    log = assistant.get("logger")
+    if log is not None:
+        try:
+            log.info("event_trigger fired: pack_id=%s", active.pack_id)
+        except Exception:
+            pass
+
+    return intent.response or f"{active.pack.display_name} shuru!"
+
+
 # ════════════════════════════════════════════════════════════════
 #  Dispatch table — single source of truth for "which handler runs"
 # ════════════════════════════════════════════════════════════════
@@ -1361,6 +1396,7 @@ _DISPATCH: Dict[str, Callable[[dict, Intent], Optional[str]]] = {
     "timer":              _handle_timer,
     "ambient":            _handle_ambient,
     "system":             _handle_system,
+    "event_trigger":      _handle_event_trigger,
 }
 
 

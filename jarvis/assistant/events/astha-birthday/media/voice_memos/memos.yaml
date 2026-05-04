@@ -1,0 +1,5 @@
+# Recorded voice memos from Devesh, played via "Vesper, what did Devesh leave"
+# intent. Each entry: { file, title, tags, available_from (optional, ISO date) }.
+# `available_from: null` = always available.
+# `available_from: "2026-05-14"` = only playable on or after that date.
+memos: []
