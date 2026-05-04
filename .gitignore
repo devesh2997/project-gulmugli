@@ -69,3 +69,6 @@ app/android/app/build/
 app/ios/Pods/
 app/ios/.symlinks/
 app/pubspec.lock
+
+# Claude Code session lock — created at session start, removed at exit
+.claude/scheduled_tasks.lock
