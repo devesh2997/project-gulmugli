@@ -161,16 +161,22 @@ def run_suite(suite_name: str, brain) -> dict:
         # the handler" class of bug at test time instead of at runtime.
         from tests.test_intent_dispatch import run_intent_dispatch_tests
         return run_intent_dispatch_tests()
+    elif suite_name == "imports":
+        # Import sanity: every birthday-pack / core / api / provider
+        # module imports without raising. Catches circular imports +
+        # missing optional deps + module-level errors.
+        from tests.test_imports import run_imports_tests
+        return run_imports_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
-ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
-              "birthday_quiz", "trigger_state", "astha_angry_prefilter",
-              "custom_playlist", "voice_memos", "memory_event_recall",
-              "memory_log", "event_scheduler", "intent_dispatch", "prefilter",
-              "intent", "enrichment", "personality", "knowledge", "latency",
-              "integration"]
+ALL_SUITES = ["api_smoke", "imports", "intent_dispatch", "event_manager",
+              "intro_runner", "astha_jokes", "birthday_quiz", "trigger_state",
+              "astha_angry_prefilter", "custom_playlist", "voice_memos",
+              "memory_event_recall", "memory_log", "event_scheduler",
+              "prefilter", "intent", "enrichment", "personality", "knowledge",
+              "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:
