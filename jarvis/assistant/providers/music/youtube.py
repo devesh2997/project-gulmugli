@@ -31,6 +31,61 @@ from core.audio_focus import AudioFocusManager, AudioChannel
 log = get_logger("music.youtube")
 
 
+# Words that aren't distinctive enough to anchor a same-song match between
+# two YouTube search results. "play" is a verb the user added; "by" / "ka"
+# are connectives; English/Hindi stopwords add noise. We strip these before
+# computing overlap so that "play sajni" + "Sajni" still matches.
+_STOPWORDS = {
+    # English
+    "a", "an", "the", "play", "song", "by", "from", "and", "of", "in",
+    "with", "for", "to", "on", "at",
+    # Hinglish/Hindi
+    "ka", "ki", "ke", "se", "yaar", "naa", "do", "ja", "lagao", "bajao",
+    "sunao", "sunna", "lo", "le", "wala", "wali", "pe", "mein",
+    "video", "audio",
+}
+
+
+def _titles_share_distinctive_word(raw_input: str, title_a: str, title_b: str) -> bool:
+    """
+    True iff `raw_input`'s most-distinctive non-stopword token appears
+    in BOTH `title_a` and `title_b`.
+
+    Used by `search()` to detect the "two YouTube hits represent the
+    same song with different artists" case. Example:
+      raw_input  = "play Sajni"
+      title_a    = "Sajni" (Arijit Singh, 2024)
+      title_b    = "Sajni" (Jal The Band, 2003)
+      → distinctive word "sajni" in both → True → prefer enriched
+
+    Versus the negative case:
+      raw_input  = "play Pasoori"
+      title_a    = "Pasoori Nu" (Arijit, Bollywood remake — wrong song)
+      title_b    = "Pasoori" (Ali Sethi, Coke Studio — right)
+      → distinctive word "pasoori" in BOTH → True → would prefer enriched
+        BUT enriched is wrong here. This case is handled by enrichment
+        hints in `core.song_corrections` so we never get to this branch
+        for known-difficult cases. For everything else, falling back to
+        "prefer enriched on title overlap" is a defensible default —
+        users almost always mean the version with confirmed artist context.
+    """
+    words = [
+        w.strip(".,!?;:'\"()[]").lower()
+        for w in raw_input.split()
+        if w.strip(".,!?;:'\"()[]").lower() not in _STOPWORDS
+        and len(w) > 1
+    ]
+    if not words:
+        return False
+    # Pick the longest token as the most distinctive one. For most user
+    # queries this is the actual song name (e.g., "Pasoori" or "Heeriye"),
+    # since stopwords like "play" / "ka" / "yaar" have been stripped.
+    distinctive = max(words, key=len)
+    a_lower = title_a.lower()
+    b_lower = title_b.lower()
+    return distinctive in a_lower and distinctive in b_lower
+
+
 @register("music", "youtube_music")
 class YouTubeMusicProvider(MusicProvider):
     """YouTube Music search + mpv playback."""
@@ -93,6 +148,34 @@ class YouTubeMusicProvider(MusicProvider):
         own popularity ranking often handles bare queries better than a
         hallucinated enrichment.
 
+        ## Disagreement-resolution rule (v3)
+
+        The previous rule was "raw wins on disagreement" — defended against
+        LLM hallucination. But the rule lost to a real failure mode: for
+        bare titles like "Sajni" the raw search returned Jal The Band's
+        2003 song, while the enriched search ("Sajni Arijit Singh")
+        correctly returned Arijit's 2024 hit. Both are real Sajni songs;
+        YouTube ranking goes to Jal because it's older and has had more
+        time to accumulate views. The user almost always wants the recent,
+        more-discussed version implied by enrichment.
+
+        New rule:
+
+          - Same videoId on both → use enriched (no change).
+          - Different videoIds, BUT the two top titles overlap on the
+            distinctive non-stopword (e.g., both contain "Sajni") →
+            **prefer enriched**, since enrichment added artist context
+            and YT picked the artist-matching version. This is the
+            case where the LLM was right and YT popularity was wrong.
+          - Different videoIds AND title text disagrees (different song
+            entirely — e.g. "Pasoori" vs "Pasoori Nu") → **prefer raw**.
+            This is the LLM-hallucinated-the-wrong-song case.
+
+        Title overlap is computed via case-insensitive substring on the
+        first significant word of the raw input. This is intentionally
+        simple — fancier semantics would catch edge cases at the cost of
+        more failure modes.
+
         The cost is one extra API call per music_play intent. ytmusicapi
         calls are fast (~100-200ms) and have no rate limit for reasonable use.
         """
@@ -103,8 +186,6 @@ class YouTubeMusicProvider(MusicProvider):
             return self._raw_search(query, limit)
 
         # Dual search: run BOTH searches in parallel to halve the wait.
-        # Each ytmusicapi call takes ~100-200ms (network I/O bound), so
-        # running them concurrently saves ~100-200ms per music request.
         with ThreadPoolExecutor(max_workers=2, thread_name_prefix="yt-search") as pool:
             future_enriched = pool.submit(self._raw_search, query, limit)
             future_raw = pool.submit(self._raw_search, raw_input, limit)
@@ -123,9 +204,33 @@ class YouTubeMusicProvider(MusicProvider):
             log.debug('Both searches agree: "%s"', enriched_results[0].title)
             return enriched_results
 
-        # Different songs — merge and deduplicate, raw results first.
-        log.warning("Search mismatch: enriched \"%s\" → \"%s\", raw \"%s\" → \"%s\". Using raw result.",
-                     query, enriched_results[0].title, raw_input, raw_results[0].title)
+        # Different videoIds — figure out whether the model enriched
+        # to the same SONG with better artist context (prefer enriched)
+        # or to a different song entirely (prefer raw, defend against
+        # LLM hallucination).
+        if _titles_share_distinctive_word(
+            raw_input, enriched_results[0].title, raw_results[0].title
+        ):
+            log.info(
+                'Search mismatch on title-overlap: enriched "%s" → "%s" (kept), '
+                'raw "%s" → "%s" (rejected, same title different artist)',
+                query, enriched_results[0].title,
+                raw_input, raw_results[0].title,
+            )
+            seen_ids = set()
+            merged = []
+            for result in enriched_results + raw_results:
+                if result.uri not in seen_ids:
+                    seen_ids.add(result.uri)
+                    merged.append(result)
+            return merged[:limit]
+
+        # Different songs entirely — prefer raw to defend against LLM
+        # hallucination (e.g., "Pasoori" enriched to wrong artist returns
+        # "Pasoori Nu" which is a different song).
+        log.warning("Search mismatch (different songs): enriched \"%s\" → \"%s\", raw \"%s\" → \"%s\". Using raw result.",
+                     query, enriched_results[0].title,
+                     raw_input, raw_results[0].title)
 
         seen_ids = set()
         merged = []

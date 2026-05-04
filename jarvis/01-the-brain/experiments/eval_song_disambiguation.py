@@ -531,6 +531,20 @@ def evaluate_one(brain, tc: dict) -> dict[str, Any]:
         out["passed"] = False
         return out
 
+    # STT-mishear correction. Mirrors what core/intent_handler.py does
+    # in production — applies BEFORE both raw and enriched searches so
+    # both operate on the corrected title. Without this, "hayriye" stays
+    # uncorrected on the raw branch and matches a Turkish folk song.
+    try:
+        from core.song_corrections import correct_title
+        corrected = correct_title(out["raw_query"])
+        if corrected != out["raw_query"]:
+            out["stt_correction"] = {"from": out["raw_query"], "to": corrected}
+            out["raw_query"] = corrected
+    except ImportError:
+        # rapidfuzz / corrections module not available — skip correction
+        pass
+
     raw_query = out["raw_query"]
 
     # Step 2: enrich_query (separate LLM call)

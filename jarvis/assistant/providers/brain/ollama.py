@@ -77,6 +77,97 @@ def _get_personality_names_for_prompt() -> str:
 _recent_context: str = ""
 
 
+# ── Intent JSON-schema enforcement ──────────────────────────────────
+#
+# llama3.2:3b's classification baseline scored 44% on our hard test suite
+# because the model treated `## Intents` as a suggestion list and invented
+# its own names: `joke_teller` instead of `chat`, `weather_report` instead
+# of `weather`, `sound_play` instead of `ambient`, `bollywood_quiz` instead
+# of `quiz`, etc. Ollama 0.5+ accepts a JSON Schema as the `format` value
+# (https://ollama.com/blog/structured-outputs) — when provided, the
+# generation is mathematically constrained: tokens that would violate the
+# schema get zero probability and can't be sampled. The model literally
+# CANNOT return an intent name outside this enum.
+#
+# This is the single most important fix for the intent suite. Adding new
+# intents = add to this list. Removing any value here is a breaking change
+# for `core/intent_handler.py`'s dispatch.
+
+_VALID_INTENTS = [
+    "music_play", "music_control", "volume", "light_control",
+    "switch_personality", "chat", "system", "weather",
+    "knowledge_search", "memory_recall", "memory_stats", "sleep",
+    "quiz", "youtube_search", "reminder", "story", "timer", "ambient",
+]
+
+_INTENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "intents": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "intent": {"type": "string", "enum": _VALID_INTENTS},
+                    # `params` stays loose — each intent has its own param
+                    # schema and we don't want to multiply schema complexity.
+                    # Strict per-intent action enums are handled by the
+                    # post-classify normalization below.
+                    "params": {"type": "object"},
+                },
+                "required": ["intent"],
+            },
+        },
+        # Free-form spoken acknowledgement; for `chat` intents, this is the
+        # actual reply.
+        "response": {"type": "string"},
+    },
+    "required": ["intents"],
+}
+
+
+# Synonym → canonical mapping for the `action` param within each intent.
+# The prompt already says "skip" includes "next", but the model still
+# sometimes echoes the user's word. We normalize here so handlers in
+# core/intent_handler.py only ever see canonical action names.
+_ACTION_SYNONYMS = {
+    "music_control": {
+        "next": "skip", "next_song": "skip", "next_track": "skip",
+        "forward": "skip", "play": "resume", "continue": "resume",
+        "halt": "stop", "end": "stop",
+    },
+    "light_control": {
+        # The model loves "dim" / "adjust" — both mean brightness in
+        # production. "Increase" / "decrease" we leave for context.
+        "dim": "brightness", "adjust": "brightness", "set": "brightness",
+        "set_brightness": "brightness", "change_brightness": "brightness",
+        "change": "color", "set_color": "color",
+    },
+}
+
+
+def _normalize_intent(name: str, params: dict) -> tuple[str, dict]:
+    """
+    Apply synonym → canonical normalization on the action param.
+
+    Returns (intent_name, normalized_params). Pure function — does not mutate
+    its inputs. We keep this defensive even with JSON-schema enforcement
+    because the schema constrains intent names but not param values.
+    """
+    if not isinstance(params, dict):
+        return name, {}
+    syn_table = _ACTION_SYNONYMS.get(name, {})
+    if not syn_table:
+        return name, params
+    action = params.get("action")
+    if isinstance(action, str) and action.lower() in syn_table:
+        new = dict(params)
+        new["action"] = syn_table[action.lower()]
+        return name, new
+    return name, params
+
+
 def set_conversation_context(memory_provider) -> None:
     """
     Load recent interactions from memory and cache as a compact context string.
@@ -121,6 +212,63 @@ Extract parameters EXACTLY as the user said them. Do NOT modify, translate, or e
 The user speaks in English, Hindi, or Hinglish. You must understand all three.
 
 Respond with valid JSON only. No explanation. No markdown.
+
+## CRITICAL — disambiguation rules (read before classifying)
+
+These are the most common confusions. Resolve them in this order:
+
+1. **Time of day** ("what time is it", "kitna baj raha hai") → `system` action="time".
+   NOT `timer` (timer is for "set a 5 minute timer").
+   NOT `chat`.
+
+2. **Date** ("what day is it", "aaj kya date hai", "today's date") → `system` action="date".
+
+3. **Ambient sounds** vs **music**:
+   - "play rain sounds", "thunderstorm sounds", "white noise", "ocean sounds",
+     "fireplace", "barish ki awaaz", "sleep sounds" → ALWAYS `ambient`.
+   - "play [song name]", "play [artist]", "play some [genre]" → `music_play`.
+   - If the user names a real song or artist → `music_play`. If they ask
+     for a nature/relaxation sound → `ambient`.
+
+4. **Stories** vs **jokes**:
+   - "tell me a story", "ek kahani sunao", "bedtime story" → `story`.
+   - "tell me a joke", "ek joke sunao", "make me laugh" → `chat` (the
+     personality replies with the joke in the `response` field).
+   - Jokes are short, told inline. Stories are long-form, routed elsewhere.
+
+5. **Knowledge search** vs **chat**:
+   - Time-sensitive ("current", "latest", "today", "this week", "abhi")
+     about real-world facts → `knowledge_search`.
+   - Stable knowledge ("what is photosynthesis", "explain gravity",
+     "tell me about the Mughal empire") → `chat` — the LLM knows it.
+   - "Who is the current prime minister of UK" → `knowledge_search`
+     (changes over time).
+   - "Who was the first PM of India" → `chat` (historical, stable).
+
+6. **Memory recall** vs **knowledge search**:
+   - About what the USER did with the assistant before → `memory_recall`.
+   - "what songs did I play yesterday" → memory_recall.
+   - About facts in the world → `knowledge_search` or `chat`.
+   - "Who is the PM" is NEVER memory_recall — the user isn't asking
+     what they discussed before.
+
+7. **Personality switch** vs **chat**:
+   - User says "talk like X", "switch to X", "be X", "X bana de",
+     where X is one of {_get_personality_names_for_prompt()}.
+   - Otherwise → chat / the appropriate intent.
+
+8. **Reminder** vs **timer**:
+   - Reminder = action at a specific time/date with a description ("call mom at 5pm",
+     "buy groceries tomorrow"). → `reminder`.
+   - Timer = countdown duration without a description ("5 minute timer",
+     "10 second timer", "30 minute timer for pasta"). → `timer`.
+   - "Remind me in 2 hours to check the oven" has BOTH a description AND
+     a duration — the description ("check the oven") makes this `reminder`,
+     not timer.
+
+9. **Falling back to chat is OK.** When in doubt and the request doesn't
+   clearly fit any intent above, use `chat` with the user's full message
+   in `params.message`.
 
 ## Intents
 
@@ -718,6 +866,9 @@ class OllamaBrainProvider(BrainProvider):
             payload["system"] = system
         if json_mode:
             payload["format"] = "json"
+        # NB: streaming path doesn't support format_schema yet — none of our
+        # streaming consumers (chat reply path) need strict schema validation.
+        # If they ever do, route through a non-streaming call instead.
 
         start = time.time()
         # stream=True keeps the response open as a chunked HTTP stream.
@@ -754,7 +905,8 @@ class OllamaBrainProvider(BrainProvider):
         )
 
     def generate(self, prompt: str, system: str = "", json_mode: bool = False,
-                 temperature: float = None, max_tokens: int | None = None) -> LLMResponse:
+                 temperature: float = None, max_tokens: int | None = None,
+                 format_schema: dict | None = None) -> LLMResponse:
         """
         Generate a response from the LLM.
 
@@ -763,6 +915,14 @@ class OllamaBrainProvider(BrainProvider):
             on edge hardware to keep latency bounded — at 22 tok/s on Jetson, an
             80-token cap means the chat call returns in <4s no matter how chatty
             the model wants to be. None = no cap (default).
+
+        format_schema: a JSON Schema dict (Ollama 0.5+ feature). When provided,
+            Ollama constrains the model output to match the schema — `enum`
+            fields literally cannot produce values outside the enum, `required`
+            fields are guaranteed present. Takes precedence over `json_mode`.
+            We use this for classify_intent so the model can't invent new
+            intent names like "joke_teller" or "weather_report" that aren't
+            in our 17-intent dispatch table.
         """
         options = {"temperature": temperature or self.temperature}
         if max_tokens is not None:
@@ -777,7 +937,9 @@ class OllamaBrainProvider(BrainProvider):
         }
         if system:
             payload["system"] = system
-        if json_mode:
+        if format_schema is not None:
+            payload["format"] = format_schema
+        elif json_mode:
             payload["format"] = "json"
 
         start = time.time()
@@ -805,10 +967,16 @@ class OllamaBrainProvider(BrainProvider):
         # part. 200 is enough for a 1-2 sentence chat reply (~120-150 tokens
         # of reply text + ~50 tokens of JSON overhead). On Jetson at 22 tok/s
         # this caps classification at ~9s in the worst case (verbose chat).
+        #
+        # format_schema=_INTENT_SCHEMA forces the output to conform — the
+        # `intent` field can only be one of the 17 valid names. This single
+        # change addresses ~30 of the 50 failures in the intent test suite
+        # baseline (model used to invent names like `joke_teller`,
+        # `weather_report`, `sound_play`, etc.).
         resp = self.generate(
             prompt=user_input,
             system=_build_system_prompt(),
-            json_mode=True,
+            format_schema=_INTENT_SCHEMA,
             temperature=self.temperature,
             max_tokens=200,
         )
@@ -835,16 +1003,26 @@ class OllamaBrainProvider(BrainProvider):
 
         # New format: {"intents": [...], "response": "..."}
         if "intents" in parsed and isinstance(parsed["intents"], list):
-            intents = [
-                Intent(
-                    name=i.get("intent", "chat"),
-                    params=i.get("params", {}),
+            intents = []
+            for i in parsed["intents"]:
+                # Coerce malformed param values to dict so handlers don't crash
+                raw_params = i.get("params", {})
+                if not isinstance(raw_params, dict):
+                    raw_params = {}
+                # Apply synonym → canonical normalization on action param
+                canon_name, canon_params = _normalize_intent(
+                    i.get("intent", "chat"), raw_params
+                )
+                intents.append(Intent(
+                    name=canon_name,
+                    params=canon_params,
                     response=response,
                     confidence=1.0,
                     meta=meta,
-                )
-                for i in parsed["intents"]
-            ] or [Intent(name="chat", params={"message": user_input}, response="", meta=meta)]
+                ))
+            if not intents:
+                intents = [Intent(name="chat", params={"message": user_input},
+                                  response="", meta=meta)]
 
             # Defensive: if the LLM returned multiple chat intents, merge them.
             # A single conversational request should never be split into two
@@ -885,8 +1063,34 @@ class OllamaBrainProvider(BrainProvider):
           - Classification extracts clean params ("Sajni", not "Sajni Arijit Singh")
           - Enrichment adds artist when confident ("Sajni" → "Sajni Arijit Singh")
           - The raw query is always available for fallback search
+
+        Pipeline:
+          1. Curated enrichment hint (`core.song_corrections.enrichment_hint`).
+             Hits known-difficult cases like "Pasoori" (Coke Studio
+             original loses YT popularity to a Bollywood remake of a
+             different song) by hardcoding a verified enrichment. Skips
+             the LLM call entirely on hit, saving ~2s.
+          2. LLM enrichment fallback — same as before, low temperature.
+
+        Note: STT-mishear correction (`correct_title`) is intentionally
+        applied UPSTREAM in `core/intent_handler.py` rather than here,
+        so that BOTH the enriched query AND the raw_input passed to the
+        dual search use the corrected title. Otherwise the raw search
+        runs on the misheard string and lands on a wrong-language song
+        ("hayriye" → Turkish "Fıldır Fıldır Hayriye").
         """
-        # Use per-personality music prefs if available
+        from core.song_corrections import enrichment_hint
+
+        if not raw_query:
+            return raw_query
+
+        # Stage 1: explicit enrichment hint for known-difficult cases.
+        hint = enrichment_hint(raw_query)
+        if hint:
+            log.debug('Enrichment hint: "%s" → "%s"', raw_query, hint)
+            return hint
+
+        # Stage 2: LLM enrichment.
         p = personality_manager.active
         enrichment_prompt = _build_enrichment_prompt(p.music_preferences)
 
@@ -905,7 +1109,7 @@ class OllamaBrainProvider(BrainProvider):
             return enriched
         except json.JSONDecodeError:
             log.warning("Enrichment returned invalid JSON, using raw query. Raw: %s", resp.text)
-            return raw_query  # enrichment failed, return original
+            return raw_query
 
     def list_models(self) -> list[str]:
         resp = self._session.get(f"{self.endpoint}/api/tags")

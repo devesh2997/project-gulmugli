@@ -190,6 +190,22 @@ def handle_intent(assistant: dict, intent) -> str:
             elif not raw_query:
                 return "I don't have anything to play. Tell me what you'd like to hear."
 
+        # Step 1.5: STT-mishear correction on the raw query BEFORE both
+        # branches (enrichment + raw search). Whisper transcribes Hindi
+        # proper nouns badly — "kesriya" for Kesariya, "hayriye" for
+        # Heeriye, "sajney" for Sajni. If we left raw_query unchanged
+        # going into the dual-search raw branch, we'd land on the wrong
+        # language song (observed: "hayriye" → Turkish folk song with
+        # "Hayriye" in the title). By correcting upstream, both raw
+        # search and enrichment operate on the right title — and the
+        # dual-search disagreement rule's distinctive-word check still
+        # works because both queries share the corrected token.
+        from core.song_corrections import correct_title
+        corrected_query = correct_title(raw_query)
+        if corrected_query != raw_query:
+            log.info('STT correction: "%s" → "%s"', raw_query, corrected_query)
+            raw_query = corrected_query
+
         # Step 2: Enrich + search IN PARALLEL.
         #
         # The naive flow is serial:
