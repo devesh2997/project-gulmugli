@@ -226,14 +226,22 @@ TEST_CASES = [
      "expected_artist": "Naseebo", "lang": "hi", "tier": "medium",
      "tags": ["modern", "coke-studio", "pakistani"],
      "desc": "Coke Studio — Naseebo Lal & Abida Parveen"},
-    {"input": "play Tu Hai Kahaan", "expected_song": "Tu Hai Kahaan",
+    {"input": "play Tu Hai Kahaan",
+     # AUR's title shows up on YouTube as "Tu hai kahan" or "Tu Hai Kahan" —
+     # accept any of those spellings + the user-input spelling.
+     "expected_song": ["Tu Hai Kahaan", "Tu Hai Kahan", "Tu hai kahan", "Tu hai kahaan"],
      "expected_artist": "AUR", "lang": "hi", "tier": "medium",
      "tags": ["modern", "post2020", "pakistani"],
      "desc": "AUR band — viral 2023"},
 
     # ── Punjabi crossover ─────────────────────────────────────────
-    {"input": "play Brown Munde", "expected_song": "Brown Munde",
-     "expected_artist": "AP Dhillon", "lang": "pa", "tier": "medium",
+    {"input": "play Brown Munde",
+     "expected_song": "Brown Munde",
+     # Brown Munde is credited to AP Dhillon, Gurinder Gill, Shinda Kahlon
+     # and Gminxr; ytmusicapi sometimes returns Gurinder Gill as primary.
+     # Either is the correct song.
+     "expected_artist": ["AP Dhillon", "Gurinder Gill", "Shinda Kahlon"],
+     "lang": "pa", "tier": "medium",
      "tags": ["punjabi", "modern"],
      "desc": "AP Dhillon — Punjabi-Canadian breakout"},
     {"input": "play 295 by Sidhu", "expected_song": "295",
@@ -417,9 +425,65 @@ def _load_brain(model: str):
     return brain
 
 
+_VIDEOS_FILTER_TRIGGERS = (
+    "coke studio", "aur band", "ali sethi",
+    "naseebo lal", "abida parveen",
+)
+
+
+# Mirrors providers/music/youtube.py::_titles_share_distinctive_word and
+# _STOPWORDS. Kept inline here (not imported) so the eval stays runnable
+# from the experiments/ directory without having to thread sys.path
+# through the music provider's transitive imports.
+_EVAL_STOPWORDS = {
+    "a", "an", "the", "play", "song", "by", "from", "and", "of", "in",
+    "with", "for", "to", "on", "at",
+    "ka", "ki", "ke", "se", "yaar", "naa", "do", "ja", "lagao", "bajao",
+    "sunao", "sunna", "lo", "le", "wala", "wali", "pe", "mein",
+    "video", "audio",
+}
+
+
+def _titles_share_distinctive_word(raw_input: str, title_a: str, title_b: str) -> bool:
+    """
+    True iff `raw_input`'s longest non-stopword token appears in BOTH titles.
+
+    Uses rapidfuzz partial_ratio so spelling variants of Hindi proper nouns
+    match — "kahaan" matches "kahan" (one vowel difference, score 91),
+    "heeriye" matches "Heeriye" (case-insensitive substring).
+    """
+    words = [
+        w.strip(".,!?;:'\"()[]").lower()
+        for w in (raw_input or "").split()
+        if w.strip(".,!?;:'\"()[]").lower() not in _EVAL_STOPWORDS
+        and len(w) > 1
+    ]
+    if not words:
+        return False
+    distinctive = max(words, key=len)
+    a_lower = (title_a or "").lower()
+    b_lower = (title_b or "").lower()
+    # Direct substring match handles the common case
+    if distinctive in a_lower and distinctive in b_lower:
+        return True
+    # Fuzzy fallback for spelling variants (Hindi vowel-spread:
+    # kahaan/kahan, heeriye/heeriye, sajni/sajney). Threshold 88 catches
+    # 1-2 character differences in 5-7 character words; lower than that
+    # would risk matching unrelated titles.
+    try:
+        from rapidfuzz import fuzz
+        return (fuzz.partial_ratio(distinctive, a_lower) >= 88
+                and fuzz.partial_ratio(distinctive, b_lower) >= 88)
+    except ImportError:
+        return False
+
+
 def _search_yt(query: str, raw_input: str | None = None) -> dict | None:
-    """Use the production music provider's search() (dual-search if both
-    queries given, single search otherwise)."""
+    """
+    Use ytmusicapi the same way the production provider does — songs filter
+    by default, videos filter when the query suggests content not in YT
+    Music's songs catalog (Coke Studio Pakistan originals, AUR, etc).
+    """
     try:
         from ytmusicapi import YTMusic
         ytm = YTMusic()
@@ -432,20 +496,25 @@ def _search_yt(query: str, raw_input: str | None = None) -> dict | None:
             queries.append(raw_input)
         all_hits: list[dict] = []
         for q in queries:
-            hits = ytm.search(q, filter="songs", limit=3) or []
+            q_lower = (q or "").lower()
+            use_videos = any(t in q_lower for t in _VIDEOS_FILTER_TRIGGERS)
+            f = "videos" if use_videos else "songs"
+            hits = ytm.search(q, filter=f, limit=3) or []
             all_hits.extend(hits)
         if not all_hits:
             return None
-        # Pick the FIRST hit from the FIRST query (matches production
-        # provider's "raw wins on disagreement, enriched wins on agreement"
-        # logic loosely — for eval we just take top-of-each-list).
         first = all_hits[0]
+        artist = (
+            ", ".join(a["name"] for a in first.get("artists", []))
+            if first.get("artists")
+            else first.get("author", "")
+        )
         return {
             "title": first.get("title", ""),
-            "artist": ", ".join(a["name"] for a in first.get("artists", [])),
+            "artist": artist,
             "videoId": first.get("videoId", ""),
             "year": first.get("year"),
-            "views": first.get("views", ""),  # usually "12M views" string
+            "views": first.get("views", ""),
             "album": (first.get("album") or {}).get("name", "") if isinstance(first.get("album"), dict) else "",
         }
     except Exception as e:
@@ -453,9 +522,32 @@ def _search_yt(query: str, raw_input: str | None = None) -> dict | None:
 
 
 def _matches(actual: str, expected: str | None) -> bool:
+    """
+    Matches if `expected` is a case-insensitive substring of `actual`.
+    `expected` can be a list/tuple of acceptable strings — ANY match wins.
+    Used for both song titles and artists.
+    """
     if expected is None:
         return True
+    if isinstance(expected, (list, tuple)):
+        return any(_matches(actual, e) for e in expected)
     return expected.lower() in (actual or "").lower()
+
+
+def _matches_either(*fields: str, expected: str | None) -> bool:
+    """True iff the expected substring appears in ANY of the supplied fields.
+
+    For Coke Studio Pakistan: title might say `Coke Studio | Pasoori | Ali
+    Sethi x Shae Gill` while artist is just `Coke Studio Pakistan` (the
+    channel). The user's correct expectation "Ali Sethi" appears in the
+    title, not the artist, so we accept either.
+    """
+    if expected is None:
+        return True
+    if isinstance(expected, (list, tuple)):
+        return any(_matches_either(*fields, expected=e) for e in expected)
+    needle = expected.lower()
+    return any(needle in (f or "").lower() for f in fields)
 
 
 def _violates_must_not_contain(value: str, forbidden: list[str] | None) -> str | None:
@@ -585,18 +677,37 @@ def evaluate_one(brain, tc: dict) -> dict[str, Any]:
         out["enriched_song_match"] = out.get("raw_song_match", False)
         out["enriched_artist_match"] = out.get("raw_artist_match", False)
 
-    # Step 4: production "dual" pick — what the user would actually hear.
+    # Step 4: production "dual" pick — mirrors providers/music/youtube.py's
+    # disagreement rule (v3): when raw and enriched return different videos
+    # AND the user's distinctive word appears in BOTH titles, prefer
+    # enriched (same song, just better artist). When titles differ
+    # entirely, prefer raw (defends against LLM hallucinating a different
+    # song). This is what fixed Sajni → Arijit (vs Jal The Band) and
+    # Pasoori → Coke Studio Pakistan (vs Bollywood remake).
     raw_id = (raw_hit or {}).get("videoId", "") if raw_hit else ""
     enriched_id = ""
     final_hit: dict[str, Any] = {}
     if out["enrichment_changed"]:
-        e_hit = _search_yt(enriched_query)
+        # Reuse the enriched_hit fetched in step 3 — ytmusicapi search is
+        # non-deterministic between calls (different orderings, sometimes
+        # entirely different top results), so re-fetching here would
+        # diverge from the title we just stored as `enriched_title`. The
+        # production music provider does both fetches in parallel and
+        # consumes the same result twice — this mirrors that.
+        e_hit = enriched_hit if "enriched_title" in out else _search_yt(enriched_query)
         enriched_id = (e_hit or {}).get("videoId", "") if e_hit else ""
         if raw_id and enriched_id:
             if raw_id == enriched_id:
                 final_hit = e_hit or {}
+            elif _titles_share_distinctive_word(
+                user_input,
+                (e_hit or {}).get("title", ""),
+                (raw_hit or {}).get("title", ""),
+            ):
+                # Same song, different artist/version — prefer enriched
+                final_hit = e_hit or {}
             else:
-                # Disagreement — production picks raw
+                # Different songs — prefer raw (defends against LLM hallucination)
                 final_hit = raw_hit or {}
         else:
             final_hit = raw_hit or e_hit or {}
@@ -611,7 +722,14 @@ def evaluate_one(brain, tc: dict) -> dict[str, Any]:
     out["final_views"] = (final_hit or {}).get("views", "") if isinstance(final_hit, dict) else ""
 
     out["final_song_match"] = _matches(final_title, tc.get("expected_song"))
-    out["final_artist_match"] = _matches(final_artist, tc.get("expected_artist"))
+    # Artist can appear in either the artist field or in the title (Coke Studio
+    # Pakistan officials list the channel name as artist; the actual featured
+    # artist is in the title — "Coke Studio | Season 14 | Pasoori | Ali Sethi
+    # x Shae Gill"). For Brown Munde, ytmusicapi credits a co-artist (Gurinder
+    # Gill) instead of the lead AP Dhillon. Match either field.
+    out["final_artist_match"] = _matches_either(
+        final_artist, final_title, expected=tc.get("expected_artist"),
+    )
 
     # Optional version-filter checks
     bad_title = _violates_must_not_contain(final_title, tc.get("must_not_contain"))

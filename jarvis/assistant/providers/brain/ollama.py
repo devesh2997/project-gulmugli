@@ -361,294 +361,109 @@ These are the most common confusions. Resolve them in this order:
 15. **Fall back to chat** when nothing else fits. Better to chat than
     invent.
 
-## Intents
+## Intents (signature reference)
 
-1. "music_play" — Play a song/artist/playlist/genre
-   Params: {{"query": "the song/artist/mood keywords EXACTLY as the user said them", "with_video": true|false}}
-   IMPORTANT: Do NOT add artist names, movie names, or any enrichment. Just extract what the user said.
-   "with_video" defaults to false. Set to true ONLY when the user explicitly asks for video playback.
-   Video triggers: "with video", "video mein", "video chalao", "ka video lagao", "video mode"
-   Strip the video phrase from the query — do NOT include "with video" in the query string.
-   "play Sajni" → query: "Sajni", with_video: false
-   "play Sajni with video" → query: "Sajni", with_video: true
-   "Sajni ka video lagao" → query: "Sajni", with_video: true
-   "kuch romantic sa bajao" → query: "romantic Hindi songs", with_video: false
-   "Coldplay bajao" → query: "Coldplay", with_video: false
-   For mood/vague requests, translate Hindi to English search terms: "kuch sad sa" → "sad Hindi songs"
+- `music_play` — params: {{"query": <song/artist/mood string>, "with_video": true|false}}
+  Extract the user's words as-is. Don't enrich. Strip "play"/"bajao"/"sunao".
+  with_video=true only when the user says "video", "with video", "video chalao".
 
-2. "music_control" — Control current playback
-   Params: {{"action": "pause|resume|skip|stop"}}
-   "skip" includes: skip, next, next song, move to next, agle gaane, change the song, dusra gaana
-   IMPORTANT: "next song" or "next track" is ALWAYS music_control with action "skip" — it is NOT music_play.
-   This is for controlling CURRENT playback — not for requesting new music.
+- `music_control` — params: {{"action": "pause"|"resume"|"skip"|"stop"}}
+  "next"/"agle gaane"/"change the song"/"dusra gaana" all map to "skip".
 
-3. "volume" — Change system volume (applies to ALL audio)
-   Params: {{"level": "0-100", "output": "default"}}
-   Clamp to 100 max. "volume up"→80, "volume down"→30.
+- `volume` — params: {{"level": "0..100", "output": "default"}}
+  up/badhao→80, down/kam karo→30. Even "a bit down" = 30.
 
-4. "light_control" — Change room lights
-   Params: {{"action": "on|off|brightness|color|scene", "value": "..."}}
-   Scenes include: romantic, movie, party, sleep, reading, sunset, focus, and any "[word] mode" that refers to a lighting mood.
-   IMPORTANT: "X mode laga do" where X is a mood/scene (like party, sleep, reading, focus) is ALWAYS light_control, NOT switch_personality.
-   Only use switch_personality when the user explicitly names a personality (Jarvis, Devesh, Chandler, etc.).
+- `light_control` — params: {{"action": "on"|"off"|"brightness"|"color"|"scene", "value": <string>}}
+  Scenes: romantic, movie, party, sleep, reading, sunset, focus, study.
+  "warm white" / "cool white" → action="color", value="warm white".
 
-5. "switch_personality" — Switch assistant personality/character
-   Params: {{"personality": "name of the personality to switch to"}}
-   Available personalities: {_get_personality_names_for_prompt()}
-   "switch to Devesh mode" → personality: "devesh"
-   "talk like Chandler" → personality: "chandler"
-   "Devesh ban ja" → personality: "devesh"
-   "normal mode" / "default mode" / "Jarvis mode" → personality: "jarvis"
+- `switch_personality` — params: {{"personality": <id>}}
+  Valid ids: {_get_personality_names_for_prompt()}.
+  "talk like X"/"X mode"/"X bana de"/"act like X". Don't reply in character; just emit the switch.
 
-6. "chat" — General question, conversation, jokes, factoids.
-   Params: {{"message": "the user's question or request EXACTLY as said"}}
-   IMPORTANT: For chat intents, ALSO put a brief 1-2 sentence answer in the
-   top-level "response" field (not in params). Keep it concise — voice
-   replies should be short. For long-form requests like "tell me a story"
-   or "write an essay", leave "response" empty and the system will route
-   to a dedicated handler.
-   "message" should still just echo the user's original words (used for
-   long-form fallback). Do NOT enrich or rephrase the message param.
+- `chat` — params: {{"message": <user's exact words>}} + non-empty `response` for short replies.
+  Catch-all for jokes, factoids, opinions, idioms, reactions ("I love this song"),
+  stable knowledge, negated commands ("don't turn off the lights"). Leave `response`
+  empty for long-form (essay, story, etc.) — system handles.
 
-7. "system" — System info (time, date, alarms)
-   Params: {{"action": "time|date|alarm|reminder"}}
+- `system` — params: {{"action": "time"|"date"|"alarm"|"reminder"}}
+  ALWAYS for "what time is it"/"kitna baj raha hai"/"what's the date".
 
-14. "weather" — Weather queries (current conditions, forecast, rain check)
-   Params: {{"query": "current|forecast|rain|temperature", "location": "optional city name"}}
-   "what's the weather" → weather {{"query": "current"}}
-   "will it rain today" → weather {{"query": "rain"}}
-   "weather forecast" → weather {{"query": "forecast"}}
-   "temperature kya hai" → weather {{"query": "temperature"}}
-   "mausam kaisa hai" → weather {{"query": "current"}}
-   "Delhi ka mausam" → weather {{"query": "current", "location": "Delhi"}}
+- `weather` — params: {{"query": "current"|"forecast"|"rain"|"temperature", "location": <opt>}}
+  ALL weather questions, even "current". Never knowledge_search.
 
-8. "memory_recall" — User asks about past interactions or what they/you did before
-   Params: {{"query": "what the user wants to recall"}}
-   Extract the KEY TOPIC words — strip filler like "what/did/you/have/for/me".
-   IMPORTANT: Keep time words (today, yesterday) EXACTLY as the user said them. Do NOT change "today" to "yesterday" or vice versa.
-   "what songs have you played for me today" → query: "songs played today"
-   "what did I play yesterday" → query: "played yesterday"
-   "last time I asked about lights" → query: "lights"
-   "what was the song I played" → query: "song played"
-   "kya bajaya tha maine" → query: "music play"
-   "pichli baar kya pucha tha" → query: "recent interactions"
+- `knowledge_search` — params: {{"query": <english search string>}}
+  Real-world facts that change over time: current PM, latest score, today's
+  news, this week's events. Stable knowledge → `chat`.
 
-9. "memory_stats" — User asks how much the assistant remembers / interaction stats
-   Params: {{}}
-   "how much do you remember" → memory_stats
-   "kitna yaad hai tujhe" → memory_stats
+- `memory_recall` — params: {{"query": <topic>}}
+  About the USER's past interactions ("what did I play yesterday"). Trim filler.
+  "yaad hai" = past interactions. "yaad dilana" = future reminder (use `reminder`).
 
-10. "sleep" — User wants the assistant to go to sleep or wake up
-   Params: {{"action": "sleep|wake"}}
-   Sleep: "good night", "sleep mode", "sone ja", "so ja", "go to sleep"
-   Wake: "good morning", "wake up", "jag ja", "uth ja", "jaga do"
-   Your response should be a personality-appropriate good night or good morning message.
+- `memory_stats` — params: {{}}. "how much do you remember", "kitna yaad hai tujhe".
 
-11. "knowledge_search" — User asks about current events, real-time info, or facts that change over time
-   Params: {{"query": "concise search query in English"}}
-   Use this ONLY when the user asks about:
-     - Current events, news, sports scores, election results
-     - Things that change over time: "who is the PM now", "latest score", "today's weather"
-     - Keywords that signal recency: "latest", "today", "yesterday", "current", "recent", "abhi"
-   Do NOT use for:
-     - General knowledge that doesn't change: "what is machine learning", "explain gravity", "what is Python"
-     - Jokes, stories, opinions, creative requests, general conversation
-     - Anything you can answer well from your training knowledge
-   When in doubt between chat and knowledge_search, prefer chat. Only use knowledge_search when the answer REQUIRES up-to-date information.
-   Translate Hindi/Hinglish to English for the search query.
-   "aaj news kya hai" → query: "India news today"
-   "IPL mein kya hua" → query: "IPL cricket latest score"
+- `sleep` — params: {{"action": "sleep"|"wake"}}
+  sleep: "good night", "sleep mode", "sone ja". wake: "good morning", "wake up", "jag ja".
 
-12. "quiz" — Start or interact with a trivia quiz game
-   Params: {{"action": "start|answer|hint|score|quit", "category": "general|bollywood|movies|music|geography|tech|food|cricket", "difficulty": "easy|medium|hard", "answer": "user's answer text"}}
-   Start: "play quiz", "quiz khelna hai", "trivia start", "let's play a game", "quiz chalao", "bollywood quiz", "start a hard quiz"
-   Answer: any answer during an active quiz — "B", "Shah Rukh Khan", "Paris", "option C"
-   Hint: "hint", "clue", "give me a hint", "hint de do"
-   Score: "my score", "kitne aaye", "score bata"
-   Quit: "quit quiz", "stop quiz", "quiz band karo"
-   When starting, extract category and difficulty if mentioned: "play a hard bollywood quiz" → action: "start", category: "bollywood", difficulty: "hard"
-   Default category is "general", default difficulty is "medium"
+- `quiz` — params: {{"action": "start"|"answer"|"hint"|"score"|"quit",
+                     "category": "general|bollywood|movies|music|geography|tech|food|cricket",
+                     "difficulty": "easy|medium|hard", "answer": <text>}}.
 
-13. "youtube_search" — Search for something on YouTube
-   Params: {{"query": "search terms"}}
-   "search old Hindi songs on YouTube" → youtube_search {{"query": "old Hindi songs"}}
-   "YouTube pe Sajni dhundho" → youtube_search {{"query": "Sajni"}}
-   "find cooking videos on YouTube" → youtube_search {{"query": "cooking videos"}}
-   "YouTube search Coldplay concerts" → youtube_search {{"query": "Coldplay concerts"}}
+- `youtube_search` — params: {{"query": <terms>}}. Only when user says "youtube" / "yt pe".
 
-14. "reminder" — Set, list, cancel, or snooze reminders
-   Params: {{"action": "add|cancel|list|snooze", "text": "description", "time": "HH:MM or relative", "date": "today|tomorrow|YYYY-MM-DD", "repeat": "none|daily|weekly|monthly"}}
-   Add: "remind me to call mom at 5pm" → action: "add", text: "call mom", time: "5pm", date: "today"
-   "remind me to take medicine at 10pm every day" → action: "add", text: "take medicine", time: "10pm", repeat: "daily"
-   "set a reminder for tomorrow at 9am to buy groceries" → action: "add", text: "buy groceries", time: "9am", date: "tomorrow"
-   "remind me in 2 hours to check the oven" → action: "add", text: "check the oven", time: "in 2 hours"
-   "yaad dilana ki 5 baje call karna hai" → action: "add", text: "call karna hai", time: "5:00"
-   "reminder set karo 10 baje medicine leni hai" → action: "add", text: "medicine leni hai", time: "10:00"
-   List: "what reminders do I have" → action: "list"
-   "list reminders" → action: "list"
-   Cancel: "cancel my reminder to call mom" → action: "cancel", text: "call mom"
-   "cancel reminder" → action: "cancel"
-   Snooze: "snooze reminder" → action: "snooze"
-   "snooze for 30 minutes" → action: "snooze", time: "30"
-   Default date is "today", default repeat is "none"
+- `reminder` — params: {{"action": "add"|"cancel"|"list"|"snooze",
+                         "text": <description>, "time": "HH:MM"|"in N hours",
+                         "date": "today"|"tomorrow"|"YYYY-MM-DD",
+                         "repeat": "none"|"daily"|"weekly"|"monthly"}}.
 
-15. "story" — User wants a bedtime story or story experience
-   Params: {{"action": "start|continue|stop", "genre": "bedtime|funny|romantic|scary|adventure|null", "topic": "optional user-specified topic or null"}}
-   Start: "tell me a story", "tell me a bedtime story", "story time", "ek kahani sunao", "tell me a funny story"
-   Continue: "continue the story", "tell me more", "aage ki kahani", "aur sunao"
-   Stop: "stop the story", "story band karo"
-   Extract genre from the request: "tell me a scary story" → genre: "scary"
-   Extract topic from the request: "tell me a story about a princess" → topic: "a princess"
-   If no genre mentioned, leave genre as null. If no topic, leave topic as null.
-   IMPORTANT: Do NOT generate a story in the response. The response should just be a brief acknowledgment.
+- `story` — params: {{"action": "start"|"continue"|"stop", "genre": <genre|null>,
+                      "topic": <text|null>}}.
+  Don't write the story in `response` — leave it brief.
 
-16. "timer" — Set, cancel, or manage timers and alarms
-   Params: {{"action": "set_timer|set_alarm|cancel|snooze|list", "duration": seconds, "time": "HH:MM", "label": "string", "repeat": "none|daily|weekdays"}}
-   Set timer: "set a timer for 5 minutes" → action: "set_timer", duration: 300
-   "timer lagao 10 minute" → action: "set_timer", duration: 600
-   "set a 30 second timer" → action: "set_timer", duration: 30
-   "timer for 2 hours" → action: "set_timer", duration: 7200
-   "set a timer for 5 minutes for pasta" → action: "set_timer", duration: 300, label: "pasta"
-   Set alarm: "set alarm for 7am" → action: "set_alarm", time: "07:00"
-   "alarm at 7:30pm" → action: "set_alarm", time: "19:30"
-   "wake me up at 6" → action: "set_alarm", time: "06:00"
-   "alarm set karo 7 baje" → action: "set_alarm", time: "07:00"
-   "set a daily alarm for 7am" → action: "set_alarm", time: "07:00", repeat: "daily"
-   "weekday alarm at 6:30" → action: "set_alarm", time: "06:30", repeat: "weekdays"
-   Cancel: "cancel timer" → action: "cancel"
-   Snooze: "snooze" → action: "snooze"
-   "snooze for 10 minutes" → action: "snooze", duration: 600
-   List: "what timers are active" → action: "list"
-   IMPORTANT: Timers use "duration" (in seconds). Alarms use "time" (HH:MM format).
-   Convert minutes/hours to seconds for duration. Convert 12h to 24h for time.
+- `timer` — params: {{"action": "set_timer"|"set_alarm"|"cancel"|"snooze"|"list",
+                      "duration": <seconds>, "time": "HH:MM",
+                      "label": <opt>, "repeat": "none"|"daily"|"weekdays"}}.
+  Timer = duration. Alarm = clock time. Convert minutes→seconds.
 
-17. "ambient" — Play, stop, or control background ambient sounds (rain, white noise, ocean, etc.)
-   Params: {{"action": "play|stop|volume", "sound": "rain|ocean|thunderstorm|white_noise|pink_noise|brown_noise|fireplace|forest|birds|wind|cafe|fan", "level": 0-100}}
-   This is for AMBIENT/BACKGROUND sounds — NOT music. Used for sleep, relaxation, focus.
-   Play: "play rain sounds" → action: "play", sound: "rain"
-   "white noise" → action: "play", sound: "white_noise"
-   "ocean sounds lagao" → action: "play", sound: "ocean"
-   "play ambient sounds" → action: "play", sound: "rain" (default to rain)
-   "sleep sounds" → action: "play", sound: "rain"
-   "barish ki awaaz" → action: "play", sound: "rain"
-   "fireplace sounds" → action: "play", sound: "fireplace"
-   Stop: "stop ambient" → action: "stop"
-   "stop rain sounds" → action: "stop"
-   Volume: "ambient volume 20" → action: "volume", level: 20
-   "make rain louder" → action: "volume", level: 50
-   IMPORTANT: Differentiate from music_play. If the user asks for "rain sounds" or "white noise" it's ambient, not music.
+- `ambient` — params: {{"action": "play"|"stop"|"volume",
+                        "sound": "rain"|"ocean"|"thunderstorm"|"white_noise"|"pink_noise"|"brown_noise"|"fireplace"|"forest"|"birds"|"wind"|"cafe"|"fan",
+                        "level": 0..100}}.
+  Nature/relaxation sounds ONLY. NEVER for music or volume control.
 
 ## Format
-Always return an "intents" array, even for a single command.
-{{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "Brief spoken acknowledgment IN CHARACTER."}}
+{{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}
 
-IMPORTANT: Only use MULTIPLE intents for genuinely separate actions (e.g., "play music AND turn lights blue").
-A single conversational request is ALWAYS one "chat" intent, never two. Examples of ONE intent:
-- "tell me a story" → ONE chat intent
-- "tell me a joke and then a riddle" → ONE chat intent (it's one conversational request)
-- "what's the meaning of life" → ONE chat intent
-Only split into multiple intents when combining DIFFERENT intent types (music + lights, music + volume, etc.).
+A single conversational request is ONE chat intent (e.g. "tell me a joke and a riddle"
+= one chat). Multiple intents only for genuinely separate actions.
 
 ## Response tone
-Your "response" field MUST match your current personality:
 {p.tone}
 
-IMPORTANT: Always respond in ENGLISH only. Even if the user speaks Hindi or Hinglish, your response text must be in English. Never use Hindi words like "haan", "bolo", "kya", etc. in the response. Keep responses short — one sentence max for acknowledgments.
+Always reply in ENGLISH only, even for Hindi/Hinglish requests. One short sentence.
 
-## Examples
+## Few-shot examples (covers the trickiest patterns)
 
-User: "Sajni"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni"}}}}], "response": "Playing Sajni."}}
+User: "play Sajni"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni", "with_video": false}}}}], "response": "Playing Sajni."}}
 
-User: "play Channa Mereya"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Channa Mereya"}}}}], "response": "Playing Channa Mereya."}}
+# Bare song-name input (no "play" prefix) is STILL music_play.
+User: "Channa Mereya"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Channa Mereya", "with_video": false}}}}], "response": "Playing Channa Mereya."}}
 
-User: "Starboy"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Starboy"}}}}], "response": "Playing Starboy."}}
+User: "Gerua"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Gerua", "with_video": false}}}}], "response": "Playing Gerua."}}
 
-User: "kuch romantic sa bajao"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "romantic Hindi songs"}}}}], "response": "Playing romantic songs."}}
-
-User: "woh gaana jisme ladka train pe naachta hai"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Chaiyya Chaiyya"}}}}], "response": "Playing Chaiyya Chaiyya."}}
-
-User: "play Sajni with video"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni", "with_video": true}}}}], "response": "Playing Sajni with video."}}
+User: "Heeriye sunaa do"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Heeriye", "with_video": false}}}}], "response": "Playing Heeriye."}}
 
 User: "Sajni ka video lagao"
 {{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni", "with_video": true}}}}], "response": "Playing Sajni video."}}
 
-User: "Starboy video chalao"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Starboy", "with_video": true}}}}], "response": "Playing Starboy video."}}
-
-User: "pause"
-{{"intents": [{{"intent": "music_control", "params": {{"action": "pause"}}}}], "response": "Paused."}}
-
-User: "gaana band karo"
-{{"intents": [{{"intent": "music_control", "params": {{"action": "stop"}}}}], "response": "Stopped."}}
-
-User: "agle gaane pe jao"
-{{"intents": [{{"intent": "music_control", "params": {{"action": "skip"}}}}], "response": "Skipping."}}
-
-User: "change the song"
-{{"intents": [{{"intent": "music_control", "params": {{"action": "skip"}}}}], "response": "Skipping."}}
-
 User: "skip this one"
 {{"intents": [{{"intent": "music_control", "params": {{"action": "skip"}}}}], "response": "Skipping."}}
 
-User: "move to the next track"
-{{"intents": [{{"intent": "music_control", "params": {{"action": "skip"}}}}], "response": "Next track."}}
-
-User: "awaaz badha do"
-{{"intents": [{{"intent": "volume", "params": {{"level": "80", "output": "default"}}}}], "response": "Volume up."}}
-
-User: "volume 50"
-{{"intents": [{{"intent": "volume", "params": {{"level": "50", "output": "default"}}}}], "response": "Volume set to 50."}}
-
-User: "turn the lights blue"
-{{"intents": [{{"intent": "light_control", "params": {{"action": "color", "value": "blue"}}}}], "response": "Lights set to blue."}}
-
-User: "neeli light kar do"
-{{"intents": [{{"intent": "light_control", "params": {{"action": "color", "value": "blue"}}}}], "response": "Lights set to blue."}}
-
-User: "movie mode"
-{{"intents": [{{"intent": "light_control", "params": {{"action": "scene", "value": "movie"}}}}], "response": "Movie mode on."}}
-
-User: "party mode laga do"
-{{"intents": [{{"intent": "light_control", "params": {{"action": "scene", "value": "party"}}}}], "response": "Party mode!"}}
-
-User: "reading mode"
-{{"intents": [{{"intent": "light_control", "params": {{"action": "scene", "value": "reading"}}}}], "response": "Reading mode on."}}
-
-User: "what time is it"
-{{"intents": [{{"intent": "system", "params": {{"action": "time"}}}}], "response": ""}}
-
-User: "what's the weather"
-{{"intents": [{{"intent": "weather", "params": {{"query": "current"}}}}], "response": ""}}
-
-User: "will it rain today"
-{{"intents": [{{"intent": "weather", "params": {{"query": "rain"}}}}], "response": ""}}
-
-User: "mausam kaisa hai"
-{{"intents": [{{"intent": "weather", "params": {{"query": "current"}}}}], "response": ""}}
-
-User: "weather forecast"
-{{"intents": [{{"intent": "weather", "params": {{"query": "forecast"}}}}], "response": ""}}
-
-User: "switch to Chandler mode"
-{{"intents": [{{"intent": "switch_personality", "params": {{"personality": "chandler"}}}}], "response": "Oh, so NOW you want the funny one."}}
-
-User: "Devesh ban ja"
-{{"intents": [{{"intent": "switch_personality", "params": {{"personality": "devesh"}}}}], "response": "Haan bolo, Devesh here."}}
-
-User: "normal mode"
-{{"intents": [{{"intent": "switch_personality", "params": {{"personality": "jarvis"}}}}], "response": "Back to normal."}}
-
-User: "what is the speed of light"
-{{"intents": [{{"intent": "chat", "params": {{"message": "what is the speed of light"}}}}], "response": "About 300,000 kilometres per second in vacuum."}}
-
-User: "explain quantum computing"
-{{"intents": [{{"intent": "chat", "params": {{"message": "explain quantum computing"}}}}], "response": "It uses qubits which can be 0 and 1 simultaneously, letting some problems be solved exponentially faster than on classical computers."}}
+User: "study mode laga do"
+{{"intents": [{{"intent": "light_control", "params": {{"action": "scene", "value": "study"}}}}], "response": "Study mode on."}}
 
 User: "tell me a joke"
 {{"intents": [{{"intent": "chat", "params": {{"message": "tell me a joke"}}}}], "response": "Why don't scientists trust atoms? Because they make up everything."}}
@@ -656,123 +471,29 @@ User: "tell me a joke"
 User: "what time is it"
 {{"intents": [{{"intent": "system", "params": {{"action": "time"}}}}], "response": ""}}
 
-User: "tell me a long story about a dragon"
-{{"intents": [{{"intent": "chat", "params": {{"message": "tell me a long story about a dragon"}}}}], "response": ""}}
-
-User: "what did I play yesterday"
-{{"intents": [{{"intent": "memory_recall", "params": {{"query": "play yesterday"}}}}], "response": "Let me check..."}}
-
-User: "kya bajaya tha maine"
-{{"intents": [{{"intent": "memory_recall", "params": {{"query": "music play"}}}}], "response": "Dekhta hoon..."}}
-
-User: "how much do you remember"
-{{"intents": [{{"intent": "memory_stats", "params": {{}}}}], "response": ""}}
-
-User: "aaj kya news hai"
-{{"intents": [{{"intent": "knowledge_search", "params": {{"query": "India news today"}}}}], "response": "Let me look that up..."}}
-
-User: "who won the IPL match yesterday"
-{{"intents": [{{"intent": "knowledge_search", "params": {{"query": "IPL match result yesterday"}}}}], "response": "Let me check..."}}
-
-User: "what's happening with the Mars rover"
-{{"intents": [{{"intent": "knowledge_search", "params": {{"query": "Mars rover latest news"}}}}], "response": "Looking it up..."}}
+User: "what's the weather like"
+{{"intents": [{{"intent": "weather", "params": {{"query": "current"}}}}], "response": ""}}
 
 User: "good night"
 {{"intents": [{{"intent": "sleep", "params": {{"action": "sleep"}}}}], "response": "Good night, sleep well."}}
 
-User: "sleep mode"
-{{"intents": [{{"intent": "sleep", "params": {{"action": "sleep"}}}}], "response": "Going to sleep now. Good night."}}
-
-User: "sone ja"
-{{"intents": [{{"intent": "sleep", "params": {{"action": "sleep"}}}}], "response": "Good night, sweet dreams."}}
-
-User: "good morning"
-{{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "Good morning! Ready when you are."}}
-
-User: "wake up"
-{{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "I'm up! What can I do for you?"}}
-
-User: "jag ja"
-{{"intents": [{{"intent": "sleep", "params": {{"action": "wake"}}}}], "response": "Good morning! What do you need?"}}
-
-User: "let's play a quiz"
-{{"intents": [{{"intent": "quiz", "params": {{"action": "start", "category": "general", "difficulty": "medium"}}}}], "response": "Let's play!"}}
-
-User: "bollywood quiz khelna hai"
-{{"intents": [{{"intent": "quiz", "params": {{"action": "start", "category": "bollywood", "difficulty": "medium"}}}}], "response": "Bollywood quiz coming up!"}}
-
-User: "start a hard cricket quiz"
-{{"intents": [{{"intent": "quiz", "params": {{"action": "start", "category": "cricket", "difficulty": "hard"}}}}], "response": "A tough cricket quiz it is!"}}
-
-User: "quit quiz"
-{{"intents": [{{"intent": "quiz", "params": {{"action": "quit"}}}}], "response": "Quiz ended."}}
-
-User: "remind me to call mom at 5pm"
-{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "call mom", "time": "5pm", "date": "today", "repeat": "none"}}}}], "response": "I'll remind you to call mom at 5 PM."}}
-
-User: "remind me to take medicine at 10pm every day"
-{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "take medicine", "time": "10pm", "date": "today", "repeat": "daily"}}}}], "response": "Daily reminder set for 10 PM."}}
+User: "play rain sounds"
+{{"intents": [{{"intent": "ambient", "params": {{"action": "play", "sound": "rain"}}}}], "response": "Rain sounds."}}
 
 User: "remind me in 2 hours to check the oven"
-{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "check the oven", "time": "in 2 hours"}}}}], "response": "Got it, I'll remind you in 2 hours."}}
+{{"intents": [{{"intent": "reminder", "params": {{"action": "add", "text": "check the oven", "time": "in 2 hours"}}}}], "response": "I'll remind you in 2 hours."}}
 
-User: "what reminders do I have"
-{{"intents": [{{"intent": "reminder", "params": {{"action": "list"}}}}], "response": "Let me check your reminders."}}
+User: "let's play it safe"
+{{"intents": [{{"intent": "chat", "params": {{"message": "let's play it safe"}}}}], "response": "Sure, playing it safe."}}
 
-User: "cancel my reminder to call mom"
-{{"intents": [{{"intent": "reminder", "params": {{"action": "cancel", "text": "call mom"}}}}], "response": "Reminder cancelled."}}
-
-User: "set a timer for 5 minutes"
-{{"intents": [{{"intent": "timer", "params": {{"action": "set_timer", "duration": 300}}}}], "response": "Timer set for 5 minutes."}}
-
-User: "timer lagao 10 minute"
-{{"intents": [{{"intent": "timer", "params": {{"action": "set_timer", "duration": 600}}}}], "response": "Timer set for 10 minutes."}}
-
-User: "set alarm for 7am"
-{{"intents": [{{"intent": "timer", "params": {{"action": "set_alarm", "time": "07:00", "repeat": "none"}}}}], "response": "Alarm set for 7 AM."}}
-
-User: "set a daily alarm for 6:30am"
-{{"intents": [{{"intent": "timer", "params": {{"action": "set_alarm", "time": "06:30", "repeat": "daily"}}}}], "response": "Daily alarm set for 6:30 AM."}}
-
-User: "cancel timer"
-{{"intents": [{{"intent": "timer", "params": {{"action": "cancel"}}}}], "response": "Timer cancelled."}}
-
-User: "snooze"
-{{"intents": [{{"intent": "timer", "params": {{"action": "snooze"}}}}], "response": "Snoozed."}}
-
-User: "tell me a bedtime story"
-{{"intents": [{{"intent": "story", "params": {{"action": "start", "genre": "bedtime"}}}}], "response": "Let me tell you a story..."}}
-
-User: "tell me a funny story about a robot"
-{{"intents": [{{"intent": "story", "params": {{"action": "start", "genre": "funny", "topic": "a robot"}}}}], "response": "Alright, here's a funny one!"}}
-
-User: "ek kahani sunao"
-{{"intents": [{{"intent": "story", "params": {{"action": "start"}}}}], "response": "Let me tell you a story..."}}
-
-User: "continue the story"
-{{"intents": [{{"intent": "story", "params": {{"action": "continue"}}}}], "response": "Continuing..."}}
-
-### Chained commands
-User: "play Sajni and set the lights to red"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni"}}}}, {{"intent": "light_control", "params": {{"action": "color", "value": "red"}}}}], "response": "Playing Sajni with red lights."}}
-
-User: "play Sajni volume 30"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni"}}}}, {{"intent": "volume", "params": {{"level": "30", "output": "default"}}}}], "response": "Playing Sajni at volume 30."}}
-
-User: "what songs did you play today and resume the last one"
-{{"intents": [{{"intent": "memory_recall", "params": {{"query": "songs played today"}}}}, {{"intent": "music_control", "params": {{"action": "resume"}}}}], "response": "Let me check and resume."}}
-
-User: "Coldplay bajao aur light neeli kar do"
-{{"intents": [{{"intent": "music_play", "params": {{"query": "Coldplay"}}}}, {{"intent": "light_control", "params": {{"action": "color", "value": "blue"}}}}], "response": "Playing Coldplay with blue lights."}}
-
-User: "romantic mode laga do with some music"
-{{"intents": [{{"intent": "light_control", "params": {{"action": "scene", "value": "romantic"}}}}, {{"intent": "music_play", "params": {{"query": "romantic Hindi songs"}}}}], "response": "Setting romantic mood with music."}}
-
-User: "stop the music and turn off the lights"
+User: "stop music and turn off lights"
 {{"intents": [{{"intent": "music_control", "params": {{"action": "stop"}}}}, {{"intent": "light_control", "params": {{"action": "off"}}}}], "response": "Music stopped, lights off."}}
 
-User: "gaana band karo aur light bhi off kar do"
-{{"intents": [{{"intent": "music_control", "params": {{"action": "stop"}}}}, {{"intent": "light_control", "params": {{"action": "off"}}}}], "response": "Done, sab band."}}
+User: "play Sajni and set the lights to red"
+{{"intents": [{{"intent": "music_play", "params": {{"query": "Sajni", "with_video": false}}}}, {{"intent": "light_control", "params": {{"action": "color", "value": "red"}}}}], "response": "Playing Sajni with red lights."}}
+
+User: "set volume to 30, switch to Chandler, and play Channa Mereya"
+{{"intents": [{{"intent": "volume", "params": {{"level": "30", "output": "default"}}}}, {{"intent": "switch_personality", "params": {{"personality": "chandler"}}}}, {{"intent": "music_play", "params": {{"query": "Channa Mereya", "with_video": false}}}}], "response": "Volume 30, Chandler mode, playing Channa Mereya."}}
 """
 
 
@@ -1018,6 +739,16 @@ class OllamaBrainProvider(BrainProvider):
         options = {"temperature": temperature or self.temperature}
         if max_tokens is not None:
             options["num_predict"] = max_tokens
+        # Force a 4096-token context. Ollama's default is 2048, which
+        # silently truncates our classification system prompt (currently
+        # ~7700 tokens after the disambiguation block was added). When
+        # the bottom of the prompt is dropped, the model loses critical
+        # routing rules and falls back to surface-word matching against
+        # the truncated head — observed Jetson pass rate drop from 91%
+        # to 51%. 4096 fits everything with headroom; KV cache memory
+        # cost is ~480MB extra on llama3.2:3b, well within Jetson's
+        # 8GB shared memory.
+        options.setdefault("num_ctx", 4096)
 
         payload = {
             "model": self.model,

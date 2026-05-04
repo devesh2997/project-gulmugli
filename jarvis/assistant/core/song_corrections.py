@@ -144,6 +144,26 @@ _ENRICHMENT_HINTS: dict[str, str] = {
     "sajni": "Sajni Arijit Singh Laapataa Ladies",
     "play sajni": "Sajni Arijit Singh Laapataa Ladies",
     "sajni bajao": "Sajni Arijit Singh Laapataa Ladies",
+
+    # ─ Channa Ve — Akhil Sachdeva's Bhoot Police (2021). Without a hint
+    #   the LLM enriches to "Channa Mereya" (different song) because
+    #   "Channa Mereya" is more famous. Pin to Akhil Sachdeva.
+    "channa ve": "Channa Ve Akhil Sachdeva Bhoot Police",
+    "play channa ve": "Channa Ve Akhil Sachdeva Bhoot Police",
+
+    # ─ Heeriye — Jasleen Royal's 2023 hit shares the title with several
+    #   other Hindi songs (one Arijit/Shreya version, one Punjabi original).
+    #   Pin to the Jasleen Royal version which is the one most users mean
+    #   when they say "Heeriye" by itself.
+    "heeriye": "Heeriye Jasleen Royal Arijit Singh",
+    "play heeriye": "Heeriye Jasleen Royal Arijit Singh",
+    "heeriye sunaa do": "Heeriye Jasleen Royal Arijit Singh",
+    "mujhe heeriye sunna hai": "Heeriye Jasleen Royal Arijit Singh",
+
+    # ─ Tu Hai Kahaan vs Tu Kahaan Hai — order matters; Zubeen Garg has a
+    #   completely different "Tu Kahaan Hai" that wins YT popularity for
+    #   the bare query. Pin to AUR.
+    "tu hai kahan": "Tu Hai Kahaan AUR band",
 }
 
 

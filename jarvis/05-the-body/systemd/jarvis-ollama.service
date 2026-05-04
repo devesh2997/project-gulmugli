@@ -36,3 +36,19 @@ Environment=OLLAMA_MAX_LOADED_MODELS=1
 
 # Listen on localhost only (security: no external access to the LLM)
 Environment=OLLAMA_HOST=127.0.0.1:11434
+
+# Default context window. Default Ollama is 2048 — too small for our
+# classifier system prompt (which has grown to ~7700 tokens after the
+# disambiguation rules + intent definitions + per-intent examples were
+# added). At 2048, the BOTTOM of the prompt gets silently truncated and
+# the model loses the disambiguation guidance — observed pass rate drop
+# from 91% (Mac, default 4096) to 51% (Jetson, default 2048).
+#
+# 4096 fits the prompt with headroom for the user input + response
+# (~400 tokens) and adds about 480MB to the KV cache memory footprint
+# on llama3.2:3b. With the JARVIS service running the system uses ~5GB
+# total — leaves ~2GB headroom for VAD/whisper buffers and OS.
+#
+# If we move to a smaller prompt later, this can be dropped back to
+# 2048 to recover that memory.
+Environment=OLLAMA_NUM_CTX=4096

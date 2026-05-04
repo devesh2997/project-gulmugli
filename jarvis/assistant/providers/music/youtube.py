@@ -83,7 +83,19 @@ def _titles_share_distinctive_word(raw_input: str, title_a: str, title_b: str) -
     distinctive = max(words, key=len)
     a_lower = title_a.lower()
     b_lower = title_b.lower()
-    return distinctive in a_lower and distinctive in b_lower
+    # Direct substring match — common case.
+    if distinctive in a_lower and distinctive in b_lower:
+        return True
+    # Fuzzy fallback for spelling variants of Hindi proper nouns —
+    # "kahaan" vs "kahan" differ by one vowel but represent the same
+    # name. partial_ratio threshold 88 catches 1-2 char differences in
+    # 5-7 char words without matching unrelated titles.
+    try:
+        from rapidfuzz import fuzz
+        return (fuzz.partial_ratio(distinctive, a_lower) >= 88
+                and fuzz.partial_ratio(distinctive, b_lower) >= 88)
+    except ImportError:
+        return False
 
 
 @register("music", "youtube_music")
@@ -240,10 +252,53 @@ class YouTubeMusicProvider(MusicProvider):
                 merged.append(result)
         return merged[:limit]
 
-    def _raw_search(self, query: str, limit: int) -> list[SongResult]:
-        """Execute a single YouTube Music search and return SongResults."""
-        results = self.ytm.search(query, filter="songs", limit=limit)
+    # Queries that signal "search YT videos, not the YT Music songs catalog".
+    # The songs catalog is licensed/Bollywood-leaning and DOESN'T include the
+    # official Coke Studio Pakistan videos at all — searching "Pasoori" with
+    # filter="songs" returns only Bollywood remakes ("Pasoori Nu" by Arijit
+    # Singh) because the original Coke Studio version isn't in the song
+    # catalog. The videos index has it as the actual #1 result with ~950M
+    # views. Switch to videos-search when the user query (or our
+    # enrichment) signals one of these contexts.
+    _VIDEOS_FILTER_TRIGGERS = (
+        "coke studio",
+        "aur band",
+        "ali sethi",
+        "naseebo lal",
+        "abida parveen",
+    )
 
+    def _raw_search(self, query: str, limit: int) -> list[SongResult]:
+        """
+        Execute a single YouTube search and return SongResults.
+
+        Defaults to YT Music's "songs" catalog filter (clean metadata,
+        artist arrays, album info). Falls back to "videos" when the
+        query indicates content that ISN'T in the songs catalog
+        (Coke Studio Pakistan, Pakistani indie bands like AUR). See
+        `_VIDEOS_FILTER_TRIGGERS` for the trigger list.
+        """
+        q_lower = (query or "").lower()
+        use_videos_filter = any(t in q_lower for t in self._VIDEOS_FILTER_TRIGGERS)
+
+        if use_videos_filter:
+            results = self.ytm.search(query, filter="videos", limit=limit)
+            # Videos index uses a different field shape: artists may be a
+            # single channel name, no album. Normalize to SongResult.
+            return [
+                SongResult(
+                    title=r.get("title", ""),
+                    artist=", ".join(a["name"] for a in r.get("artists", []))
+                            if r.get("artists") else r.get("author", ""),
+                    album="",
+                    duration=r.get("duration", ""),
+                    uri=r.get("videoId", ""),
+                    source="youtube_music",
+                )
+                for r in results
+            ]
+
+        results = self.ytm.search(query, filter="songs", limit=limit)
         return [
             SongResult(
                 title=r.get("title", ""),
