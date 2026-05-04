@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-05-05T04:10:44.942236",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "personality": {
+      "total": 6,
+      "passed": 6,
+      "total_latency": 12.377179145812988,
+      "tests": [
+        {
+          "name": "Default personality loaded",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "Active: jarvis (Jarvis)"
+        },
+        {
+          "name": "Multiple personalities exist",
+          "passed": true,
+          "latency": 9.059906005859375e-06,
+          "detail": "5 personalities: ['jarvis', 'devesh', 'astha', 'astha_angry', 'chandler']"
+        },
+        {
+          "name": "Switch personality",
+          "passed": true,
+          "latency": 0.0003509521484375,
+          "detail": "Switched to devesh"
+        },
+        {
+          "name": "Switch back to original",
+          "passed": true,
+          "latency": 0.00013208389282226562,
+          "detail": "Back to jarvis"
+        },
+        {
+          "name": "Personality tone influences response",
+          "passed": true,
+          "latency": 12.376005172729492,
+          "detail": "Response: Could this BE my life - I'm Chandler Muriel Bing, a sarcastic advertising executive with a heart of "
+        },
+        {
+          "name": "Fuzzy personality name matching",
+          "passed": true,
+          "latency": 0.0006759166717529297,
+          "detail": "Switched via display name 'Devesh'"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 12.377179145812988
+  }
+}

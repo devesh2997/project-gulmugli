@@ -1,0 +1,179 @@
+{
+  "timestamp": "2026-05-05T04:16:45.964281",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "birthday_quiz": {
+      "total": 17,
+      "passed": 17,
+      "total_latency": 0.023096561431884766,
+      "tests": [
+        {
+          "name": "test_pack_loads_questions_and_reveal",
+          "input": "",
+          "passed": true,
+          "latency": 0.002357959747314453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_pack_file_loads_zero_questions",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002739429473876953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_question_skipped_others_load",
+          "input": "",
+          "passed": true,
+          "latency": 0.0011780261993408203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_question_rejects_non_dict",
+          "input": "",
+          "passed": true,
+          "latency": 3.0994415283203125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_reveal_handles_missing_block",
+          "input": "",
+          "passed": true,
+          "latency": 1.9073486328125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_shuffle_preserves_order",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014278888702392578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_shuffle_session_chooses_subset",
+          "input": "",
+          "passed": true,
+          "latency": 0.0017809867858886719,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_question_count_override",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013897418975830078,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_correct_substring_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013549327850341797,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_case_insensitive",
+          "input": "",
+          "passed": true,
+          "latency": 0.001425027847290039,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_wrong_path",
+          "input": "",
+          "passed": true,
+          "latency": 0.0018270015716552734,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_before_first_question_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0016350746154785156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_score_counts_only_correct",
+          "input": "",
+          "passed": true,
+          "latency": 0.0015559196472167969,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reveal_speaks_intro_and_outro_when_audio_missing",
+          "input": "",
+          "passed": true,
+          "latency": 0.0020051002502441406,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reveal_plays_audio_when_present_and_skips_fallback_text",
+          "input": "",
+          "passed": true,
+          "latency": 0.002187013626098633,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reveal_with_no_voice_router_no_crash",
+          "input": "",
+          "passed": true,
+          "latency": 0.0017418861389160156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_empty_pack_yields_zero_question_session",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009510517120361328,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 17,
+    "passed": 17,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.023096561431884766
+  }
+}

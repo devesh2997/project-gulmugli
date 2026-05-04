@@ -1,0 +1,143 @@
+{
+  "timestamp": "2026-05-05T04:41:28.969421",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "voice_memos": {
+      "total": 13,
+      "passed": 13,
+      "total_latency": 0.007658720016479492,
+      "tests": [
+        {
+          "name": "test_load_basic_bank",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012848377227783203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_by_tag_returns_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007350444793701172,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_by_tag_no_match_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005712509155273438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_by_tag_prefers_default",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007708072662353516,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_available_from_gates_playability",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006940364837646484,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_available_from_null_means_always",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006678104400634766,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_list_available_filters_by_date",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007102489471435547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_default_falls_back_to_random",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006339550018310547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_bank_file_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002460479736328125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_memo_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005900859832763672,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_invalid_iso_date_treated_as_always_available",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005986690521240234,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_memo_with_missing_file_returns_false",
+          "input": "",
+          "passed": true,
+          "latency": 0.00015401840209960938,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_memo_rejects_non_dict",
+          "input": "",
+          "passed": true,
+          "latency": 1.9073486328125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 13,
+    "passed": 13,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.007658720016479492
+  }
+}

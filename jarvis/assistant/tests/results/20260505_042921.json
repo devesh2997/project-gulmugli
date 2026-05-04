@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-05-05T04:29:21.448418",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "memory_event_recall": {
+      "total": 8,
+      "passed": 8,
+      "total_latency": 0.015920400619506836,
+      "tests": [
+        {
+          "name": "test_log_interaction_persists_tags",
+          "input": "",
+          "passed": true,
+          "latency": 0.0025730133056640625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_by_tag_returns_matching_rows",
+          "input": "",
+          "passed": true,
+          "latency": 0.0015769004821777344,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_by_tag_does_not_partial_match_across_tag_boundaries",
+          "input": "",
+          "passed": true,
+          "latency": 0.0018320083618164062,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_event_memories_filters_by_event_and_year",
+          "input": "",
+          "passed": true,
+          "latency": 0.002096891403198242,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_by_tag_returns_empty_list_on_miss",
+          "input": "",
+          "passed": true,
+          "latency": 0.0015130043029785156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_log_without_tags_attribute_back_compat",
+          "input": "",
+          "passed": true,
+          "latency": 0.0016891956329345703,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pre_migration_rows_load_with_empty_tags",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014650821685791016,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_migration_idempotent_on_existing_db",
+          "input": "",
+          "passed": true,
+          "latency": 0.003174304962158203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.015920400619506836
+  }
+}

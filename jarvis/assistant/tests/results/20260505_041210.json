@@ -1,0 +1,170 @@
+{
+  "timestamp": "2026-05-05T04:12:10.313294",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "event_manager": {
+      "total": 16,
+      "passed": 16,
+      "total_latency": 0.012660026550292969,
+      "tests": [
+        {
+          "name": "test_no_events_dir_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008327960968017578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_recurring_match_on_day",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010230541229248047,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_recurring_eve_window",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007321834564208984,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_recurring_aftermath_window",
+          "input": "",
+          "passed": true,
+          "latency": 0.00067901611328125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_no_match_far_from_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006999969482421875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_year_boundary_dec_to_jan",
+          "input": "",
+          "passed": true,
+          "latency": 0.001049041748046875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_one_time_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.000911712646484375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_range_rule_inside_window",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007307529449462891,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_multiple_packs_first_alphabetical_wins",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010561943054199219,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_broken_pack_does_not_break_others",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010900497436523438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pack_with_no_date_rule_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005271434783935547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_features_list_exposed",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007309913635253906,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_custom_eve_aftermath_windows",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007109642028808594,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_id_mismatch_uses_directory_name",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006341934204101562,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reload_picks_up_new_packs",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006339550018310547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_leap_day_event_does_not_crash_on_non_leap_year",
+          "input": "",
+          "passed": true,
+          "latency": 0.00061798095703125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 16,
+    "passed": 16,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.012660026550292969
+  }
+}

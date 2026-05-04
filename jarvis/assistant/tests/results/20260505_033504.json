@@ -1,0 +1,1007 @@
+{
+  "timestamp": "2026-05-05T03:35:04.558978",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "prefilter": {
+      "total": 140,
+      "passed": 140,
+      "total_latency": 0.011619806289672852,
+      "tests": [
+        {
+          "name": "bare 'pause'",
+          "input": "pause",
+          "passed": true,
+          "latency": 0.005009889602661133,
+          "detail": ""
+        },
+        {
+          "name": "pause the music",
+          "input": "pause the music",
+          "passed": true,
+          "latency": 5.507469177246094e-05,
+          "detail": ""
+        },
+        {
+          "name": "pause the song",
+          "input": "pause the song",
+          "passed": true,
+          "latency": 8.511543273925781e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish pause",
+          "input": "pause the gaana",
+          "passed": true,
+          "latency": 7.987022399902344e-05,
+          "detail": ""
+        },
+        {
+          "name": "resume",
+          "input": "resume",
+          "passed": true,
+          "latency": 0.00023293495178222656,
+          "detail": ""
+        },
+        {
+          "name": "continue",
+          "input": "continue",
+          "passed": true,
+          "latency": 5.888938903808594e-05,
+          "detail": ""
+        },
+        {
+          "name": "stop",
+          "input": "stop",
+          "passed": true,
+          "latency": 0.00016498565673828125,
+          "detail": ""
+        },
+        {
+          "name": "stop the music",
+          "input": "stop the music",
+          "passed": true,
+          "latency": 4.7206878662109375e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi stop",
+          "input": "gaana rok do",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi stop",
+          "input": "gaana band karo",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip",
+          "input": "skip",
+          "passed": true,
+          "latency": 0.0005130767822265625,
+          "detail": ""
+        },
+        {
+          "name": "skip this",
+          "input": "skip this",
+          "passed": true,
+          "latency": 4.982948303222656e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip this one",
+          "input": "skip this one",
+          "passed": true,
+          "latency": 3.910064697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip this song",
+          "input": "skip this song",
+          "passed": true,
+          "latency": 3.7670135498046875e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip song",
+          "input": "skip song",
+          "passed": true,
+          "latency": 3.2901763916015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip track",
+          "input": "skip track",
+          "passed": true,
+          "latency": 3.218650817871094e-05,
+          "detail": ""
+        },
+        {
+          "name": "next",
+          "input": "next",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "next song",
+          "input": "next song",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "next track",
+          "input": "next track",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi next",
+          "input": "agla gaana",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi 'another song'",
+          "input": "dusra gaana",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "change the song",
+          "input": "change the song",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Sajni",
+          "input": "play Sajni",
+          "passed": true,
+          "latency": 0.00033020973205566406,
+          "detail": ""
+        },
+        {
+          "name": "case-insensitive",
+          "input": "Play Sajni",
+          "passed": true,
+          "latency": 3.5762786865234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Channa Mereya",
+          "input": "play Channa Mereya",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play with artist hint",
+          "input": "play Husn by Anuv Jain",
+          "passed": true,
+          "latency": 3.933906555175781e-05,
+          "detail": ""
+        },
+        {
+          "name": "put on Coldplay",
+          "input": "put on Coldplay",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "put on some Bollywood",
+          "input": "put on some Bollywood",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "start playing Sajni",
+          "input": "start playing Sajni",
+          "passed": true,
+          "latency": 3.2901763916015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "play me Tum Hi Ho",
+          "input": "play me Tum Hi Ho",
+          "passed": true,
+          "latency": 3.266334533691406e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish suffix bajao",
+          "input": "Sajni bajao",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "Sajni chalao",
+          "input": "Sajni chalao",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "Sajni laga do",
+          "input": "Sajni laga do",
+          "passed": true,
+          "latency": 3.218650817871094e-05,
+          "detail": ""
+        },
+        {
+          "name": "Sajni lagao",
+          "input": "Sajni lagao",
+          "passed": true,
+          "latency": 3.075599670410156e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish prefix bajao",
+          "input": "bajao Sajni",
+          "passed": true,
+          "latency": 3.266334533691406e-05,
+          "detail": ""
+        },
+        {
+          "name": "chalao Sajni",
+          "input": "chalao Sajni",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "lagao Sajni",
+          "input": "lagao Sajni",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "play quiz \u2192 quiz matcher (runs before music_play in chain)",
+          "input": "play quiz",
+          "passed": true,
+          "latency": 2.193450927734375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play trivia \u2192 quiz matcher",
+          "input": "play trivia",
+          "passed": true,
+          "latency": 2.4080276489257812e-05,
+          "detail": ""
+        },
+        {
+          "name": "play game \u2192 fall through (no game matcher)",
+          "input": "play game",
+          "passed": true,
+          "latency": 0.0011031627655029297,
+          "detail": ""
+        },
+        {
+          "name": "play it \u2192 ambiguous pronoun, LLM",
+          "input": "play it",
+          "passed": true,
+          "latency": 2.574920654296875e-05,
+          "detail": ""
+        },
+        {
+          "name": "play this \u2192 ambiguous pronoun, LLM",
+          "input": "play this",
+          "passed": true,
+          "latency": 2.5033950805664062e-05,
+          "detail": ""
+        },
+        {
+          "name": "play that \u2192 ambiguous pronoun, LLM",
+          "input": "play that",
+          "passed": true,
+          "latency": 2.3126602172851562e-05,
+          "detail": ""
+        },
+        {
+          "name": "play music \u2192 too ambiguous, let LLM choose",
+          "input": "play music",
+          "passed": true,
+          "latency": 2.384185791015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Sajni with video",
+          "input": "play Sajni with video",
+          "passed": true,
+          "latency": 9.107589721679688e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi 'play X video'",
+          "input": "Sajni ka video lagao",
+          "passed": true,
+          "latency": 3.2901763916015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Sajni video mein",
+          "input": "play Sajni video mein",
+          "passed": true,
+          "latency": 2.5033950805664062e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume 50",
+          "input": "volume 50",
+          "passed": true,
+          "latency": 3.504753112792969e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume 100",
+          "input": "volume 100",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume 0",
+          "input": "volume 0",
+          "passed": true,
+          "latency": 3.0040740966796875e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume up",
+          "input": "volume up",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume down",
+          "input": "volume down",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": ""
+        },
+        {
+          "name": "loud",
+          "input": "loud",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "louder",
+          "input": "louder",
+          "passed": true,
+          "latency": 3.0040740966796875e-05,
+          "detail": ""
+        },
+        {
+          "name": "quiet",
+          "input": "quiet",
+          "passed": true,
+          "latency": 3.0040740966796875e-05,
+          "detail": ""
+        },
+        {
+          "name": "quieter",
+          "input": "quieter",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi volume up",
+          "input": "awaaz badhao",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi volume down",
+          "input": "awaaz kam karo",
+          "passed": true,
+          "latency": 3.504753112792969e-05,
+          "detail": ""
+        },
+        {
+          "name": "mute",
+          "input": "mute",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "mute the volume",
+          "input": "mute the volume",
+          "passed": true,
+          "latency": 5.1975250244140625e-05,
+          "detail": ""
+        },
+        {
+          "name": "mute the sound",
+          "input": "mute the sound",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi mute",
+          "input": "awaaz band karo",
+          "passed": true,
+          "latency": 3.4809112548828125e-05,
+          "detail": ""
+        },
+        {
+          "name": "out-of-range volume \u2192 fall through",
+          "input": "volume 200",
+          "passed": true,
+          "latency": 2.47955322265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "verbose set \u2192 LLM (no exact prefilter form)",
+          "input": "set volume to 50",
+          "passed": true,
+          "latency": 2.8133392333984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "brightness, not volume",
+          "input": "brightness 30 percent",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "lights off",
+          "input": "lights off",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "light off",
+          "input": "light off",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn off the lights",
+          "input": "turn off the lights",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn off the light",
+          "input": "turn off the light",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi lights off",
+          "input": "batti band karo",
+          "passed": true,
+          "latency": 3.528594970703125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish",
+          "input": "light band karo",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": ""
+        },
+        {
+          "name": "lights band karo",
+          "input": "lights band karo",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "lights on",
+          "input": "lights on",
+          "passed": true,
+          "latency": 3.2901763916015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "light on",
+          "input": "light on",
+          "passed": true,
+          "latency": 3.0040740966796875e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn on the lights",
+          "input": "turn on the lights",
+          "passed": true,
+          "latency": 3.62396240234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn on the light",
+          "input": "turn on the light",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi lights on",
+          "input": "batti jalao",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "color setting \u2192 LLM",
+          "input": "lights to purple",
+          "passed": true,
+          "latency": 2.8133392333984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "brightness change \u2192 LLM",
+          "input": "dim the lights",
+          "passed": true,
+          "latency": 2.6941299438476562e-05,
+          "detail": ""
+        },
+        {
+          "name": "scene \u2192 LLM (handled by light_control via classifier)",
+          "input": "study mode",
+          "passed": true,
+          "latency": 2.5033950805664062e-05,
+          "detail": ""
+        },
+        {
+          "name": "scene + Hindi \u2192 LLM",
+          "input": "party mode laga do",
+          "passed": true,
+          "latency": 2.9325485229492188e-05,
+          "detail": ""
+        },
+        {
+          "name": "what time is it",
+          "input": "what time is it",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "what's the time",
+          "input": "what's the time",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "what is the time",
+          "input": "what is the time",
+          "passed": true,
+          "latency": 3.5762786865234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "what is the time right now",
+          "input": "what is the time right now",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "no apostrophe",
+          "input": "whats the time",
+          "passed": true,
+          "latency": 3.3855438232421875e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me the time",
+          "input": "tell me the time",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me the current time",
+          "input": "tell me the current time",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "give me the time",
+          "input": "give me the time",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "give me the current time",
+          "input": "give me the current time",
+          "passed": true,
+          "latency": 3.62396240234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "do you know the time",
+          "input": "do you know the time",
+          "passed": true,
+          "latency": 3.62396240234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "do you have the time",
+          "input": "do you have the time",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "current time",
+          "input": "current time",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "the time please",
+          "input": "the time please",
+          "passed": true,
+          "latency": 3.62396240234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi",
+          "input": "kitne baje hain",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi",
+          "input": "abhi kya time hai",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "what's the date",
+          "input": "what's the date",
+          "passed": true,
+          "latency": 3.6716461181640625e-05,
+          "detail": ""
+        },
+        {
+          "name": "what is the date",
+          "input": "what is the date",
+          "passed": true,
+          "latency": 3.4809112548828125e-05,
+          "detail": ""
+        },
+        {
+          "name": "no apostrophe",
+          "input": "what is todays date",
+          "passed": true,
+          "latency": 3.4809112548828125e-05,
+          "detail": ""
+        },
+        {
+          "name": "today's date",
+          "input": "today's date",
+          "passed": true,
+          "latency": 3.5762786865234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "todays date",
+          "input": "todays date",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "what day is today",
+          "input": "what day is today",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "what day is it",
+          "input": "what day is it",
+          "passed": true,
+          "latency": 3.3855438232421875e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi",
+          "input": "aaj kya date hai",
+          "passed": true,
+          "latency": 3.4809112548828125e-05,
+          "detail": ""
+        },
+        {
+          "name": "what's the weather",
+          "input": "what's the weather",
+          "passed": true,
+          "latency": 7.390975952148438e-05,
+          "detail": ""
+        },
+        {
+          "name": "how is the weather",
+          "input": "how is the weather",
+          "passed": true,
+          "latency": 1.71661376953125e-05,
+          "detail": ""
+        },
+        {
+          "name": "how hot is it",
+          "input": "how hot is it",
+          "passed": true,
+          "latency": 1.6689300537109375e-05,
+          "detail": ""
+        },
+        {
+          "name": "will it rain today",
+          "input": "will it rain today",
+          "passed": true,
+          "latency": 1.5020370483398438e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi heat",
+          "input": "kitni garmi hai",
+          "passed": true,
+          "latency": 1.71661376953125e-05,
+          "detail": ""
+        },
+        {
+          "name": "set a timer for 5 minutes",
+          "input": "set a timer for 5 minutes",
+          "passed": true,
+          "latency": 1.2159347534179688e-05,
+          "detail": ""
+        },
+        {
+          "name": "timer 10 minutes",
+          "input": "timer 10 minutes",
+          "passed": true,
+          "latency": 1.1920928955078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "5 minute timer",
+          "input": "5 minute timer",
+          "passed": true,
+          "latency": 1.2874603271484375e-05,
+          "detail": ""
+        },
+        {
+          "name": "set timer 30 seconds",
+          "input": "set timer 30 seconds",
+          "passed": true,
+          "latency": 1.1920928955078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "set alarm for 7am",
+          "input": "set alarm for 7am",
+          "passed": true,
+          "latency": 1.8835067749023438e-05,
+          "detail": ""
+        },
+        {
+          "name": "wake me up at 7",
+          "input": "wake me up at 7",
+          "passed": true,
+          "latency": 1.4066696166992188e-05,
+          "detail": ""
+        },
+        {
+          "name": "cancel the timer",
+          "input": "cancel the timer",
+          "passed": true,
+          "latency": 1.2159347534179688e-05,
+          "detail": ""
+        },
+        {
+          "name": "stop the alarm",
+          "input": "stop the alarm",
+          "passed": true,
+          "latency": 1.4781951904296875e-05,
+          "detail": ""
+        },
+        {
+          "name": "snooze",
+          "input": "snooze",
+          "passed": true,
+          "latency": 1.1920928955078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me a story",
+          "input": "tell me a story",
+          "passed": true,
+          "latency": 1.6927719116210938e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me a bedtime story",
+          "input": "tell me a bedtime story",
+          "passed": true,
+          "latency": 1.7881393432617188e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi 'tell a story'",
+          "input": "kahani sunao",
+          "passed": true,
+          "latency": 1.52587890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "good night",
+          "input": "good night",
+          "passed": true,
+          "latency": 1.71661376953125e-05,
+          "detail": ""
+        },
+        {
+          "name": "good morning",
+          "input": "good morning",
+          "passed": true,
+          "latency": 1.5020370483398438e-05,
+          "detail": ""
+        },
+        {
+          "name": "play quiz",
+          "input": "play quiz",
+          "passed": true,
+          "latency": 1.7881393432617188e-05,
+          "detail": ""
+        },
+        {
+          "name": "trivia start",
+          "input": "trivia start",
+          "passed": true,
+          "latency": 1.6927719116210938e-05,
+          "detail": ""
+        },
+        {
+          "name": "play rain sounds",
+          "input": "play rain sounds",
+          "passed": true,
+          "latency": 1.0967254638671875e-05,
+          "detail": ""
+        },
+        {
+          "name": "rain sounds",
+          "input": "rain sounds",
+          "passed": true,
+          "latency": 1.1920928955078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "greeting \u2192 chat",
+          "input": "hello",
+          "passed": true,
+          "latency": 2.4080276489257812e-05,
+          "detail": ""
+        },
+        {
+          "name": "greeting \u2192 chat",
+          "input": "hi there",
+          "passed": true,
+          "latency": 2.5033950805664062e-05,
+          "detail": ""
+        },
+        {
+          "name": "chat opener \u2192 chat",
+          "input": "how are you",
+          "passed": true,
+          "latency": 2.5987625122070312e-05,
+          "detail": ""
+        },
+        {
+          "name": "chat \u2192 LLM",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 2.8133392333984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "factual question \u2192 chat",
+          "input": "what is the speed of light",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "factual \u2192 chat",
+          "input": "explain quantum computing",
+          "passed": true,
+          "latency": 2.9087066650390625e-05,
+          "detail": ""
+        },
+        {
+          "name": "knowledge \u2192 LLM",
+          "input": "who is the PM of India",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "personality switch \u2192 LLM",
+          "input": "switch to Chandler mode",
+          "passed": true,
+          "latency": 2.9087066650390625e-05,
+          "detail": ""
+        },
+        {
+          "name": "personality switch \u2192 LLM",
+          "input": "become Devesh",
+          "passed": true,
+          "latency": 2.7179718017578125e-05,
+          "detail": ""
+        },
+        {
+          "name": "mood-music \u2192 LLM (needs mood\u2192genre mapping)",
+          "input": "kuch sad sa bajao",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        },
+        {
+          "name": "command chain \u2192 LLM",
+          "input": "play Tum Hi Ho and set lights to purple",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "knowledge \u2192 LLM",
+          "input": "when did Einstein die",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "math \u2192 LLM",
+          "input": "what's 2 plus 2",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        }
+      ],
+      "failures": []
+    }
+  },
+  "summary": {
+    "total_tests": 140,
+    "passed": 140,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.011619806289672852
+  }
+}

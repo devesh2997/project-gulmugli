@@ -1,0 +1,125 @@
+{
+  "timestamp": "2026-05-05T04:02:34.352305",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "intro_runner": {
+      "total": 11,
+      "passed": 11,
+      "total_latency": 0.011093378067016602,
+      "tests": [
+        {
+          "name": "test_happy_path_all_step_types",
+          "input": "",
+          "passed": true,
+          "latency": 0.0029060840606689453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_audio_file_skipped_continues",
+          "input": "",
+          "passed": true,
+          "latency": 0.0016319751739501953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unknown_step_type_logged_and_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009741783142089844,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_yaml_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005650520324707031,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_script_file_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.00026607513427734375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_voice_router_speak_steps_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007989406585693359,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_face_ui_dashboard_steps_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008471012115478516,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_cancel_stops_remaining_steps",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009968280792236328,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_step_handler_exception_caught",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007359981536865234,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_template_substitution_handles_missing_keys",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006699562072753906,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dashboard_hint_routes_through_dashboard_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007011890411376953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 11,
+    "passed": 11,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.011093378067016602
+  }
+}

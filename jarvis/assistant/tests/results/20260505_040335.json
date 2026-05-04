@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-05-05T04:03:35.223624",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "astha_angry_prefilter": {
+      "total": 7,
+      "passed": 7,
+      "total_latency": 0.009590864181518555,
+      "tests": [
+        {
+          "name": "test_kya_hua_in_default_personality_no_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.007625102996826172,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_in_astha_angry_returns_shortcut",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006237030029296875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_uppercase_matches",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004150867462158203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_with_question_mark_matches",
+          "input": "",
+          "passed": true,
+          "latency": 0.00022292137145996094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_hai_does_not_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.00026488304138183594,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_with_extra_words_does_not_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.00021004676818847656,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unrelated_input_in_astha_angry_falls_through",
+          "input": "",
+          "passed": true,
+          "latency": 0.00022912025451660156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.009590864181518555
+  }
+}

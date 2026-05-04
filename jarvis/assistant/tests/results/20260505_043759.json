@@ -1,0 +1,143 @@
+{
+  "timestamp": "2026-05-05T04:37:59.666376",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "astha_jokes": {
+      "total": 13,
+      "passed": 13,
+      "total_latency": 0.012077093124389648,
+      "tests": [
+        {
+          "name": "test_bank_loads_three_joke_types",
+          "input": "",
+          "passed": true,
+          "latency": 0.0024461746215820312,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_single_turn_delivery_calls_say_once",
+          "input": "",
+          "passed": true,
+          "latency": 0.000982046127319336,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_setup_then_punchline_pauses_between_turns",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009310245513916016,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_interactive_stage_a_delivers_wrong_punchline",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008938312530517578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_random_with_tag_filter",
+          "input": "",
+          "passed": true,
+          "latency": 0.00127410888671875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_random_empty_corpus_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004181861877441406,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_bank_file_loads_zero_jokes",
+          "input": "",
+          "passed": true,
+          "latency": 0.00024080276489257812,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_joke_skipped_others_load",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014369487762451172,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_voice_router_logs_and_continues",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012059211730957031,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unknown_joke_type_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.00019097328186035156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_joke_rejects_invalid_type",
+          "input": "",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_setup_then_punchline_with_empty_turns_fails",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003948211669921875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reload_picks_up_new_jokes",
+          "input": "",
+          "passed": true,
+          "latency": 0.0016582012176513672,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 13,
+    "passed": 13,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.012077093124389648
+  }
+}

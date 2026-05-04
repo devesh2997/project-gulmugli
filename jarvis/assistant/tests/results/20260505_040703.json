@@ -1,0 +1,125 @@
+{
+  "timestamp": "2026-05-05T04:07:03.354455",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "trigger_state": {
+      "total": 11,
+      "passed": 11,
+      "total_latency": 0.008356571197509766,
+      "tests": [
+        {
+          "name": "test_fresh_store_reports_not_triggered",
+          "input": "",
+          "passed": true,
+          "latency": 0.00067901611328125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_mark_then_query_returns_true",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006299018859863281,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_mark_idempotent_returns_false_second_time",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004990100860595703,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_year_keyed_storage_independent",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008633136749267578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_state_persists_across_restart",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007879734039306641,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_first_triggered_at_returns_iso_datetime",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007240772247314453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reset_returns_true_when_state_cleared",
+          "input": "",
+          "passed": true,
+          "latency": 0.0011272430419921875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_corrupt_file_starts_fresh_and_renames_old",
+          "input": "",
+          "passed": true,
+          "latency": 0.000614166259765625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_atomic_write_via_temp_file",
+          "input": "",
+          "passed": true,
+          "latency": 0.0011420249938964844,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_string_year_keys_in_loaded_file",
+          "input": "",
+          "passed": true,
+          "latency": 0.00043582916259765625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_creates_parent_directory_on_first_persist",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008540153503417969,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 11,
+    "passed": 11,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.008356571197509766
+  }
+}

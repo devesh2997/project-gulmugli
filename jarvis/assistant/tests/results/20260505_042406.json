@@ -1,0 +1,152 @@
+{
+  "timestamp": "2026-05-05T04:24:06.383978",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "intro_runner": {
+      "total": 14,
+      "passed": 14,
+      "total_latency": 0.013856649398803711,
+      "tests": [
+        {
+          "name": "test_happy_path_all_step_types",
+          "input": "",
+          "passed": true,
+          "latency": 0.002106189727783203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_audio_file_skipped_continues",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009200572967529297,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unknown_step_type_logged_and_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008640289306640625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_yaml_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005359649658203125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_script_file_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002739429473876953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_voice_router_speak_steps_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008320808410644531,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_face_ui_dashboard_steps_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008490085601806641,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_cancel_stops_remaining_steps",
+          "input": "",
+          "passed": true,
+          "latency": 0.001013040542602539,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_step_handler_exception_caught",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007519721984863281,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_template_substitution_handles_missing_keys",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006780624389648438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_playlist_calls_play_first",
+          "input": "",
+          "passed": true,
+          "latency": 0.0023670196533203125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_playlist_no_music_provider_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012371540069580078,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_playlist_missing_file_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006930828094482422,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dashboard_hint_routes_through_dashboard_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007350444793701172,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 14,
+    "passed": 14,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.013856649398803711
+  }
+}

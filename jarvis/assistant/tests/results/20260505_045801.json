@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-05-05T04:58:01.228220",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "imports": {
+      "total": 7,
+      "passed": 7,
+      "total_latency": 0.17021441459655762,
+      "tests": [
+        {
+          "name": "test_birthday_pack_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 0.0074770450592041016,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_core_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 0.0025091171264648438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_api_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 0.1586298942565918,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_provider_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 4.291534423828125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_branding_resolves_with_default_config",
+          "input": "",
+          "passed": true,
+          "latency": 4.76837158203125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_event_manager_singleton_loads",
+          "input": "",
+          "passed": true,
+          "latency": 0.0015871524810791016,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dispatch_table_loads",
+          "input": "",
+          "passed": true,
+          "latency": 2.1457672119140625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.17021441459655762
+  }
+}

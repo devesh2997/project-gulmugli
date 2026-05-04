@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-05-05T04:58:10.223018",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "intent_dispatch": {
+      "total": 4,
+      "passed": 4,
+      "total_latency": 0.0005040168762207031,
+      "tests": [
+        {
+          "name": "test_every_valid_intent_has_a_handler",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004971027374267578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_orphan_handlers_in_dispatch",
+          "input": "",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dispatch_handlers_are_callable",
+          "input": "",
+          "passed": true,
+          "latency": 1.9073486328125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_intent_schema_enum_matches_valid_intents",
+          "input": "",
+          "passed": true,
+          "latency": 2.1457672119140625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.0005040168762207031
+  }
+}

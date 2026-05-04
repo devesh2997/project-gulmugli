@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-05-05T04:29:42.083918",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "personality": {
+      "total": 6,
+      "passed": 6,
+      "total_latency": 1.3320622444152832,
+      "tests": [
+        {
+          "name": "Default personality loaded",
+          "passed": true,
+          "latency": 6.198883056640625e-06,
+          "detail": "Active: jarvis (Jarvis)"
+        },
+        {
+          "name": "Multiple personalities exist",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "5 personalities: ['jarvis', 'devesh', 'astha', 'astha_angry', 'chandler']"
+        },
+        {
+          "name": "Switch personality",
+          "passed": true,
+          "latency": 0.0008931159973144531,
+          "detail": "Switched to devesh"
+        },
+        {
+          "name": "Switch back to original",
+          "passed": true,
+          "latency": 0.00012803077697753906,
+          "detail": "Back to jarvis"
+        },
+        {
+          "name": "Personality tone influences response",
+          "passed": true,
+          "latency": 1.330157995223999,
+          "detail": "Response: Could this BE any more obvious? I'm Chandler Bing, and I'm probably the most sarcastic, awkward, yet"
+        },
+        {
+          "name": "Fuzzy personality name matching",
+          "passed": true,
+          "latency": 0.0008709430694580078,
+          "detail": "Switched via display name 'Devesh'"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 1.3320622444152832
+  }
+}

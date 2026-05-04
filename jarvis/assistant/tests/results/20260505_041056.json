@@ -1,0 +1,161 @@
+{
+  "timestamp": "2026-05-05T04:10:56.279148",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "custom_playlist": {
+      "total": 15,
+      "passed": 15,
+      "total_latency": 0.0045778751373291016,
+      "tests": [
+        {
+          "name": "test_load_basic_playlist",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014159679412841797,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_file_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.00029921531677246094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_yaml_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006349086761474609,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_skip_entries_without_youtube_search",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006489753723144531,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_in_order_iteration_with_loop",
+          "input": "",
+          "passed": true,
+          "latency": 7.152557373046875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_in_order_iteration_without_loop",
+          "input": "",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_shuffle_visits_every_song_before_repeating",
+          "input": "",
+          "passed": true,
+          "latency": 1.71661376953125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_shuffle_no_loop_terminates_after_pool",
+          "input": "",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reset_starts_over",
+          "input": "",
+          "passed": true,
+          "latency": 2.1457672119140625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_no_provider_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 1.7881393432617188e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_searches_and_plays",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003218650817871094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_handles_search_exception",
+          "input": "",
+          "passed": true,
+          "latency": 0.00011992454528808594,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_handles_empty_search_results",
+          "input": "",
+          "passed": true,
+          "latency": 0.000125885009765625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_returns_none_when_play_fails",
+          "input": "",
+          "passed": true,
+          "latency": 0.00018787384033203125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_real_pack_playlist_loads",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007731914520263672,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 15,
+    "passed": 15,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.0045778751373291016
+  }
+}
