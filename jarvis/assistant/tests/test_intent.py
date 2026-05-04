@@ -865,6 +865,42 @@ INTENT_TESTS = [
         "tier": "easy",
         "tags": ["event_trigger"],
     },
+
+    # ── Astha jokes (year-round mode) ───────────────────────────
+    # Hard-mode boundary: a plain "tell me a joke" must STAY in chat,
+    # but anything that invokes Astha's style explicitly maps here.
+    {
+        "input": "Vesper, mujhe Astha jaisi joke sunao",
+        "intent": "astha_jokes",
+        "params": {},
+        "desc": "Astha-style joke request, Hinglish",
+        "tier": "easy",
+        "tags": ["astha_jokes", "hinglish"],
+    },
+    {
+        "input": "Vesper, Astha mode chalu karo",
+        "intent": "astha_jokes",
+        "params": {},
+        "desc": "Astha mode invocation",
+        "tier": "easy",
+        "tags": ["astha_jokes", "hinglish"],
+    },
+    {
+        "input": "Vesper, phasaa do mujhe",
+        "intent": "astha_jokes",
+        "params": {},
+        "desc": "Phasaa-do verb-form invocation",
+        "tier": "medium",
+        "tags": ["astha_jokes", "hinglish"],
+    },
+    {
+        "input": "tell me a joke",
+        "intent": "chat",
+        "params": {},
+        "desc": "Generic 'tell me a joke' MUST stay chat (not astha_jokes)",
+        "tier": "medium",
+        "tags": ["astha_jokes", "boundary"],
+    },
 ]
 
 

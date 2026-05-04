@@ -1397,6 +1397,48 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
     return ""
 
 
+def _handle_astha_jokes(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Astha jokes mode — pick a random joke from the corpus and deliver it.
+
+    The joke engine handles the multi-turn delivery (setup → pause →
+    punchline) directly through the voice_router. We return "" so the
+    dispatcher doesn't speak an ack on top of the joke.
+
+    If the corpus is empty (file missing, no jokes parsed) OR if delivery
+    fails for some reason, we fall back to a gentle in-character message
+    so the user gets *something* and knows the command was heard.
+    """
+    from core.astha_jokes import JokeContext, get_joke_engine
+    from core.event_manager import get_event_manager
+
+    engine = get_joke_engine()
+    joke = engine.pick_random()
+    if joke is None:
+        log.info("astha_jokes: corpus empty — falling back to chat ack")
+        return intent.response or "Abhi koi joke ready nahi hai, sorry."
+
+    # bank_dir resolves relative `laugh_audio` references in the YAML.
+    # Use the astha-birthday pack dir if it exists; otherwise None.
+    bank_dir = None
+    em = get_event_manager()
+    for p in em.list_packs():
+        if p.pack_id == "astha-birthday":
+            bank_dir = p.pack_dir
+            break
+
+    ctx = JokeContext(
+        voice_router=assistant.get("voice_router"),
+        bank_dir=bank_dir,
+    )
+    result = engine.deliver(joke, ctx)
+    log.info("astha_jokes: delivered=%s id=%s detail=%s",
+             result.delivered, result.joke_id, result.detail)
+    if not result.delivered:
+        return intent.response or "Joke todi tedhi ho gayi yaar — try karte hain phir kabhi."
+    return ""
+
+
 # ════════════════════════════════════════════════════════════════
 #  Dispatch table — single source of truth for "which handler runs"
 # ════════════════════════════════════════════════════════════════
@@ -1429,6 +1471,7 @@ _DISPATCH: Dict[str, Callable[[dict, Intent], Optional[str]]] = {
     "ambient":            _handle_ambient,
     "system":             _handle_system,
     "event_trigger":      _handle_event_trigger,
+    "astha_jokes":        _handle_astha_jokes,
 }
 
 

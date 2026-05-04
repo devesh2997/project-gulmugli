@@ -103,6 +103,13 @@ _VALID_INTENTS = [
     # not regex-locked. See events/<pack>/pack.yaml → trigger.manual_phrases
     # for the per-pack training examples the prompt seeds with.
     "event_trigger",
+    # Astha jokes — a year-round mode that delivers silly questions /
+    # puns / phasaa-do gotchas. Triggered by phrasings like
+    # "Astha-style joke", "phasaa do mujhe", "Astha mode". Distinct
+    # from `chat`-mode jokes (generic one-liners): astha_jokes is a
+    # specific bait-and-switch *style*. Corpus lives at
+    # events/astha-birthday/jokes/astha_jokes.yaml.
+    "astha_jokes",
 ]
 
 _INTENT_SCHEMA = {
@@ -442,6 +449,14 @@ These are the most common confusions. Resolve them in this order:
   karo". These phrases ONLY make sense as triggers — they never look
   like a chat or song request. When in doubt about a generic phrase
   ("start", "begin"), prefer `chat` instead.
+
+- `astha_jokes` — params: {{}}. The "tell silly jokes like Astha would"
+  mode. Triggered by phrasings like "Astha-style joke sunao", "phasaa
+  do mujhe", "Astha mode chalu karo", "tell me jokes like Astha", "do
+  that thing Astha does", "silly questions". Distinct from `chat`
+  joke requests: a plain "tell me a joke" stays in `chat` (generic
+  one-liner); only phrasings that explicitly invoke Astha's style or
+  the phasaa-do/silly-question pattern map to this.
 
 ## Format
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}

@@ -104,13 +104,19 @@ def run_suite(suite_name: str, brain) -> dict:
         # patched out so no subprocess is spawned. Runs in <1s.
         from tests.test_intro_runner import run_intro_runner_tests
         return run_intro_runner_tests()
+    elif suite_name == "astha_jokes":
+        # Pure unit tests for core/astha_jokes.py — bank loading, joke
+        # delivery for all three types, tag filtering, parser edge cases.
+        # No Ollama, no real sleeps (sleep_fn injected). Runs in <1s.
+        from tests.test_astha_jokes import run_astha_jokes_tests
+        return run_astha_jokes_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
-ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "prefilter",
-              "intent", "enrichment", "personality", "knowledge", "latency",
-              "integration"]
+ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
+              "prefilter", "intent", "enrichment", "personality", "knowledge",
+              "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:
