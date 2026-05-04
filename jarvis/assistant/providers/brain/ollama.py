@@ -485,86 +485,31 @@ These are the most common confusions. Resolve them in this order:
                         "level": 0..100}}.
   Nature/relaxation sounds ONLY. NEVER for music or volume control.
 
-- `event_trigger` — params: {{}}. Used to manually fire a special-day
-  launch sequence (birthday surprise, festival kickoff, etc.). Phrases
-  are deliberately codename-y and unusual: "project AG begins",
-  "ek surprise hai", "light it up", "kick it off", "<assistant>, shuru
-  karo". These phrases ONLY make sense as triggers — they never look
-  like a chat or song request. When in doubt about a generic phrase
-  ("start", "begin"), prefer `chat` instead.
-
-- `astha_jokes` — params: {{}}. The "tell silly jokes like Astha would"
-  mode. Triggered by phrasings like "Astha-style joke sunao", "phasaa
-  do mujhe", "Astha mode chalu karo", "tell me jokes like Astha", "do
-  that thing Astha does", "silly questions". Distinct from `chat`
-  joke requests: a plain "tell me a joke" stays in `chat` (generic
-  one-liner); only phrasings that explicitly invoke Astha's style or
-  the phasaa-do/silly-question pattern map to this.
-
-- `birthday_quiz` — params: {{}}. The hand-curated "how well does Vesper
-  know us" relationship quiz, ending with a heartfelt recorded reveal.
-  Triggered by phrasings like "birthday quiz khelte hain", "ek game
-  khelte hain", "quiz me on us", "kitna jaanti ho mujhe", "let's play
-  the birthday game". DISTINCT from the generic `quiz` intent (which
-  is open-domain LLM trivia): birthday_quiz only fires when the user
-  invokes the relationship/birthday/"about us" framing, OR an explicit
-  "birthday quiz" wording. A bare "let's play a quiz" with no relationship
-  hint stays in generic `quiz`. Bare "ek game khelte hain" leans
-  birthday_quiz.
-
-- `yaadein_show` — params: {{}}. Starts the full-screen photo slideshow
-  ("yaadein") on the dashboard. Triggered by "mujhe yaadein dikhao",
-  "show me memories", "photos chalu karo", "slideshow start karo",
-  "memories dikhao", "tasveerein dikhao". The word "yaadein" (Hindi for
-  "memories") is the strongest signal — when present, this intent wins
-  even over generic media verbs like "show". A bare "show me photos"
-  with no other context maps here. NOT `music_play` (no song requested).
-  NOT `chat` (the user wants the slideshow surface, not a conversation).
-
-- `yaadein_stop` — params: {{}}. Ends the slideshow. Triggered by
-  "slideshow band karo", "stop yaadein", "memories band karo",
-  "yaadein bandh karo", "close the slideshow", "exit yaadein". A bare
-  "stop" while NO slideshow is running stays as `music_control`
-  (action="stop") — context here is the literal yaadein/slideshow word
-  in the utterance, not the standalone verb.
-
-- `sorry_mode` — params: {{}}. Apology channel — plays a recorded
-  apology memo from Devesh + queues a calming playlist. Triggered by
-  "Vesper, sorry shona", "Vesper, sorry mode", "Vesper, naraz mat ho",
-  "Vesper, mujhe sorry bol". Distinct from `chat` apologies (which are
-  generic): this maps to the dedicated personality channel and plays
-  pre-recorded audio.
-
-- `besura_play` — params: {{}}. Plays one of Devesh's recorded singing
-  clips. Triggered by "Vesper, sing for me", "Devesh ki gaane sunao",
-  "play besura", "Devesh ka gaana lagao". Distinct from `music_play`
-  (which searches YouTube): this is the personal-recording channel.
-
-- `voice_memo_play` — params: {{"topic": <string, optional>}}. Plays
-  a recorded voice memo from Devesh, optionally filtered by topic
-  (sad / birthday / love / etc.). Triggered by "Devesh ne kuch chhoda
-  hai mere liye?", "Devesh ka message sunao", "agar main udaas hoon"
-  (topic="sad"), "Devesh ka birthday message" (topic="birthday").
-
-- `sing_happy_birthday` — params: {{}}. Plays the personalized
-  happy-birthday recording. Triggered by "sing happy birthday",
-  "Astha ke liye happy birthday gaao", "happy birthday gaa do".
-
-- `memory_recall_event` — params: {{"event_id": <opt>, "year": <opt int>}}.
-  Recalls interactions from a past event-day. Triggered by phrasings
-  that explicitly reference both a specific event AND a past time:
-  "last year mere birthday pe kya kiya tha", "what did we do on my
-  birthday last year", "Diwali pe pichle saal kya hua tha". A bare
-  "what did I play yesterday" stays as `memory_recall` (free-form);
-  this intent is event-scoped specifically.
-
-- `memory_log` — params: {{"text": <string, the thing to remember>}}.
-  Astha asks Vesper to explicitly remember something. The text param
-  is what to store. Triggered by "Vesper, remember that <X>", "Vesper,
-  log this: <X>", "Vesper, yaad rakhna ki <X>", "Vesper, ye yaad
-  rakh: <X>". Distinct from `chat`: chat is a conversation; this is
-  a write-to-memory action. The classifier extracts the user's `<X>`
-  payload into `text`, NOT including the trigger phrase.
+- `event_trigger` — params: {{}}. Codename phrases only: "project AG begins",
+  "ek surprise hai", "light it up". Generic "start"/"begin" → `chat`.
+- `astha_jokes` — params: {{}}. Phrases that explicitly say "Astha":
+  "Astha-style joke sunao", "Astha mode", "phasaa do mujhe". Plain
+  "tell me a joke" → `chat`.
+- `birthday_quiz` — params: {{}}. "Birthday quiz", "quiz me on us",
+  "kitna jaanti ho mujhe". Generic "let's play a quiz" → `quiz`.
+- `yaadein_show` — params: {{}}. Word "yaadein" or "memories" or
+  "photos chalu karo" or "slideshow start karo".
+- `yaadein_stop` — params: {{}}. "Stop yaadein"/"slideshow band karo"
+  with the word slideshow/yaadein. Bare "stop" stays `music_control`.
+- `sorry_mode` — params: {{}}. "Sorry shona", "sorry mode",
+  "naraz mat ho".
+- `besura_play` — params: {{}}. "Sing for me", "Devesh ki gaane sunao",
+  "play besura". (Personal recording, not `music_play`.)
+- `voice_memo_play` — params: {{"topic": <opt>}}. "Devesh ne kuch chhoda",
+  "Devesh ka message sunao", "agar main udaas hoon" (topic="sad").
+- `sing_happy_birthday` — params: {{}}. "Sing happy birthday",
+  "happy birthday gaao".
+- `memory_recall_event` — params: {{"year": <opt int>}}. Past event-day
+  recall: "last year mere birthday pe kya kiya tha", "Diwali pe
+  pichle saal kya hua tha". Free-form "what did I do yesterday" →
+  `memory_recall`.
+- `memory_log` — params: {{"text": <X>}}. "Remember that <X>",
+  "yaad rakhna ki <X>", "log this: <X>". Extract `<X>` into text.
 
 ## Format
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}
