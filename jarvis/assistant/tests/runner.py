@@ -149,6 +149,12 @@ def run_suite(suite_name: str, brain) -> dict:
         # provider, log_interaction failure path.
         from tests.test_memory_log import run_memory_log_tests
         return run_memory_log_tests()
+    elif suite_name == "event_scheduler":
+        # Day-rollover scheduler that auto-fires event triggers for
+        # auto_midnight: true packs. Tests drive _tick() directly with
+        # mocked event_manager + trigger_store to avoid 60s sleeps.
+        from tests.test_event_scheduler import run_event_scheduler_tests
+        return run_event_scheduler_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
@@ -156,8 +162,9 @@ def run_suite(suite_name: str, brain) -> dict:
 ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
               "birthday_quiz", "trigger_state", "astha_angry_prefilter",
               "custom_playlist", "voice_memos", "memory_event_recall",
-              "memory_log", "prefilter", "intent", "enrichment", "personality",
-              "knowledge", "latency", "integration"]
+              "memory_log", "event_scheduler", "prefilter", "intent",
+              "enrichment", "personality", "knowledge", "latency",
+              "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:
