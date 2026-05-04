@@ -249,9 +249,14 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
     syncCSSVars(tokens)
   }, [tokens])
 
-  // Use a ref so getToken always reads current tokens without causing re-renders
+  // `getToken` should be stable across renders (consumers memoize by it),
+  // but its return value must reflect the LATEST tokens. The previous
+  // implementation wrote to a ref during render — an anti-pattern that
+  // can return stale values under React 19's concurrent rendering. Use
+  // an effect to keep the ref in sync with the committed tokens, and
+  // make getToken stable via empty-deps useCallback.
   const tokensRef = React.useRef(tokens)
-  tokensRef.current = tokens
+  React.useEffect(() => { tokensRef.current = tokens }, [tokens])
 
   const getToken = useCallback(
     (path: string) => getNestedValue(tokensRef.current, path),

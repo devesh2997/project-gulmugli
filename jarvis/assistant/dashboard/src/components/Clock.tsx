@@ -31,9 +31,16 @@ interface ClockProps {
 
 /** Single digit that slides up when changing */
 function AnimatedDigit({ digit, fontSize }: { digit: string; fontSize: string }) {
-  const prevDigit = useRef(digit)
-  const changed = prevDigit.current !== digit
-  prevDigit.current = digit
+  // Compare against previous render's digit to drive the slide animation.
+  // Use useState's lazy form (so it captures the FIRST render's value)
+  // plus an effect to update it AFTER the render is committed. This
+  // avoids the ref-during-render anti-pattern (which under React 19
+  // concurrent scheduling can read stale or future values).
+  const [prevDigit, setPrevDigit] = useState(digit)
+  const changed = prevDigit !== digit
+  useEffect(() => {
+    if (prevDigit !== digit) setPrevDigit(digit)
+  }, [digit, prevDigit])
 
   return (
     <span

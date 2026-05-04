@@ -25,7 +25,7 @@
 <body>
     <div class="header">
         <h1>JARVIS Test Dashboard</h1>
-        <p>Last run: 2026-05-04T23:19:49 | Model: llama3.2:3b | Runs: 14</p>
+        <p>Last run: 2026-05-04T23:27:16 | Model: llama3.2:3b | Runs: 15</p>
     </div>
 
     <div class="cards">
@@ -38,11 +38,11 @@
             <div class="label">Tests Passed</div>
         </div>
         <div class="card">
-            <div class="value">0.8s</div>
+            <div class="value">0.4s</div>
             <div class="label">Total Latency</div>
         </div>
         <div class="card">
-            <div class="value">14</div>
+            <div class="value">15</div>
             <div class="label">Historical Runs</div>
         </div>
     </div>
@@ -75,15 +75,15 @@
         <div style="margin:12px 0;padding:12px;background:#1e1e1e;border-radius:6px;border-left:4px solid #4caf50">
             <div style="display:flex;justify-content:space-between;align-items:center">
                 <strong style="font-size:16px">api_smoke</strong>
-                <span>7/7 (100%) — 0.76s</span>
+                <span>7/7 (100%) — 0.43s</span>
             </div>
-            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ status endpoint returns basic info   <span style="color:#888">(0.54s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ settings GET requires token when auth on   <span style="color:#888">(0.05s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ settings open when auth disabled   <span style="color:#888">(0.07s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ _is_obvious_chat classifications   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ audio cache put/pop one-shot   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ audio cache TTL eviction   <span style="color:#888">(0.05s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ CORS does not combine wildcard origin + credentials   <span style="color:#888">(0.04s)</span></div></div>
+            <div style="margin-top:8px;font-family:monospace;font-size:13px"><div style="padding:2px 0;color:#4caf50">  ✓ status endpoint returns basic info   <span style="color:#888">(0.31s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ settings GET requires token when auth on   <span style="color:#888">(0.02s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ settings open when auth disabled   <span style="color:#888">(0.02s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ _is_obvious_chat classifications   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ audio cache put/pop one-shot   <span style="color:#888">(0.00s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ audio cache TTL eviction   <span style="color:#888">(0.06s)</span></div><div style="padding:2px 0;color:#4caf50">  ✓ CORS does not combine wildcard origin + credentials   <span style="color:#888">(0.02s)</span></div></div>
         </div>
         
     </div>
 
     <script>
-    const labels = ["2026-03-27T00:54", "2026-03-27T01:20", "2026-03-27T01:34", "2026-05-04T17:25", "2026-05-04T18:29", "2026-05-04T18:35", "2026-05-04T18:39", "2026-05-04T18:40", "2026-05-04T18:44", "2026-05-04T18:49", "2026-05-04T21:02", "2026-05-04T22:54", "2026-05-04T22:56", "2026-05-04T23:19"];
+    const labels = ["2026-03-27T00:54", "2026-03-27T01:20", "2026-03-27T01:34", "2026-05-04T17:25", "2026-05-04T18:29", "2026-05-04T18:35", "2026-05-04T18:39", "2026-05-04T18:40", "2026-05-04T18:44", "2026-05-04T18:49", "2026-05-04T21:02", "2026-05-04T22:54", "2026-05-04T22:56", "2026-05-04T23:19", "2026-05-04T23:27"];
 
     new Chart(document.getElementById('scoreChart'), {
         type: 'line',
@@ -91,7 +91,7 @@
             labels: labels,
             datasets: [{
                 label: 'Score %',
-                data: [88.05970149253731, 92.42424242424242, 89.2156862745098, 44.44444444444444, 83.33333333333334, 88.88888888888889, 0.0, 87.77777777777777, 91.11111111111111, 91.11111111111111, 93.33333333333333, 100.0, 100.0, 100.0],
+                data: [88.05970149253731, 92.42424242424242, 89.2156862745098, 44.44444444444444, 83.33333333333334, 88.88888888888889, 0.0, 87.77777777777777, 91.11111111111111, 91.11111111111111, 93.33333333333333, 100.0, 100.0, 100.0, 100.0],
                 borderColor: '#4caf50',
                 backgroundColor: '#4caf5033',
                 tension: 0.3,
@@ -107,7 +107,7 @@
             labels: labels,
             datasets: [{
                 label: 'Total Latency (s)',
-                data: [75.64981126785278, 76.37950325012207, 80.26407551765442, 545.8085618019104, 248.60646557807922, 165.60264348983765, 0.0001728534698486328, 203.3851613998413, 191.31428480148315, 205.33186793327332, 307.52900552749634, 0.012320995330810547, 0.01164555549621582, 0.7580900192260742],
+                data: [75.64981126785278, 76.37950325012207, 80.26407551765442, 545.8085618019104, 248.60646557807922, 165.60264348983765, 0.0001728534698486328, 203.3851613998413, 191.31428480148315, 205.33186793327332, 307.52900552749634, 0.012320995330810547, 0.01164555549621582, 0.7580900192260742, 0.4321770668029785],
                 borderColor: '#2196f3',
                 backgroundColor: '#2196f333',
                 tension: 0.3,
@@ -123,56 +123,56 @@
             labels: labels,
             datasets: [{
             label: 'intent',
-            data: [0, 0, 0, 84.61538461538461, 92.0, 92.85714285714286, 44.44444444444444, 83.33333333333334, 88.88888888888889, 0.0, 87.77777777777777, 91.11111111111111, 91.11111111111111, 93.33333333333333],
+            data: [0, 0, 0, 0, 84.61538461538461, 92.0, 92.85714285714286, 44.44444444444444, 83.33333333333334, 88.88888888888889, 0.0, 87.77777777777777, 91.11111111111111, 91.11111111111111, 93.33333333333333],
             borderColor: '#4caf50',
             backgroundColor: '#4caf5033',
             tension: 0.3,
             fill: false,
         },{
             label: 'enrichment',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90.0, 100.0, 42.857142857142854],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90.0, 100.0, 42.857142857142854],
             borderColor: '#2196f3',
             backgroundColor: '#2196f333',
             tension: 0.3,
             fill: false,
         },{
             label: 'personality',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0, 100.0],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0, 100.0],
             borderColor: '#ff9800',
             backgroundColor: '#ff980033',
             tension: 0.3,
             fill: false,
         },{
             label: 'knowledge',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 71.42857142857143, 71.42857142857143, 100.0],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 71.42857142857143, 71.42857142857143, 100.0],
             borderColor: '#e91e63',
             backgroundColor: '#e91e6333',
             tension: 0.3,
             fill: false,
         },{
             label: 'latency',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 87.5, 87.5, 88.88888888888889],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 87.5, 87.5, 88.88888888888889],
             borderColor: '#9c27b0',
             backgroundColor: '#9c27b033',
             tension: 0.3,
             fill: false,
         },{
             label: 'integration',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0, 100.0],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0, 100.0],
             borderColor: '#00bcd4',
             backgroundColor: '#00bcd433',
             tension: 0.3,
             fill: false,
         },{
             label: 'prefilter',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0, 100.0],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0, 100.0],
             borderColor: '#4caf50',
             backgroundColor: '#4caf5033',
             tension: 0.3,
             fill: false,
         },{
             label: 'api_smoke',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0],
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 100.0],
             borderColor: '#2196f3',
             backgroundColor: '#2196f333',
             tension: 0.3,
@@ -188,7 +188,7 @@
             labels: ["api_smoke:status endpoint retu", "api_smoke:settings GET require", "api_smoke:settings open when a", "api_smoke:audio cache TTL evic", "api_smoke:CORS does not combin"],
             datasets: [{
                 label: 'Latency (s)',
-                data: [0.544, 0.05, 0.069, 0.051, 0.044],
+                data: [0.312, 0.024, 0.021, 0.055, 0.02],
                 backgroundColor: ["#4caf50", "#4caf50", "#4caf50", "#4caf50", "#4caf50"],
             }]
         },

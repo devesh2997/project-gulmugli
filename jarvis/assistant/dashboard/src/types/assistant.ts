@@ -343,7 +343,9 @@ export interface StoryModeMessage {
   type: 'story_mode'
   data: {
     active: boolean
-    genre?: string | null
+    /** Constrained to the StoryGenre union so the consumer can store it
+     *  directly in StoryState.genre without a cast. */
+    genre?: StoryGenre
     paragraphs?: string[]
     current_paragraph?: number
     finished?: boolean

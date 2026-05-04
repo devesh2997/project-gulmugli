@@ -189,8 +189,13 @@ if (typeof window !== 'undefined') {
 export function useTimeOfDay(): void {
   const { updateToken } = useTokens()
 
+  // Stable callback ref: the hook's main effect captures
+  // updateTokenRef.current to avoid re-running on every parent render
+  // (updateToken from context would be a fresh reference each time).
+  // Sync via useEffect rather than during render to avoid the
+  // ref-during-render anti-pattern under React 19 concurrent scheduling.
   const updateTokenRef = useRef(updateToken)
-  updateTokenRef.current = updateToken
+  useEffect(() => { updateTokenRef.current = updateToken }, [updateToken])
 
   useEffect(() => {
     function update() {

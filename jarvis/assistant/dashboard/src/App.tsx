@@ -34,9 +34,15 @@ type PanelId = 'transcript' | 'settings' | 'controls' | null
 function AppContent() {
   const { updateToken, setPersonality, currentPersonality } = useTokens()
 
-  // Stable ref for updateToken to avoid re-creating useAssistant
+  // Stable ref for updateToken: useAssistant takes this as a "fire-and-
+  // forget" callback to broadcast token changes to the backend; we don't
+  // want it to re-subscribe its WebSocket every time a render happens.
+  // Sync the latest function INTO the ref via useEffect (NOT during
+  // render — that pattern is an anti-pattern with React 19's concurrent
+  // scheduling because the second render's commit may run before the
+  // ref read picks it up).
   const updateTokenRef = useRef(updateToken)
-  updateTokenRef.current = updateToken
+  useEffect(() => { updateTokenRef.current = updateToken }, [updateToken])
   const stableUpdateToken = useCallback((path: string, value: any) => {
     updateTokenRef.current(path, value)
   }, [])
@@ -68,17 +74,25 @@ function AppContent() {
   }, [])
 
   // -- Weather dismiss state --
+  // Reset dismissed flag whenever new weather data arrives. Tracked via
+  // a ref so the effect's dependency is just `assistant.weather` (the
+  // sentinel for "new data") and not `weatherDismissed` (which would
+  // make the effect cyclic with itself).
   const [weatherDismissed, setWeatherDismissed] = useState(false)
   const lastWeatherRef = useRef(assistant.weather)
-  // Reset dismissed flag when new weather data arrives
-  if (assistant.weather !== lastWeatherRef.current) {
-    lastWeatherRef.current = assistant.weather
-    if (assistant.weather) setWeatherDismissed(false)
-  }
+  useEffect(() => {
+    if (assistant.weather !== lastWeatherRef.current) {
+      lastWeatherRef.current = assistant.weather
+      if (assistant.weather) setWeatherDismissed(false)
+    }
+  }, [assistant.weather])
 
-  // Stable gesture callback
+  // Stable gesture callback. openPanelRef tracks the latest panel state
+  // so handleGesture (a useCallback with [] deps to keep it stable for
+  // useGesture) reads fresh state at gesture-fire time. Sync the ref in
+  // an effect to avoid the ref-during-render anti-pattern.
   const openPanelRef = useRef(openPanel)
-  openPanelRef.current = openPanel
+  useEffect(() => { openPanelRef.current = openPanel }, [openPanel])
   const handleGesture = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (openPanelRef.current) {
       if (direction === 'down') setOpenPanel(null)

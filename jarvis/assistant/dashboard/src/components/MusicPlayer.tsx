@@ -47,12 +47,20 @@ function MarqueeText({ text, style }: { text: string; style?: React.CSSPropertie
   const outerRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLSpanElement>(null)
   const [shouldScroll, setShouldScroll] = useState(false)
+  // Snapshot scrollWidth at the same time we set shouldScroll so the
+  // animate prop on the next render uses a stable, post-layout value
+  // instead of reading innerRef.current.scrollWidth during render
+  // (an anti-pattern that returns stale values on the first render and
+  // can produce subtle layout-thrash bugs under React 19's concurrent
+  // rendering).
+  const [scrollWidth, setScrollWidth] = useState(0)
 
   useEffect(() => {
     const outer = outerRef.current
     const inner = innerRef.current
     if (!outer || !inner) return
     setShouldScroll(inner.scrollWidth > outer.clientWidth + 2)
+    setScrollWidth(inner.scrollWidth)
   }, [text])
 
   return (
@@ -70,7 +78,7 @@ function MarqueeText({ text, style }: { text: string; style?: React.CSSPropertie
       <motion.span
         ref={innerRef}
         animate={shouldScroll
-          ? { x: [0, -(innerRef.current?.scrollWidth ?? 0) - 30, 0] }
+          ? { x: [0, -scrollWidth - 30, 0] }
           : { x: 0 }
         }
         transition={shouldScroll

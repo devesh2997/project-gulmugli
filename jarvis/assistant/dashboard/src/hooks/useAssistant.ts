@@ -162,11 +162,13 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         break
 
       case 'playback_position':
-        // Legacy: position now flows dashboard→backend, but keep for backward compat
+        // Legacy: position now flows dashboard→backend, but keep for backward compat.
+        // The discriminated union narrows `msg` to the playback_position
+        // shape here, so position/duration are typed without casting.
         setState(prev => ({
           ...prev,
           nowPlaying: prev.nowPlaying
-            ? { ...prev.nowPlaying, position: (msg as any).position, duration: (msg as any).duration }
+            ? { ...prev.nowPlaying, position: msg.position, duration: msg.duration }
             : null,
         }))
         break
@@ -320,25 +322,25 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         break
 
       case 'reminder_fired':
-        setState(prev => ({ ...prev, firedReminder: (msg as any).data }))
+        setState(prev => ({ ...prev, firedReminder: msg.data }))
         break
 
       case 'reminders_updated':
-        setState(prev => ({ ...prev, reminders: (msg as any).reminders }))
+        setState(prev => ({ ...prev, reminders: msg.reminders }))
         break
 
       case 'timers':
-        setState(prev => ({ ...prev, timers: (msg as any).timers }))
+        setState(prev => ({ ...prev, timers: msg.timers }))
         break
 
       case 'timer_fired':
-        setState(prev => ({ ...prev, firedTimer: (msg as any).data }))
+        setState(prev => ({ ...prev, firedTimer: msg.data }))
         break
 
       case 'timer_cancelled':
         setState(prev => ({
           ...prev,
-          timers: prev.timers.filter(t => t.id !== (msg as any).data?.id),
+          timers: prev.timers.filter(t => t.id !== msg.data?.id),
         }))
         break
 
@@ -350,11 +352,11 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         setState(prev => ({
           ...prev,
           story: {
-            active: (msg as any).data.active ?? false,
-            genre: (msg as any).data.genre ?? null,
-            paragraphs: (msg as any).data.paragraphs ?? [],
-            currentParagraph: (msg as any).data.current_paragraph ?? 0,
-            finished: (msg as any).data.finished ?? false,
+            active: msg.data.active ?? false,
+            genre: msg.data.genre ?? null,
+            paragraphs: msg.data.paragraphs ?? [],
+            currentParagraph: msg.data.current_paragraph ?? 0,
+            finished: msg.data.finished ?? false,
           },
         }))
         break
@@ -363,9 +365,9 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         setState(prev => ({
           ...prev,
           ambient: {
-            active: (msg as any).active ?? false,
-            sound: (msg as any).sound ?? '',
-            volume: (msg as any).volume ?? 30,
+            active: msg.active ?? false,
+            sound: msg.sound ?? '',
+            volume: msg.volume ?? 30,
           },
         }))
         break
@@ -377,7 +379,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       case 'video_control':
         // Legacy: forward to MusicPlayer via player_command event
         window.dispatchEvent(new CustomEvent('jarvis-player-command', {
-          detail: { command: (msg as any).action === 'fullscreen' ? 'play' : 'pause' }
+          detail: { command: msg.action === 'fullscreen' ? 'play' : 'pause' }
         }))
         break
 
