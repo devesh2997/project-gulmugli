@@ -254,12 +254,19 @@ export function useEventTheme(): void {
           return
         }
 
-        // Only the day-window flags justify swapping the theme. (Manual
-        // trigger gating — the `is_triggered` field — is checked
-        // server-side as part of `is_today` once Phase 1.2 lands.)
-        const isWithinWindow =
-          event.is_today || event.is_eve || event.is_aftermath
-        if (!isWithinWindow) {
+        // Theme gating policy:
+        //   - On the day itself: gate on `is_triggered` so the surprise
+        //     stays dormant until Devesh fires the manual phrase / app
+        //     button. (For 2027+ where auto_midnight may flip true, the
+        //     backend will start returning is_triggered=true at 00:00,
+        //     same effect.)
+        //   - In the eve/aftermath windows: the theme can show as a
+        //     soft pre-/post-celebration ramp without waiting for the
+        //     trigger. eve = "tomorrow's the day, gentle hint." aftermath
+        //     = "yesterday was special, soft glow."
+        const showOnEveOrAftermath = event.is_eve || event.is_aftermath
+        const showToday = event.is_today && event.is_triggered
+        if (!showToday && !showOnEveOrAftermath) {
           if (appliedEventIdRef.current !== null) {
             clearTokens()
           }

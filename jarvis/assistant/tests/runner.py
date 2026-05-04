@@ -110,13 +110,18 @@ def run_suite(suite_name: str, brain) -> dict:
         # No Ollama, no real sleeps (sleep_fn injected). Runs in <1s.
         from tests.test_astha_jokes import run_astha_jokes_tests
         return run_astha_jokes_tests()
+    elif suite_name == "trigger_state":
+        # Pure unit tests for core/trigger_state.py — persistence,
+        # idempotency, atomic write, corrupt-file recovery. Runs in <1s.
+        from tests.test_trigger_state import run_trigger_state_tests
+        return run_trigger_state_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
 ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
-              "prefilter", "intent", "enrichment", "personality", "knowledge",
-              "latency", "integration"]
+              "trigger_state", "prefilter", "intent", "enrichment",
+              "personality", "knowledge", "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:

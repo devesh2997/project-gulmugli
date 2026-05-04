@@ -1352,6 +1352,7 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
     """
     from core.event_manager import get_event_manager
     from core.intro_runner import IntroContext, IntroRunner
+    from core.trigger_state import get_trigger_store
 
     em = get_event_manager()
     active = em.current()
@@ -1360,7 +1361,11 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
         # gentle no-op so the user knows the command was heard.
         return intent.response or "Aaj koi special event nahi hai."
 
-    log.info("event_trigger fired: pack_id=%s", active.pack_id)
+    # Persist the trigger BEFORE the intro runs — that way a crash mid-intro
+    # doesn't roll back the dashboard's celebration state.
+    was_fresh = get_trigger_store().mark_triggered(active.pack_id)
+    log.info("event_trigger fired: pack_id=%s fresh=%s",
+             active.pack_id, was_fresh)
 
     # Look for the intro script. Path is declared per-pack at
     # `first_year_only.intro_script` (year-1 only — see roadmap).

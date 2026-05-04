@@ -298,11 +298,12 @@ export function ConfettiLayer(): React.ReactElement {
         const body = (await res.json()) as ActiveEventResponse | null
         if (cancelled) return
 
-        // TODO: switch to `is_triggered` once Phase 1.2 ships. Today the
-        // backend always returns is_triggered=false, so we'd never spawn
-        // anything. Gating on is_today gives the right behavior for the
-        // launch-day window.
-        const shouldRun = body !== null && body.is_today === true
+        // Confetti ambient mode = "we are mid-celebration." That's
+        // strictly is_today AND is_triggered (manual or auto). Eve /
+        // aftermath windows get the theme color ramp but no confetti
+        // spam — confetti is a peak-moment effect, not background.
+        const shouldRun =
+          body !== null && body.is_today === true && body.is_triggered === true
         setAmbientActive(shouldRun)
       } catch (err) {
         console.info('[ConfettiLayer] poll failed:', err)

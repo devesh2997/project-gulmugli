@@ -48,6 +48,7 @@ from fastapi.responses import JSONResponse
 from api.auth import verify_token
 from core.event_manager import ActiveEvent, get_event_manager
 from core.logger import get_logger
+from core.trigger_state import get_trigger_store
 
 log = get_logger("api.events")
 
@@ -65,6 +66,7 @@ def _serialize_active(active: ActiveEvent) -> dict:
     below so the client doesn't need to know the on-disk layout.
     """
     pack = active.pack
+    triggered = get_trigger_store().is_triggered(active.pack_id)
     return {
         "event_id": active.pack_id,
         "display_name": pack.display_name,
@@ -74,10 +76,8 @@ def _serialize_active(active: ActiveEvent) -> dict:
         "is_aftermath": active.is_aftermath,
         "features": pack.features,
         "trigger": pack.trigger_config,
-        # Phase 1.2 will replace this with persisted trigger state.
-        # For now we always report false — the dashboard treats this
-        # as "the date matches but nobody has fired the surprise yet."
-        "is_triggered": False,
+        # Persisted across server restart via core.trigger_state.
+        "is_triggered": triggered,
         "theme_url": f"/api/events/{active.pack_id}/theme/tokens",
         "avatar_url": f"/api/events/{active.pack_id}/theme/avatar",
     }
@@ -152,21 +152,21 @@ def get_theme_avatar(pack_id: str) -> Any:
 
 # ── POST /api/events/trigger ─────────────────────────────────────────
 
-# In-memory trigger state. Phase 1.2 will replace this with a persisted
-# JSON file (so a server restart on the day-of doesn't lose the trigger).
-# For Phase 0 we just need the API surface so the dashboard hook and the
-# Flutter button can wire up; the actual launch sequence is Phase 1.
-_triggered_packs: set[str] = set()
-
-
 @router.post("/trigger", dependencies=[Depends(verify_token)])
 def trigger_event() -> Any:
     """
     Manually fire the active event's launch sequence.
 
-    Idempotent in spirit — calling twice on the same active event just
-    re-runs the trigger (the launch sequence handler decides whether to
-    actually re-run or to no-op).
+    Two side effects:
+      1. Persist `is_triggered = true` for this pack/year via
+         core.trigger_state. Survives a Jetson restart on the day-of.
+      2. Run the intro script if the pack defines one (best-effort —
+         the runner won't crash the API if a step fails).
+
+    Idempotent: a re-trigger marks the persisted flag (no-op if already
+    set) and re-runs the intro script. Some packs may want a different
+    re-trigger behavior (e.g., skip the script the second time); that's
+    handled inside the intro runner / pack logic, not here.
 
     409 if no event is active today. The Flutter app should hide the
     button when `is_today=false`, but we double-check server-side.
@@ -179,16 +179,63 @@ def trigger_event() -> Any:
             detail="no event is active today",
         )
 
-    _triggered_packs.add(active.pack_id)
-    log.info("event triggered: pack_id=%s", active.pack_id)
+    store = get_trigger_store()
+    was_fresh = store.mark_triggered(active.pack_id)
+    log.info(
+        "event triggered: pack_id=%s fresh=%s",
+        active.pack_id, was_fresh,
+    )
 
-    # Phase 1.1 will plug in the actual intro_runner here. For now we
-    # just log + acknowledge — the dashboard's `is_triggered` poll will
-    # flip true once we wire that up properly.
-    # TODO(roadmap 1.1): invoke intro_runner.run(active.pack_dir / first_year_only.intro_script)
+    # Run the intro script if the pack has one. Don't block the API
+    # response on the script's full duration — kick it off in a daemon
+    # thread and return immediately. The script is best-effort and
+    # logs its own progress.
+    fy = active.pack.raw.get("first_year_only") or {}
+    script_rel = fy.get("intro_script") if isinstance(fy, dict) else None
+    if isinstance(script_rel, str) and script_rel:
+        from threading import Thread
+        from core.intro_runner import IntroContext, IntroRunner
+
+        def _run_intro():
+            try:
+                # The API-layer trigger doesn't have access to the live
+                # voice_router/face_ui here. They live on app.state.assistant
+                # — the FastAPI startup wiring stores them. Pull from request
+                # state if available; otherwise the runner gracefully no-ops
+                # the speak/dashboard steps.
+                # TODO: pass assistant context through to the trigger endpoint
+                #       so intro_runner has voice_router + face_ui.
+                ctx = IntroContext(
+                    pack_dir=active.pack_dir,
+                    voice_router=None,
+                    face_ui=None,
+                    template_vars={
+                        "event_name": active.pack.display_name,
+                        "pack_id": active.pack_id,
+                    },
+                )
+                IntroRunner(active.pack_dir / script_rel).run(ctx)
+            except Exception as e:
+                log.warning("trigger: intro_runner failed: %s", e)
+
+        Thread(target=_run_intro, name="intro-runner", daemon=True).start()
 
     return {
         "ok": True,
         "event_id": active.pack_id,
-        "message": "trigger recorded; launch sequence engine wires in Phase 1.1",
+        "is_triggered": True,
+        "freshly_triggered": was_fresh,
     }
+
+
+@router.post("/{pack_id}/reset", dependencies=[Depends(verify_token)])
+def reset_event_trigger(pack_id: str) -> Any:
+    """
+    Clear the persisted trigger state for a pack. Useful for testing
+    and for a hypothetical "reset to pre-launch" admin action. Returns
+    200 with `was_set` indicating whether state actually changed.
+    """
+    store = get_trigger_store()
+    was_set = store.reset(pack_id)
+    log.info("trigger reset: pack_id=%s was_set=%s", pack_id, was_set)
+    return {"ok": True, "pack_id": pack_id, "was_set": was_set}
