@@ -8,11 +8,11 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import type { SettingSchema } from '../../types/assistant'
+import type { SettingSchema, SettingValue } from '../../types/assistant'
 
 interface Props {
   settings: SettingSchema[]
-  onUpdate: (path: string, value: any) => void
+  onUpdate: (path: string, value: SettingValue) => void
 }
 
 /* ------------------------------------------------------------------ */

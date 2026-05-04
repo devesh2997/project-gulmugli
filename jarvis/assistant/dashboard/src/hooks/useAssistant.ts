@@ -26,6 +26,8 @@ import type {
   StoryState,
   WeatherData,
   AmbientState,
+  TokenValue,
+  SettingValue,
 } from '../types/assistant'
 
 interface InternalState {
@@ -80,7 +82,7 @@ const DEFAULT_STATE: InternalState = {
 
 const MAX_TRANSCRIPT = 50
 
-export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, value: any) => void): AssistantStore {
+export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, value: TokenValue) => void): AssistantStore {
   const [state, setState] = useState<InternalState>(DEFAULT_STATE)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -483,7 +485,7 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         wsRef.current.send(JSON.stringify({ type: 'gesture', gesture, target: target ?? null }))
       }
     },
-    updateSetting: (path: string, value: any) => sendAction({ action: 'update_setting', params: { path, value } }),
+    updateSetting: (path: string, value: SettingValue) => sendAction({ action: 'update_setting', params: { path, value } }),
     requestSettings: () => sendAction({ action: 'get_settings', params: {} }),
     wake: () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {

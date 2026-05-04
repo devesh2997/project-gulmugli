@@ -10,11 +10,11 @@
 
 import { useState, useRef, useCallback, useLayoutEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { SettingSchema } from '../../types/assistant'
+import type { SettingSchema, SettingValue } from '../../types/assistant'
 
 interface Props {
   setting: SettingSchema
-  onUpdate: (path: string, value: any) => void
+  onUpdate: (path: string, value: SettingValue) => void
 }
 
 /* ──────────────────────── Toggle (bool) ──────────────────────── */
@@ -251,7 +251,16 @@ export function SettingControl({ setting, onUpdate }: Props) {
       case 'float':
         return (
           <Slider
-            value={typeof value === 'number' ? value : parseFloat(value) || 0}
+            // SettingValue is `string | number | boolean | null`. Slider
+            // wants a number; coerce safely (parseFloat tolerates string
+            // input from older config; null/bool defaults to 0).
+            value={
+              typeof value === 'number'
+                ? value
+                : typeof value === 'string'
+                  ? parseFloat(value) || 0
+                  : 0
+            }
             min={min ?? 0} max={max ?? 1} step={0.01}
             color="var(--personality-accent)" onChange={v => onUpdate(path, v)}
           />
@@ -259,7 +268,13 @@ export function SettingControl({ setting, onUpdate }: Props) {
       case 'int':
         return (
           <Slider
-            value={typeof value === 'number' ? value : parseInt(value) || 0}
+            value={
+              typeof value === 'number'
+                ? value
+                : typeof value === 'string'
+                  ? parseInt(value) || 0
+                  : 0
+            }
             min={min ?? 0} max={max ?? 100} step={1}
             color="var(--personality-accent)" onChange={v => onUpdate(path, v)}
           />

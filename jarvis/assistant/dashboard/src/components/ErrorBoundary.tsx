@@ -54,9 +54,9 @@ export class ErrorBoundary extends Component<Props, State> {
     // Send to console — production kiosk has no devtools but the
     // Chromium logs are reachable via `journalctl -u jarvis-dashboard`
     // when running under systemd.
-    // eslint-disable-next-line no-console
+     
     console.error('ErrorBoundary caught an error:', error)
-    // eslint-disable-next-line no-console
+     
     console.error('Component stack:', info.componentStack)
   }
 

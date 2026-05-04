@@ -21,10 +21,62 @@ import { VideoControls } from './video/VideoControls'
 import { useLightMode } from '../hooks/useLightMode'
 import type { NowPlaying, AssistantActions } from '../types/assistant'
 
+// ─── YouTube IFrame Player API: minimal type surface ──────────────
+// We type only the fields we actually call. The official @types/youtube
+// package is overkill (covers every config + event the API exposes —
+// most never relevant to us) and adds a build dependency. This local
+// interface captures exactly the shape `iframe-api` returns and that
+// MusicPlayer touches; if YT ever ships an incompatible API change,
+// TypeScript flags the call site, not the type.
+
+interface YTPlayer {
+  destroy: () => void
+  playVideo: () => void
+  pauseVideo: () => void
+  stopVideo?: () => void
+  seekTo: (seconds: number, allowSeekAhead?: boolean) => void
+  getCurrentTime: () => number
+  getDuration: () => number
+  getPlayerState: () => number
+  setVolume: (volume: number) => void
+  loadVideoById?: (videoId: string, startSeconds?: number) => void
+  cueVideoById?: (videoId: string, startSeconds?: number) => void
+}
+
+interface YTPlayerEvent {
+  target: YTPlayer
+  data: number
+}
+
+interface YTConstructor {
+  new (
+    element: HTMLElement | string,
+    options: {
+      videoId?: string
+      width?: number | string
+      height?: number | string
+      playerVars?: Record<string, string | number>
+      events?: {
+        onReady?: (event: YTPlayerEvent) => void
+        onStateChange?: (event: YTPlayerEvent) => void
+        onError?: (event: YTPlayerEvent) => void
+      }
+    },
+  ): YTPlayer
+  PlayerState: {
+    UNSTARTED: -1
+    ENDED: 0
+    PLAYING: 1
+    PAUSED: 2
+    BUFFERING: 3
+    CUED: 5
+  }
+}
+
 declare global {
   interface Window {
-    YT: any
-    onYouTubeIframeAPIReady: () => void
+    YT?: { Player: YTConstructor; PlayerState: YTConstructor['PlayerState'] }
+    onYouTubeIframeAPIReady?: () => void
   }
 }
 
@@ -144,7 +196,7 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
   const constraintsRef = useRef<HTMLDivElement>(null)
 
   // YT Player API
-  const ytPlayerRef = useRef<any>(null)
+  const ytPlayerRef = useRef<YTPlayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [ytReady, setYtReady] = useState(!!window.YT?.Player)
 
@@ -193,14 +245,19 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
       return
     }
     const prev = window.onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = () => {
+    const ourCallback = () => {
       prev?.()
       setYtReady(true)
     }
+    window.onYouTubeIframeAPIReady = ourCallback
     return () => {
-      // Restore if we set it
-      if (window.onYouTubeIframeAPIReady === arguments[0]) {
-        window.onYouTubeIframeAPIReady = prev as any
+      // Restore the previous handler ONLY if ours is still wired up.
+      // If something else hooked the global between our setup + cleanup,
+      // overwriting that would break it. Compare by reference, not via
+      // `arguments[0]` (which is undefined inside an arrow function and
+      // was a long-standing bug in the prior version).
+      if (window.onYouTubeIframeAPIReady === ourCallback) {
+        window.onYouTubeIframeAPIReady = prev
       }
     }
   }, [])
@@ -214,15 +271,17 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
     // If player exists and videoId is the same, skip
     if (ytPlayerRef.current && loadedVideoIdRef.current === videoId) return
 
-    // If player exists but different video, just load the new video
+    // If player exists but different video, just load the new video.
+    // `loadVideoById` is optional in our minimal YT.Player typing
+    // (some embed flavours expose only `cueVideoById`); guard it.
     if (ytPlayerRef.current && loadedVideoIdRef.current !== videoId) {
-      ytPlayerRef.current.loadVideoById(videoId)
+      ytPlayerRef.current.loadVideoById?.(videoId)
       loadedVideoIdRef.current = videoId
       return
     }
 
     // No player yet — create one
-    if (!containerRef.current) return
+    if (!containerRef.current || !window.YT) return
 
     // Create a child div for YT.Player to render into (it replaces the element)
     const playerDiv = document.createElement('div')
@@ -242,14 +301,13 @@ export function MusicPlayer({ nowPlaying, actions }: MusicPlayerProps) {
         origin: window.location.origin,
       },
       events: {
-        onReady: (event: any) => {
+        onReady: (event: YTPlayerEvent) => {
           event.target.playVideo()
-          // Try to get duration
           const dur = event.target.getDuration?.()
           if (dur && dur > 0) setLocalDuration(dur)
         },
-        onStateChange: (event: any) => {
-          // 0=ended, 1=playing, 2=paused, 3=buffering
+        onStateChange: (event: YTPlayerEvent) => {
+          // YT.PlayerState: ENDED=0, PLAYING=1, PAUSED=2, BUFFERING=3
           if (event.data === 0) {
             actions.reportPlayerEnded()
             setMode('hidden')

@@ -207,27 +207,28 @@ def test_audio_cache_ttl_eviction():
     """Cache enforces a TTL on inserts so one-and-done audio chunks
     don't pile up forever when a client drops mid-stream.
 
-    The TTL constant is `_AUDIO_CACHE_TTL` (note: not `_TTL_SECS`).
-    Eviction runs lazily on every insert — entries older than the TTL
-    are swept before the new entry is added.
+    The cache lives in `api/voice/audio_cache.py` (was inline in voice.py
+    until the module split). Patch the TTL on the new module to verify
+    eviction triggers on the next insert.
     """
-    from api.routers import voice as voice_module
-    from api.routers.voice import _audio_cache_put, _audio_cache_pop
+    from api.voice import audio_cache as cache_module
 
-    # Set TTL to negative so any pre-existing entry is older.
-    original_ttl = voice_module._AUDIO_CACHE_TTL
-    voice_module._AUDIO_CACHE_TTL = 0.0  # immediate eviction
+    # Set TTL to 0 so any pre-existing entry is older than the cutoff.
+    original_ttl = cache_module._AUDIO_CACHE_TTL
+    cache_module._AUDIO_CACHE_TTL = 0.0  # immediate eviction
     try:
-        victim_id = _audio_cache_put(b"ephemeral")
-        # Something else is put → triggers eviction sweep
-        time.sleep(0.05)  # ensure any clock skew puts victim past cutoff
-        trigger_id = _audio_cache_put(b"trigger-bytes")
-        # The first chunk should have been evicted.
-        assert _audio_cache_pop(victim_id) is None
-        # The trigger is still there (it was just inserted).
-        assert _audio_cache_pop(trigger_id) == b"trigger-bytes"
+        victim_id = cache_module.put(b"ephemeral")
+        # Tiny sleep so the next put's `now - TTL` cutoff is strictly
+        # after the victim's insert time (defends against same-microsecond
+        # comparisons on fast machines).
+        time.sleep(0.05)
+        trigger_id = cache_module.put(b"trigger-bytes")
+        # The first chunk should have been evicted on the second put.
+        assert cache_module.pop(victim_id) is None
+        # The trigger is still there (just inserted).
+        assert cache_module.pop(trigger_id) == b"trigger-bytes"
     finally:
-        voice_module._AUDIO_CACHE_TTL = original_ttl
+        cache_module._AUDIO_CACHE_TTL = original_ttl
 
 
 # ── Test 5: CORS headers configured safely ────────────────────────────

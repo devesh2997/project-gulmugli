@@ -216,8 +216,16 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
     },
   }), [config.glowScale, glowOpacity])
 
-  // Pick orb animation based on state
+  // Pick orb animation based on state. Both `speakingVariants` and
+  // `orbVariants` follow the same `{ animate: {...} }` shape from
+  // useMemo above, so we narrow once here. Pulling `.animate` into a
+  // local variable lets the spread sites below use it directly without
+  // `as any` casts (the previous version wrote `(activeOrbVariants as
+  // any).animate` five times to bypass framer-motion's deeply-typed
+  // Variants — narrowing once is cleaner and TypeScript-honest).
   const activeOrbVariants = state === 'speaking' ? speakingVariants : orbVariants
+  const activeOrbAnimate = activeOrbVariants.animate
+  const speakingAnimate = speakingVariants.animate
   const activeGlowVariants = state === 'thinking' ? thinkingGlowVariants : glowVariants
 
   // For thinking state, use warm-shifted gradient.
@@ -345,7 +353,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
           state === 'listening'
             ? {
                 // Elongate vertically — leaning forward to listen
-                ...(activeOrbVariants as any).animate,
+                ...activeOrbAnimate,
                 borderRadius: ['50%', '45% 45% 50% 50%', '50%'],
                 scaleX: [config.scale * 0.94, config.scale * 0.92, config.scale * 0.94],
                 scaleY: [config.scale * 1.08, config.scale * 1.12, config.scale * 1.08],
@@ -353,15 +361,15 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
                   borderRadius: { duration: breatheDuration, repeat: Infinity, ease: 'easeInOut' as const },
                   scaleX: { duration: breatheDuration, repeat: Infinity, ease: 'easeInOut' as const },
                   scaleY: { duration: breatheDuration, repeat: Infinity, ease: 'easeInOut' as const },
-                  opacity: (activeOrbVariants as any).animate.transition,
+                  opacity: activeOrbAnimate.transition,
                 },
               }
             : state === 'thinking'
-              ? { ...(activeOrbVariants as any).animate, ...thinkingRotation }
+              ? { ...activeOrbAnimate, ...thinkingRotation }
               : state === 'speaking'
                 ? {
                     // Rhythmic bounce — scale Y and X pulse in antiphase for "breathing speech"
-                    ...(speakingVariants as any).animate,
+                    ...speakingAnimate,
                     scaleX: [config.scale * 1.04, config.scale * 0.96, config.scale * 1.02, config.scale * 1.04],
                     scaleY: [config.scale * 0.96, config.scale * 1.06, config.scale * 0.98, config.scale * 0.96],
                     borderRadius: '50%',
@@ -372,7 +380,7 @@ export function AvatarOrb({ size, state }: AvatarOrbProps) {
                       times: [0, 0.25, 0.6, 1],
                     },
                   }
-                : { ...(activeOrbVariants as any).animate, borderRadius: '50%' }
+                : { ...activeOrbAnimate, borderRadius: '50%' }
         }
       />
 

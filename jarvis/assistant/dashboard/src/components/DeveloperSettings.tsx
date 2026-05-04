@@ -8,12 +8,12 @@
 
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { SettingSchema } from '../types/assistant'
+import type { SettingSchema, SettingValue } from '../types/assistant'
 import { SettingControl } from './settings/SettingControl'
 
 interface Props {
   settings: SettingSchema[]
-  onUpdate: (path: string, value: any) => void
+  onUpdate: (path: string, value: SettingValue) => void
   onBack: () => void
 }
 

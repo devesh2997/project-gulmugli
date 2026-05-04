@@ -26,10 +26,18 @@ import uiTokens from '../tokens/ui.json'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+import type { TokenTree, TokenValue } from '../types/assistant'
+
 interface TokenContextValue {
-  tokens: Record<string, any>
-  getToken: (path: string) => any
-  updateToken: (path: string, value: any) => void
+  tokens: TokenTree
+  /**
+   * Read a token by dot-notation path. Returns `unknown` because the
+   * caller knows what the leaf type should be (color hex string,
+   * pixel size string, animation duration etc.) — make them narrow
+   * at the call site.
+   */
+  getToken: (path: string) => TokenValue | undefined
+  updateToken: (path: string, value: TokenValue) => void
   currentPersonality: string
   setPersonality: (id: string) => void
 }
@@ -37,14 +45,16 @@ interface TokenContextValue {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Walk a nested object using dot-notation path.
+ * Walk a nested token tree using dot-notation path.
  * Returns `undefined` for any missing segment.
  */
-function getNestedValue(obj: Record<string, any>, path: string): any {
-  return path.split('.').reduce<any>((current, key) => {
+function getNestedValue(obj: TokenTree, path: string): TokenValue | undefined {
+  let current: TokenValue | undefined = obj
+  for (const key of path.split('.')) {
     if (current == null || typeof current !== 'object') return undefined
-    return current[key]
-  }, obj)
+    current = (current as TokenTree)[key]
+  }
+  return current
 }
 
 /**
@@ -52,20 +62,21 @@ function getNestedValue(obj: Record<string, any>, path: string): any {
  * Creates intermediate objects as needed.
  */
 function setNestedValue(
-  obj: Record<string, any>,
+  obj: TokenTree,
   path: string,
-  value: any,
-): Record<string, any> {
-  const clone = structuredClone(obj)
+  value: TokenValue,
+): TokenTree {
+  const clone = structuredClone(obj) as TokenTree
   const keys = path.split('.')
-  let cursor: Record<string, any> = clone
+  let cursor: TokenTree = clone
 
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i]
-    if (cursor[key] == null || typeof cursor[key] !== 'object') {
+    const next = cursor[key]
+    if (next == null || typeof next !== 'object') {
       cursor[key] = {}
     }
-    cursor = cursor[key]
+    cursor = cursor[key] as TokenTree
   }
 
   cursor[keys[keys.length - 1]] = value
@@ -83,7 +94,7 @@ function setNestedValue(
  * predictable (animation.orb.breathe_duration → --animation-orb-breathe_duration).
  */
 function flattenToCSSVars(
-  obj: Record<string, any>,
+  obj: Record<string, TokenValue>,
   prefix = '',
 ): Array<[string, string]> {
   const result: Array<[string, string]> = []
@@ -124,7 +135,7 @@ function hexToRgbString(hex: string): string | null {
   return `${(n >> 16) & 0xff}, ${(n >> 8) & 0xff}, ${n & 0xff}`
 }
 
-function syncCSSVars(tokens: Record<string, any>): void {
+function syncCSSVars(tokens: TokenTree): void {
   const vars = flattenToCSSVars(tokens)
   const root = document.documentElement.style
   for (const [property, value] of vars) {
@@ -184,9 +195,9 @@ const WARM_PERSONALITY_PALETTES: Record<string, WarmPalette> = {
  * accent and glow_color with warm values, and adds new warm-specific tokens.
  */
 function applyWarmPalette(
-  baseData: Record<string, any>,
+  baseData: TokenTree,
   personalityId: string,
-): Record<string, any> {
+): TokenTree {
   const warm = WARM_PERSONALITY_PALETTES[personalityId]
   if (!warm) return baseData
   return {
@@ -203,16 +214,23 @@ function applyWarmPalette(
 const DEFAULT_PERSONALITY = 'jarvis'
 const TOKEN_OVERRIDES_KEY = 'jarvis-token-overrides'
 
-function buildInitialTokens(): Record<string, any> {
-  const basePersonality = (personalitiesTokens as Record<string, any>)[DEFAULT_PERSONALITY] ?? {}
+// Type-guard helper: a personality JSON entry is shaped like a TokenTree
+// (string-keyed nested object with primitive leaves).
+function asTokenTree(v: unknown): TokenTree {
+  return (typeof v === 'object' && v !== null) ? (v as TokenTree) : {}
+}
+
+function buildInitialTokens(): TokenTree {
+  const personalitiesAsTree = personalitiesTokens as Record<string, TokenTree>
+  const basePersonality = personalitiesAsTree[DEFAULT_PERSONALITY] ?? {}
   const warmPersonality = applyWarmPalette(basePersonality, DEFAULT_PERSONALITY)
 
-  let tokens: Record<string, any> = {
-    animation: animationTokens,
-    layout: layoutTokens,
-    time: timeTokens,
+  let tokens: TokenTree = {
+    animation: asTokenTree(animationTokens),
+    layout: asTokenTree(layoutTokens),
+    time: asTokenTree(timeTokens),
     ui: {
-      ...uiTokens,
+      ...asTokenTree(uiTokens),
       backgroundMode: 'gradient', // default background mode: "gradient" | "texture" | "glass"
     },
     personality: warmPersonality,
@@ -222,7 +240,7 @@ function buildInitialTokens(): Record<string, any> {
   try {
     const saved = localStorage.getItem(TOKEN_OVERRIDES_KEY)
     if (saved) {
-      const overrides: Record<string, any> = JSON.parse(saved)
+      const overrides = JSON.parse(saved) as Record<string, TokenValue>
       for (const [path, value] of Object.entries(overrides)) {
         tokens = setNestedValue(tokens, path, value)
       }
@@ -241,7 +259,7 @@ const TokenContext = createContext<TokenContextValue | null>(null)
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function TokenProvider({ children }: { children: React.ReactNode }) {
-  const [tokens, setTokens] = useState<Record<string, any>>(buildInitialTokens)
+  const [tokens, setTokens] = useState<TokenTree>(buildInitialTokens)
   const [currentPersonality, setCurrentPersonality] = useState(DEFAULT_PERSONALITY)
 
   // Sync CSS vars whenever tokens change
@@ -263,19 +281,20 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
     [],
   )
 
-  const updateToken = useCallback((path: string, value: any) => {
+  const updateToken = useCallback((path: string, value: TokenValue) => {
     setTokens((prev) => setNestedValue(prev, path, value))
 
     // Persist override so it survives page refreshes
     try {
-      const saved = JSON.parse(localStorage.getItem(TOKEN_OVERRIDES_KEY) || '{}')
+      const saved = JSON.parse(localStorage.getItem(TOKEN_OVERRIDES_KEY) || '{}') as Record<string, TokenValue>
       saved[path] = value
       localStorage.setItem(TOKEN_OVERRIDES_KEY, JSON.stringify(saved))
     } catch { /* quota exceeded or private mode — ignore */ }
   }, [])
 
   const setPersonality = useCallback((id: string) => {
-    const personalityData = (personalitiesTokens as Record<string, any>)[id]
+    const personalitiesAsTree = personalitiesTokens as Record<string, TokenTree>
+    const personalityData = personalitiesAsTree[id]
     if (!personalityData) {
       console.warn(`[TokenProvider] Unknown personality id: "${id}"`)
       return
@@ -283,7 +302,7 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
 
     setCurrentPersonality(id)
     setTokens((prev) => {
-      let next = structuredClone(prev)
+      let next = structuredClone(prev) as TokenTree
       // Replace personality block with the new personality's data + warm palette.
       next.personality = applyWarmPalette(personalityData, id)
 
@@ -292,7 +311,7 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
       try {
         const saved = localStorage.getItem(TOKEN_OVERRIDES_KEY)
         if (saved) {
-          const overrides: Record<string, any> = JSON.parse(saved)
+          const overrides = JSON.parse(saved) as Record<string, TokenValue>
           for (const [path, value] of Object.entries(overrides)) {
             next = setNestedValue(next, path, value)
           }

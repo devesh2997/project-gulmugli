@@ -175,11 +175,21 @@ function computeBlend(fractionalHour: number): BlendResult {
 /**
  * Expose a global testing API: window.__setSimulatedHour(14.5) sets 2:30pm.
  * Call window.__setSimulatedHour(null) to return to real time.
+ *
+ * Use a typed `Window` augmentation so we don't need `as any` to attach
+ * the dev hook. The interface only adds the dev field; everything else
+ * about `window` stays as DOM lib defines it.
  */
+declare global {
+  interface Window {
+    __setSimulatedHour?: (hour: number | null) => void
+  }
+}
+
 let simulatedHour: number | null = null
 
 if (typeof window !== 'undefined') {
-  (window as any).__setSimulatedHour = (hour: number | null) => {
+  window.__setSimulatedHour = (hour: number | null) => {
     simulatedHour = hour
     console.log(`[useTimeOfDay] Simulated hour: ${hour === null ? 'OFF (real time)' : hour}`)
     window.dispatchEvent(new CustomEvent('time-sim-change'))

@@ -72,13 +72,33 @@ export interface IntentBadge {
 }
 
 // ─── Settings Schema ─────────────────────────────────────────────
+/**
+ * A primitive setting value as it lives in config.yaml.
+ *
+ * `null` covers the "not set / inherits default" case. We deliberately
+ * don't include arrays or objects — the settings schema only exposes
+ * primitive knobs (Tuya device IDs and other complex configs are NOT
+ * routed through this surface; see `core/config_manager.py`'s
+ * SETTINGS_SCHEMA invariant).
+ */
+export type SettingValue = string | number | boolean | null
+
+/**
+ * A token-tree value. Tokens are nested under personality / category
+ * keys; leaves are primitive (color hex, font-size px, etc.). The
+ * `Record` recursion captures arbitrary depth without resorting to
+ * `any`. Callers that read a token still narrow before use.
+ */
+export type TokenValue = string | number | boolean | null | TokenTree
+export interface TokenTree { [key: string]: TokenValue }
+
 export interface SettingSchema {
   path: string
   type: 'string' | 'int' | 'float' | 'bool' | 'choice'
   label: string
   description: string
   category: string
-  value: any
+  value: SettingValue
   choices?: string[]
   min?: number
   max?: number
@@ -570,7 +590,7 @@ export interface AssistantActions {
   switchPersonality: (id: string) => void
   sendText: (text: string) => void
   sendGesture: (gesture: string, target?: string) => void
-  updateSetting: (path: string, value: any) => void
+  updateSetting: (path: string, value: SettingValue) => void
   requestSettings: () => void
   wake: () => void
   // Audio controls

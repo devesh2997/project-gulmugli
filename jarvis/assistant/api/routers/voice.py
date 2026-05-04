@@ -48,194 +48,42 @@ from core.personality import personality_manager
 from core.pipeline import process_input
 from core.prefilter import prefilter_intent
 
+# ── Lifted helpers (audio cache, filler clips, chat-fast heuristic) ──
+# These were inline in this file (~280 LOC of standalone helpers) until
+# the refactor moved them into siblings under api/voice/. Each module
+# is independently testable. The `_audio_cache_*` aliases preserve the
+# pre-refactor names so test_api_smoke.py keeps working without rewrites.
+from api.voice.audio_cache import (
+    put as _audio_cache_put,
+    pop as _audio_cache_pop,
+    router as _audio_cache_router,
+    _AUDIO_CACHE,
+    _AUDIO_CACHE_LOCK,
+    _AUDIO_CACHE_TTL,
+)
+from api.voice.filler import (
+    ensure_filler_for as _ensure_filler_for,
+    pick_filler_wav as _pick_filler_wav,
+    ensure_error_audio_for as _ensure_error_audio_for,
+    pick_error_wav as _pick_error_wav,
+    _FILLER_CACHE, _FILLER_LOCK, _ERROR_CACHE,
+    _FILLER_PHRASES, _ERROR_PHRASES,
+)
+from api.voice.chat_fast import (
+    find_first_chunk_boundary as _find_first_chunk_boundary,
+    is_obvious_chat as _is_obvious_chat,
+    _CHAT_HEURISTIC_RE,
+    _SENTENCE_END_RE,
+    _CLAUSE_BREAK_RE,
+)
+
 log = get_logger("api.voice")
 router = APIRouter(dependencies=[Depends(verify_token)])
 
-
-# ─── Out-of-band audio cache ─────────────────────────────────────────────
-#
-# Why we store synthesized WAVs server-side and ship a URL instead of a
-# base64 blob over SSE:
-#
-# Originally the streaming endpoint embedded `wav_b64` (the entire WAV
-# encoded as base64) inside each `audio_chunk` SSE event. That works, but
-# SSE multiplexes everything onto one TCP stream — a single large event
-# (a 5-second sentence ≈ 300-600 KB base64) blocks the head of line. While
-# that big chunk is in flight, the next `response_text` event the server
-# already produced sits in the kernel send buffer behind it. The Mac
-# client's symptom: text-only events flow in real time, but the audio for
-# the same sentence — and any later events — show up several seconds late.
-#
-# Out-of-band fix: server caches the WAV in memory under a random chunk_id,
-# emits a tiny `audio_chunk` event (no audio bytes, just `chunk_id` +
-# `url` + `index` + `sentence`), and serves the bytes from a separate GET
-# endpoint. The Mac client fires off a parallel HTTP fetch as soon as it
-# sees the URL. SSE stream stays small and head-of-line-clean; audio
-# transfers run in parallel TCP streams; each event reaches the client
-# within ~10 ms of being yielded server-side regardless of audio sizes.
-_AUDIO_CACHE: dict[str, tuple[bytes, float]] = {}
-_AUDIO_CACHE_LOCK = threading.Lock()
-# Cap memory: drop entries older than this on every store. 5 minutes is
-# generous — a typical audio chunk is fetched within seconds of being
-# announced. Worst case (client crash, never fetches) = ≤5 min × ~5 chunks
-# per request × ~600 KB = bounded growth.
-_AUDIO_CACHE_TTL = 300.0
-
-
-def _audio_cache_put(wav: bytes) -> str:
-    """Store WAV bytes, return a chunk_id. Evicts entries older than TTL."""
-    chunk_id = uuid.uuid4().hex
-    now = time.time()
-    cutoff = now - _AUDIO_CACHE_TTL
-    with _AUDIO_CACHE_LOCK:
-        # Lazy eviction — sweep on every insert. O(n) but n is small (<50).
-        stale = [k for k, (_, t) in _AUDIO_CACHE.items() if t < cutoff]
-        for k in stale:
-            _AUDIO_CACHE.pop(k, None)
-        _AUDIO_CACHE[chunk_id] = (wav, now)
-    return chunk_id
-
-
-def _audio_cache_pop(chunk_id: str) -> bytes | None:
-    """Retrieve WAV bytes by chunk_id. Single-fetch: removes after read."""
-    with _AUDIO_CACHE_LOCK:
-        entry = _AUDIO_CACHE.pop(chunk_id, None)
-    return entry[0] if entry else None
-
-
-@router.get("/api/voice/audio/{chunk_id}")
-async def get_audio_chunk(chunk_id: str):
-    """
-    Fetch a synthesized WAV by chunk_id (issued via /api/voice/stream's
-    `audio_chunk` SSE event). Each chunk is single-fetch — once retrieved
-    it's removed from the cache. Reasonable: the streaming client downloads
-    each chunk exactly once and queues it for playback.
-    """
-    wav = _audio_cache_pop(chunk_id)
-    if wav is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"audio chunk '{chunk_id}' not found (already fetched, "
-                   "or expired after 5 minutes)",
-        )
-    return Response(content=wav, media_type="audio/wav")
-
-
-# ─── Filler audio (pre-synthesized acknowledgment clips) ────────────────
-#
-# Why: even with TTFA pinned at ~3s, that's 3 seconds of dead air after the
-# user stops speaking. The brain reads "...delay..." as "the assistant
-# didn't hear me / is broken / will respond eventually." Playing a tiny
-# acknowledgment clip ("Hmm,", "Let me think.", "One sec.") IMMEDIATELY
-# after end-of-speech — well before the LLM has produced a token, let
-# alone synthesized audio — drops perceived TTFA to ~150 ms (just the
-# STT cost). The actual answer plays right after, sounding like a
-# natural pause for thought.
-#
-# This is what Alexa/Google/Siri do under the hood. Implementation cost:
-# pre-synth a small set per personality at startup, cache as raw WAV
-# bytes, ship one as the very first audio_chunk before the main pipeline
-# runs. 30 lines of code, dramatic UX win.
-_FILLER_CACHE: dict[str, list[bytes]] = {}  # personality_id → list of WAVs
-_FILLER_LOCK = threading.Lock()
-_FILLER_PHRASES = {
-    "jarvis":   ["Mm-hmm.", "One moment.", "Let me see."],
-    "devesh":   ["Haan.", "Ek second.", "Sochne do."],
-    "chandler": ["Riiiight.", "Could I be...", "Oh, *that*."],
-    "girlfriend": ["Mmhm,", "One sec babe.", "Hmm,"],
-    "_default": ["Mm,", "One moment.", "Let me think."],
-}
-
-# Pre-synthesized error responses, played when the pipeline fails after
-# STT has succeeded. The user always gets audible feedback — never silent
-# failure. Cached the same way as fillers, lazy-built per personality.
-_ERROR_CACHE: dict[str, list[bytes]] = {}
-_ERROR_PHRASES = {
-    "jarvis":   ["Sorry, I'm having trouble. Please try again.",
-                 "Something went wrong on my end. Could you repeat that?"],
-    "devesh":   ["Yaar, kuch gadbad ho gayi. Phir try karo.",
-                 "Mujhe samajh nahi aya. Dobara bolo?"],
-    "chandler": ["Could this BE any more broken? Try again?",
-                 "Well, that didn't work. One more time?"],
-    "girlfriend": ["Oops, something broke. Try again babe?",
-                   "Hmm, that didn't work. Say it again?"],
-    "_default": ["Sorry, something went wrong. Please try again.",
-                 "I had a problem. Could you say that again?"],
-}
-
-
-def _ensure_error_audio_for(voice_router, personality) -> None:
-    if not voice_router or personality is None:
-        return
-    pid = personality.id
-    with _FILLER_LOCK:
-        if pid in _ERROR_CACHE:
-            return
-        _ERROR_CACHE[pid] = []
-
-    phrases = _ERROR_PHRASES.get(pid, _ERROR_PHRASES["_default"])
-    wavs: list[bytes] = []
-    for phrase in phrases:
-        try:
-            wav = voice_router.speak(phrase, personality)
-            if wav:
-                wavs.append(wav)
-        except Exception as e:
-            log.warning("Error-audio synth for '%s' failed: %s", phrase, e)
-    with _FILLER_LOCK:
-        _ERROR_CACHE[pid] = wavs
-
-
-def _pick_error_wav(personality_id: str) -> bytes | None:
-    import random
-    with _FILLER_LOCK:
-        wavs = _ERROR_CACHE.get(personality_id) or _ERROR_CACHE.get("_default", [])
-    return random.choice(wavs) if wavs else None
-
-
-def _ensure_filler_for(voice_router, personality) -> None:
-    """
-    Lazy-build the filler clip cache for the given personality on first
-    use. Keeps startup fast (one personality might be 1-3 seconds of TTS
-    work; we don't want to do all of them up front).
-
-    Filler clips are synthesized with the same provider that handles the
-    personality's normal speech, so the voice character matches. For
-    personalities whose normal voice is Hindi (Devesh), the filler is in
-    Hindi voice; for English personalities, English voice. This keeps
-    the "Hmm,..." natural-sounding regardless of which TTS handles the
-    answer.
-    """
-    if not voice_router or personality is None:
-        return
-    pid = personality.id
-    with _FILLER_LOCK:
-        if pid in _FILLER_CACHE:
-            return  # already built
-        # Mark immediately so concurrent requests don't all try to build
-        _FILLER_CACHE[pid] = []
-
-    phrases = _FILLER_PHRASES.get(pid, _FILLER_PHRASES["_default"])
-    wavs: list[bytes] = []
-    for phrase in phrases:
-        try:
-            wav = voice_router.speak(phrase, personality)
-            if wav:
-                wavs.append(wav)
-        except Exception as e:
-            log.warning("Filler synth for '%s' (personality=%s) failed: %s",
-                        phrase, pid, e)
-    with _FILLER_LOCK:
-        _FILLER_CACHE[pid] = wavs
-    log.info("Filler cache built for '%s': %d clips", pid, len(wavs))
-
-
-def _pick_filler_wav(personality_id: str) -> bytes | None:
-    """Return a random filler WAV for the given personality, or None if none cached."""
-    import random
-    with _FILLER_LOCK:
-        wavs = _FILLER_CACHE.get(personality_id) or _FILLER_CACHE.get("_default", [])
-    return random.choice(wavs) if wavs else None
+# Mount the audio-cache GET endpoint on this router so the public URL
+# stays at /api/voice/audio/{chunk_id} — clients don't need to know
+# the cache moved.
+router.include_router(_audio_cache_router)
 
 
 # ─── Schema (non-streaming) ──────────────────────────────────────────────
@@ -255,115 +103,6 @@ class VoiceResponse(BaseModel):
     audio_format: str = "wav"
     timings: VoiceTimings | None = None
     error: str | None = None
-
-
-# ─── Sentence splitting (mirrors voice_router._split_sentences) ──────────
-
-_SENTENCE_END_RE = re.compile(r"(?<=[.!?;:।])\s+")
-
-# Sub-sentence emit boundary — fires earlier than _SENTENCE_END_RE so the
-# first chunk of audio reaches the user sooner. Strategy is a port of
-# Pipecat's SentenceAggregator behavior:
-#   1. Sentence-end punctuation followed by whitespace (true sentence break)
-#   2. Comma/dash/colon after at least 5 words (clause break)
-# Used only for the FIRST chunk in a chat-fast turn — once the user is
-# already hearing audio, we revert to whole-sentence emission to keep
-# prosody natural.
-_CLAUSE_BREAK_RE = re.compile(r"(?<=[,—:;])\s+")
-
-
-def _find_first_chunk_boundary(text: str, min_words: int = 5) -> int:
-    """
-    Find a NATURAL position to flush the FIRST audio chunk early.
-
-    Returns the index AFTER the boundary character (so text[:idx] is the
-    chunk to emit). Returns -1 if no good boundary yet.
-
-    Strategy: emit only at natural prosodic breaks — sentence end or
-    comma/dash/colon after at least `min_words` words. We deliberately
-    do NOT emit on raw word-count fallback because Kokoro's prosody
-    breaks audibly when a chunk ends mid-clause ("the speed of light
-    in a vacuum is approximately 299,792 kilometers per [STOP] second.").
-    The win from cutting 0.3s off TTFA isn't worth the audio glitch.
-
-    For LLM responses without internal commas (which is common with
-    short replies), this returns -1 and we fall back to whole-sentence
-    emission — same TTFA as before, no regression.
-    """
-    words = text.split()
-    if len(words) < min_words:
-        return -1
-
-    # 1. Sentence end
-    m = list(_SENTENCE_END_RE.finditer(text))
-    if m:
-        return m[0].end()
-
-    # 2. Clause break (comma/em-dash/colon/semicolon) after min_words
-    for m in _CLAUSE_BREAK_RE.finditer(text):
-        prefix = text[: m.start()].split()
-        if len(prefix) >= min_words:
-            return m.end()
-
-    return -1
-
-
-# ─── Heuristic chat fast-path ────────────────────────────────────────────
-#
-# For obviously-chat questions (open-ended factual / explanation prompts),
-# we skip the classifier entirely and stream a chat reply directly. This
-# saves the JSON-mode penalty (Ollama's grammar-constrained decoding is
-# ~2x slower than free generation) AND skips the second LLM round-trip
-# that would otherwise run for chat intents.
-#
-# This runs AFTER the regex prefilter — so "what time is it", "what's the
-# weather", "tell me a story", etc. are already routed to their proper
-# handlers via prefilter and never reach this check. We only catch the
-# residual "what is the speed of light" / "explain quantum computing"
-# class of questions.
-#
-# Conservative by design: false negatives are fine (the classifier still
-# runs), false positives = a "play song X" command misrouted to chat,
-# which would be a silent failure. So we anchor on opener phrases that
-# are vanishingly unlikely to ever start a command.
-_CHAT_HEURISTIC_RE = re.compile(
-    r"^("
-    r"what\s+(is|are|was|were|does|do|did|will|would|kind|type|color|colour)\b"
-    r"|what's\s+(the|a|an)\b"
-    r"|how\s+(do|does|did|can|would|should|long|tall|big|small|much|many|far|fast|come)\b"
-    r"|why\s+(is|are|was|were|do|does|did|don't|doesn't|can't|would|should)\b"
-    r"|who\s+(is|was|were|are|invented|discovered|wrote|made|created|painted|composed)\b"
-    r"|when\s+(is|was|were|did|does|do|will|would)\b"
-    r"|where\s+(is|are|was|were|did|does|do|will)\b"
-    r"|tell\s+me\s+(about|something\s+about|more\s+about)\b"
-    r"|explain\s+(to\s+me\s+)?\w+"
-    r"|describe\s+\w+"
-    r"|define\s+\w+"
-    r"|do\s+you\s+know\s+(what|how|why|who|when|where|about)\b"
-    r"|can\s+you\s+(tell|explain|describe)\b"
-    r")",
-    re.IGNORECASE,
-)
-
-
-def _is_obvious_chat(text: str) -> bool:
-    """Return True for questions that are clearly chat — no command verbs."""
-    cleaned = text.strip()
-    if not cleaned:
-        return False
-    # Reject inputs that contain explicit action verbs even if they start with
-    # a chat-y opener. (Belt-and-suspenders — the heuristic regex shouldn't
-    # match these anyway, but if it does we don't want to misroute.)
-    action_verbs = re.compile(
-        r"\b(play|baja|bajao|chala|chalao|laga|lagao|stop|pause|skip|next|"
-        r"on|off|set|turn|switch|mute|unmute|increase|decrease|brighten|dim|"
-        r"open|close|search\s+for|search\s+youtube|remind|set\s+a?\s*timer|"
-        r"alarm|wake\s+me|change|switch\s+to)\b",
-        re.IGNORECASE,
-    )
-    if action_verbs.search(cleaned):
-        return False
-    return bool(_CHAT_HEURISTIC_RE.match(cleaned))
 
 
 # ─── Non-streaming endpoint (kept for simple JSON consumers) ─────────────

@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-05-05T00:01:26.391437",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.3",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "api_smoke": {
+      "total": 7,
+      "passed": 6,
+      "total_latency": 0.4604630470275879,
+      "tests": [
+        {
+          "name": "status endpoint returns basic info",
+          "passed": true,
+          "latency": 0.33744287490844727,
+          "detail": ""
+        },
+        {
+          "name": "settings GET requires token when auth on",
+          "passed": true,
+          "latency": 0.026198148727416992,
+          "detail": ""
+        },
+        {
+          "name": "settings open when auth disabled",
+          "passed": true,
+          "latency": 0.020262956619262695,
+          "detail": ""
+        },
+        {
+          "name": "_is_obvious_chat classifications",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "audio cache put/pop one-shot",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "audio cache TTL eviction",
+          "passed": false,
+          "latency": 0.054853200912475586,
+          "detail": "AssertionError: "
+        },
+        {
+          "name": "CORS does not combine wildcard origin + credentials",
+          "passed": true,
+          "latency": 0.02164292335510254,
+          "detail": ""
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 7,
+    "passed": 6,
+    "failed": 1,
+    "score": 85.71428571428571,
+    "total_latency": 0.4604630470275879
+  }
+}

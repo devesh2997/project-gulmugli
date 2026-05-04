@@ -28,6 +28,7 @@ import { TimerWidget } from './components/TimerWidget'
 import { WeatherWidget } from './components/WeatherWidget'
 import { AmbientIndicator } from './components/AmbientIndicator'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import type { TokenValue } from './types/assistant'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -43,7 +44,7 @@ function AppContent() {
   // ref read picks it up).
   const updateTokenRef = useRef(updateToken)
   useEffect(() => { updateTokenRef.current = updateToken }, [updateToken])
-  const stableUpdateToken = useCallback((path: string, value: any) => {
+  const stableUpdateToken = useCallback((path: string, value: TokenValue) => {
     updateTokenRef.current(path, value)
   }, [])
 
