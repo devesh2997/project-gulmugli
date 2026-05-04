@@ -224,6 +224,77 @@ The pipeline: classifier detects `knowledge_search` intent → KnowledgeProvider
 
 On edge hardware: max_results is kept low (3) to limit context window usage. Each result adds ~100-150 tokens. The KV cache grows linearly with input length, and on Jetson's 8GB shared memory, keeping total prompt under ~1000 tokens is important.
 
+## Birthday-pack additions (May 5-14, 2026)
+
+A whole "event pack" subsystem ships alongside the core assistant for
+Astha's birthday and future occasion-specific surprises. Full spec
+lives in [`jarvis/BIRTHDAY_ROADMAP.md`](../BIRTHDAY_ROADMAP.md).
+Hardware decisions deferred — see
+[`jarvis/05-the-body/HARDWARE_NOTES.md`](../05-the-body/HARDWARE_NOTES.md).
+
+### New modules (all in `core/`)
+
+  - `branding.py` — single source of truth for the assistant's name
+    (Vesper) + protocol_id (gulmugli, stable across rebrands)
+  - `event_manager.py` — date-rule based event-pack registry; reads
+    `events/<pack>/pack.yaml`, answers "what's happening today?"
+  - `event_scheduler.py` — daemon thread that auto-fires triggers
+    at midnight rollover for packs with `trigger.auto_midnight: true`
+  - `trigger_state.py` — persistent year-keyed trigger record so a
+    Jetson restart on the day-of doesn't roll back the celebration
+  - `intro_runner.py` — executes a YAML launch script with 5 step
+    types (play_audio, dashboard_event, speak, dashboard_hint,
+    start_playlist); best-effort, never crashes on a missing step
+  - `audio_playback.py` — portable WAV/MP3 player (afplay → paplay
+    → aplay → mpv) for any code that needs to play a local file
+  - `astha_jokes.py` — joke bank engine for the silly-questions
+    mode; supports single_turn, setup_then_punchline, interactive
+  - `birthday_quiz.py` — finite hand-curated quiz with audio reveal
+  - `voice_memos.py` — recall recorded letters by tag, with date
+    gating (memos can be locked until a release date)
+  - `custom_playlist.py` — playlist YAML loader with shuffle/loop
+
+### New event-pack content tree
+
+`events/astha-birthday/` holds all the per-pack content:
+  - `pack.yaml` — date rule + features + manual trigger phrases
+  - `theme/{tokens.json, avatar.json}` — dashboard CSS-var overrides
+  - `first_year/intro_script.yaml` — year-1-only launch sequence
+  - `media/{photos, songs, sounds, voice_memos, besura, sorry}/`
+  - `jokes/astha_jokes.yaml`, `quiz/about_us.yaml`
+
+Adding a new event pack (Diwali, anniversary, etc.) is a directory
+drop — see `events/README.md`.
+
+### New API endpoints (in `api/routers/`)
+
+  - `events.py` — GET /current (poll-friendly), /health (diagnostic),
+    /{pack}/theme/{tokens,avatar}, POST /trigger, /{pack}/reset
+  - `yaadein.py` — GET /list, /photo/{filename}, /music
+
+### New voice intents
+
+11 new intents added this cycle (see `_VALID_INTENTS` in
+`providers/brain/ollama.py`). Dispatch table in `core/intent_handler.py`
+is now ~25 entries. `tests/test_intent_dispatch.py` enforces the
+table-vs-enum integrity at test time.
+
+### CLI tools
+
+  - `tools/birthday_rehearsal.py` — May 14 launch dry-run on Mac
+  - `tools/check_content.py` — audit which user-content slots are
+    still placeholder before the day-of
+
+### Test surface
+
+16+ fast-suite test files cover the new modules:
+api_smoke, imports, intent_dispatch, event_manager, intro_runner,
+astha_jokes, birthday_quiz, trigger_state, astha_angry_prefilter,
+custom_playlist, voice_memos, memory_event_recall, memory_log,
+event_scheduler, prefilter, personality.
+
+Run `python tests/runner.py --suite <name>` for any of them.
+
 ## Known issues / tech debt
 
 - **Eval framework outdated**: `eval_song_disambiguation.py` still uses old single-LLM-call approach, needs updating for the separated 3-step pipeline
