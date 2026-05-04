@@ -1665,6 +1665,108 @@ def _handle_voice_memo_play(assistant: dict, intent: Intent) -> Optional[str]:
     return ""
 
 
+def _handle_memory_recall_event(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Year-over-year event-scoped memory recall.
+
+    Resolves `event_id` (default: the currently active pack, else
+    'astha-birthday' as the only currently-defined recurring pack) and
+    `year` (default: current year - 1 — "last year"). Pulls all
+    interactions tagged for that event+year and runs them through the
+    existing memory_recall LLM-summary pattern.
+    """
+    from datetime import datetime as _dt
+
+    memory = assistant.get("memory")
+    if memory is None:
+        return intent.response or "Memory abhi enable nahi hai."
+
+    # Resolve event_id: classifier-supplied → active pack → default.
+    event_id = (intent.params or {}).get("event_id") or ""
+    if not event_id:
+        try:
+            from core.event_manager import get_event_manager
+            active = get_event_manager().current()
+            event_id = active.pack_id if active else "astha-birthday"
+        except Exception:
+            event_id = "astha-birthday"
+
+    # Resolve year: classifier-supplied → last year (the natural meaning
+    # of "pichle saal" / "last year").
+    year_param = (intent.params or {}).get("year")
+    if isinstance(year_param, int):
+        year = year_param
+    elif isinstance(year_param, str) and year_param.isdigit():
+        year = int(year_param)
+    else:
+        year = _dt.now().year - 1
+
+    # Provider may not support find_event_memories (older providers don't);
+    # be defensive.
+    finder = getattr(memory, "find_event_memories", None)
+    if not callable(finder):
+        log.info("memory_recall_event: provider lacks find_event_memories; skipping")
+        return intent.response or "Year-by-year recall is not available with this memory provider."
+
+    memories = finder(event_id=event_id, year=year, limit=20)
+    if not memories:
+        # Polite empty state — common for the FIRST birthday since there's
+        # no past data yet. Speak it warmly so it doesn't feel broken.
+        return (
+            intent.response
+            or f"Pichle saal {event_id.replace('-', ' ')} ki memories abhi nahi hain — "
+               "is saal se aap dono ka pehla saal hai mere saath. "
+               "Agle saal yeh question puch ke dekhna."
+        )
+
+    # Format the memories for the LLM summary, same shape as
+    # `_handle_memory_recall`'s existing format.
+    memory_lines = []
+    for m in memories[:10]:
+        intents = m.raw.get("intents", []) or []
+        intent_names = [
+            i.get("name", "") for i in intents if isinstance(i, dict)
+        ]
+        if "memory_recall" in intent_names or "memory_recall_event" in intent_names:
+            continue
+        responses = m.raw.get("responses", []) or []
+        response_text = responses[0] if responses else ""
+        memory_lines.append(
+            f"- {str(m.timestamp)[:16]} | She/he said: \"{m.raw.get('input_text', '')}\" "
+            f"| Vesper did: {response_text[:120]}"
+        )
+
+    if not memory_lines:
+        return (intent.response
+                or f"Pichle saal ki interactions thin lekin specific memory nahi nikli.")
+
+    # Hand off to the LLM for a natural summary, in the active personality's
+    # voice. Reuses the existing brain.generate path.
+    p = personality_manager.active
+    system = (
+        f"You are {p.display_name}. {p.tone}\n\n"
+        f"TASK: Astha asked what happened on the {event_id.replace('-', ' ')} "
+        f"in {year}. Below is the interaction log from that day. Answer "
+        f"warmly in 2-3 sentences. Match her language (English/Hindi/Hinglish). "
+        f"Do NOT recommend new actions. Just recap the memory.\n\n"
+        f"INTERACTION LOG:\n" + "\n".join(memory_lines)
+    )
+    try:
+        resp = assistant["brain"].generate(
+            prompt=f"What happened on the {event_id.replace('-', ' ')} in {year}?",
+            system=system,
+            temperature=0.4,
+            max_tokens=120,
+        )
+        return resp.text
+    except Exception as e:
+        log.warning("memory_recall_event: LLM summary failed: %s", e)
+        # Fallback: speak a literal one-line summary.
+        return (intent.response
+                or f"{len(memory_lines)} cheezein hui thi {event_id.replace('-', ' ')} "
+                   f"par {year} mein.")
+
+
 def _handle_sing_happy_birthday(assistant: dict, intent: Intent) -> Optional[str]:
     """
     Plays the personalized recorded happy-birthday clip.
@@ -1925,6 +2027,7 @@ _DISPATCH: Dict[str, Callable[[dict, Intent], Optional[str]]] = {
     "besura_play":        _handle_besura_play,
     "voice_memo_play":    _handle_voice_memo_play,
     "sing_happy_birthday": _handle_sing_happy_birthday,
+    "memory_recall_event": _handle_memory_recall_event,
 }
 
 

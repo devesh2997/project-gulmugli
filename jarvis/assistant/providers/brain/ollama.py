@@ -141,6 +141,12 @@ _VALID_INTENTS = [
     # active event subject. Phrases: "sing happy birthday", "Astha ke
     # liye happy birthday gaao".
     "sing_happy_birthday",
+    # Memory recall scoped to a past event/year. Distinct from
+    # generic memory_recall (which searches free-form): this surfaces
+    # interactions tagged with `event:<id>` + `year:<YYYY>`. Phrases:
+    # "last year mere birthday pe kya kiya tha?", "remind me of last
+    # birthday", "what did we do on Diwali last year?".
+    "memory_recall_event",
 ]
 
 _INTENT_SCHEMA = {
@@ -537,6 +543,14 @@ These are the most common confusions. Resolve them in this order:
 - `sing_happy_birthday` — params: {{}}. Plays the personalized
   happy-birthday recording. Triggered by "sing happy birthday",
   "Astha ke liye happy birthday gaao", "happy birthday gaa do".
+
+- `memory_recall_event` — params: {{"event_id": <opt>, "year": <opt int>}}.
+  Recalls interactions from a past event-day. Triggered by phrasings
+  that explicitly reference both a specific event AND a past time:
+  "last year mere birthday pe kya kiya tha", "what did we do on my
+  birthday last year", "Diwali pe pichle saal kya hua tha". A bare
+  "what did I play yesterday" stays as `memory_recall` (free-form);
+  this intent is event-scoped specifically.
 
 ## Format
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}
