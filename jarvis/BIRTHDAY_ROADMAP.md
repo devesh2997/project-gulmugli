@@ -192,7 +192,7 @@ first_year_only:         # 2026 specifically
 **Effort:** 30 min
 **Depends on:** none
 
-## 0.4 Theme switching on dashboard `[~]`
+## 0.4 Theme switching on dashboard `[x]`
 
 > Backend complete (API endpoints + tests, 11/11 api_smoke pass).
 > Dashboard hook delegated to a sub-agent — in flight at time of writing.
@@ -227,7 +227,7 @@ first_year_only:         # 2026 specifically
 **Effort:** 3-4 hours
 **Depends on:** 0.2, 0.3
 
-## 0.5 Manual trigger plumbing `[ ]`
+## 0.5 Manual trigger plumbing `[x]`
 
 **Why:** Year-1 launch is manual — you trigger it when the cake-cutting
 is done and everyone has settled in.
@@ -285,7 +285,7 @@ dev menu) before the Flutter side gets built.
 The most emotionally weighted code in the whole project. This is what she'll
 remember — the moment she meets Vesper.
 
-## 1.1 Intro script engine `[ ]`
+## 1.1 Intro script engine `[x]`
 
 **Why:** The launch sequence is a series of timed steps — your voice plays,
 Vesper picks up, dashboard animates, hints appear on screen. Needs a small
@@ -322,7 +322,7 @@ state machine.
 **Effort:** 3-4 hours
 **Depends on:** 0.2
 
-## 1.2 Theme on/off integration `[ ]`
+## 1.2 Theme on/off integration `[x]`
 
 **Why:** Theme should activate when the event triggers, not based on date
 alone (since auto-midnight is off for 2026).
@@ -349,7 +349,7 @@ alone (since auto-midnight is off for 2026).
 
 The project_ag heritage. These are the features she'll come back to all year.
 
-## 2.1 Yaadein — photo slideshow `[ ]`
+## 2.1 Yaadein — photo slideshow `[x]`
 
 **Why:** project_ag's killer feature. Photos with captions in your voice.
 Now ambient on the dashboard, plus on-demand via voice ("Vesper, mujhe
@@ -384,7 +384,7 @@ yaadein dikhao").
 **Effort:** 5-6 hours
 **Depends on:** 0.2
 
-## 2.2 Besura — recorded singing playback `[ ]`
+## 2.2 Besura — recorded singing playback `[x]`
 
 **Why:** project_ag's Besura with Love. Your voice singing for her.
 Self-deprecating gift > polished anything.
@@ -421,7 +421,7 @@ Self-deprecating gift > polished anything.
 **Effort:** 2-3 hours (engine), separate time for actual recording
 **Depends on:** 0.2
 
-## 2.3 Voice memo library `[ ]`
+## 2.3 Voice memo library `[x]`
 
 **Why:** Multiple recorded messages from you, accessible by topic.
 Different from besura (which is singing) — these are spoken letters.
@@ -462,7 +462,7 @@ Different from besura (which is singing) — these are spoken letters.
 **Effort:** 3-4 hours
 **Depends on:** 0.2
 
-## 2.4 Memory snapshot for year-over-year recall `[ ]`
+## 2.4 Memory snapshot for year-over-year recall `[x]`
 
 **Why:** "On her birthday last year, she did X" needs a seed memory.
 Year 1 records; year 2+ recalls.
@@ -508,7 +508,7 @@ placeholder tone. This phase fills in real Astha-specific voice and tone.
 **Effort:** 1 hour engine + your content time
 **Depends on:** 0.1
 
-## 3.2 Angry Astha personality `[ ]`
+## 3.2 Angry Astha personality `[x]`
 
 **Why:** project_ag inside joke, weaponized lovingly. Now voice.
 
@@ -529,7 +529,7 @@ placeholder tone. This phase fills in real Astha-specific voice and tone.
 **Effort:** 2 hours
 **Depends on:** personality system, prefilter
 
-## 3.3 Sorry Shona mode `[ ]`
+## 3.3 Sorry Shona mode `[x]`
 
 **Why:** project_ag had this as an empty file. Time to build it.
 
@@ -552,7 +552,7 @@ song.
 **Effort:** 2 hours engine + your recording time
 **Depends on:** 2.3 (memo library)
 
-## 3.4 Party hat avatar `[ ]`
+## 3.4 Party hat avatar `[x]`
 
 **Why:** Visual delight. Avatar wears a tiny party hat on her birthday.
 
@@ -577,7 +577,7 @@ song.
 
 # PHASE 4 — Astha Jokes (May 11 morning)
 
-## 4.1 Astha jokes intent (NLU) `[ ]`
+## 4.1 Astha jokes intent (NLU) `[x]`
 
 **Why:** Year-round feature. The trigger is NLU-classified, not regex.
 
@@ -599,7 +599,7 @@ song.
 **Effort:** 1.5 hours
 **Depends on:** existing intent system
 
-## 4.2 Joke engine + state machine `[ ]`
+## 4.2 Joke engine + state machine `[x]`
 
 **Why:** Some jokes are multi-turn (setup → user response → punchline).
 Some are single-turn (just a pun question with the answer in the same
@@ -656,7 +656,7 @@ through the engine with mocked TTS and STT inputs
 **Effort:** 3-4 hours
 **Depends on:** 4.1
 
-## 4.3 Joke corpus — seed bank `[ ]`
+## 4.3 Joke corpus — seed bank `[x]`
 
 **Why:** The engine is empty without content. Seed with 10-15 jokes,
 add more over time.
@@ -681,7 +681,7 @@ add more over time.
 
 # PHASE 5 — Tier-A Delight (May 11 afternoon)
 
-## 5.1 Confetti / balloons on dashboard `[ ]`
+## 5.1 Confetti / balloons on dashboard `[x]`
 
 **Why:** Cheap delight. Project_ag had it.
 
@@ -700,7 +700,7 @@ add more over time.
 **Effort:** 1.5 hours
 **Depends on:** 0.4
 
-## 5.2 "Sing happy birthday" voice line `[ ]`
+## 5.2 "Sing happy birthday" voice line `[x]`
 
 **Why:** Simple, expected, joyful.
 
@@ -718,7 +718,7 @@ add more over time.
 **Effort:** 1 hour engine + your recording
 **Depends on:** existing audio output
 
-## 5.3 Custom playlist auto-queue `[ ]`
+## 5.3 Custom playlist auto-queue `[x]`
 
 **Why:** Curated for the day. Her favorite songs + Bollywood birthday
 classics.
@@ -744,7 +744,7 @@ classics.
 **Effort:** 2 hours
 **Depends on:** 0.4, 1.2, existing music provider
 
-## 5.4 Birthday quiz mode `[ ]`
+## 5.4 Birthday quiz mode `[x]`
 
 **Why:** Playful interactive moment with a heartfelt reveal.
 
@@ -953,6 +953,17 @@ Append a one-line entry per session.
               endpoint) shipped; dashboard hook delegated to a sub-agent
               (verified clean — lint/tsc/build all green). Open questions
               Q1-Q5 logged for next user batch.
+
+- 2026-05-05 (very late PM) — All birthday-pack software phases marked
+              done except user content (Phase 3.1 Astha tone,
+              Phase 7.x recordings/photos/captions/joke bank) and
+              Phase 6 dress rehearsal. Shipped this session: 0.1-0.5,
+              1.1-1.2, 2.1-2.4, 3.2-3.4, 4.1-4.3, 5.1-5.4, plus
+              memory_recall_event + memory_log intents and hardware
+              notes (jarvis/05-the-body/HARDWARE_NOTES.md). 13 fast
+              suites, 283 unit cases all green. Dashboard build clean.
+              Intent eval re-run after the 10+ new intent additions
+              kicked off in background — result will be appended.
 
 - 2026-05-05 (late PM) — Mac intent eval after Phase 0: **70/93 = 75.3%**.
               All 3 new event_trigger cases PASS. Other failures are the

@@ -143,6 +143,12 @@ def run_suite(suite_name: str, brain) -> dict:
         # + back-compat with pre-v2 rows + migration idempotency.
         from tests.test_memory_event_recall import run_memory_event_recall_tests
         return run_memory_event_recall_tests()
+    elif suite_name == "memory_log":
+        # Explicit memory_log handler — Astha asks Vesper to remember
+        # something. Tests cover write, empty-payload fallback, missing
+        # provider, log_interaction failure path.
+        from tests.test_memory_log import run_memory_log_tests
+        return run_memory_log_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
@@ -150,8 +156,8 @@ def run_suite(suite_name: str, brain) -> dict:
 ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
               "birthday_quiz", "trigger_state", "astha_angry_prefilter",
               "custom_playlist", "voice_memos", "memory_event_recall",
-              "prefilter", "intent", "enrichment", "personality", "knowledge",
-              "latency", "integration"]
+              "memory_log", "prefilter", "intent", "enrichment", "personality",
+              "knowledge", "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:

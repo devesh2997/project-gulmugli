@@ -1665,6 +1665,65 @@ def _handle_voice_memo_play(assistant: dict, intent: Intent) -> Optional[str]:
     return ""
 
 
+def _handle_memory_log(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Explicitly log something Astha asked to remember.
+
+    Stored as a tagged interaction so it surfaces in future
+    `memory_recall` queries. Tag `memory_log` distinguishes these from
+    organic interaction logs (which mostly capture commands rather
+    than user-curated facts).
+
+    The classifier extracts the payload into `intent.params.text`. If
+    that's empty (the user said "remember this" without a payload), we
+    fall back to the original input text.
+    """
+    memory = assistant.get("memory")
+    if memory is None:
+        return intent.response or "Memory abhi enable nahi hai — yaad rakhne ka tareeka nahi hai."
+
+    text = (intent.params or {}).get("text", "")
+    if not isinstance(text, str) or not text.strip():
+        # Fallback: use original input minus a generic verb prefix.
+        text = (intent.meta or {}).get("original_input", "") or "(empty memory)"
+
+    text = text.strip()
+
+    # Tag with memory_log + (if active) the event tags so the recall
+    # path can scope these too.
+    tags = ["memory_log", "user_logged"]
+    try:
+        from core.event_manager import get_event_manager
+        from datetime import datetime as _dt
+        active = get_event_manager().current()
+        if active is not None and active.is_today:
+            tags.extend([
+                f"event:{active.pack_id}",
+                f"year:{_dt.now().year}",
+            ])
+    except Exception:
+        pass
+
+    try:
+        from core.interfaces import Interaction
+        intr = Interaction(
+            user_id="default",
+            input_text=text,
+            intents=[],
+            responses=[f"Logged: {text}"],
+            outcome="success",
+            tags=tags,
+        )
+        memory.log_interaction(intr)
+    except Exception as e:
+        log.warning("memory_log: failed to write: %s", e)
+        return intent.response or "Yaad rakhne mein problem hui — ek baar phir try karo."
+
+    log.info("memory_log: stored %r (tags=%s)", text[:80], tags)
+    # Confirm warmly so she knows it landed.
+    return intent.response or f"Yaad rakh liya: {text}."
+
+
 def _handle_memory_recall_event(assistant: dict, intent: Intent) -> Optional[str]:
     """
     Year-over-year event-scoped memory recall.
@@ -2028,6 +2087,7 @@ _DISPATCH: Dict[str, Callable[[dict, Intent], Optional[str]]] = {
     "voice_memo_play":    _handle_voice_memo_play,
     "sing_happy_birthday": _handle_sing_happy_birthday,
     "memory_recall_event": _handle_memory_recall_event,
+    "memory_log":         _handle_memory_log,
 }
 
 

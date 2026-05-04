@@ -147,6 +147,12 @@ _VALID_INTENTS = [
     # "last year mere birthday pe kya kiya tha?", "remind me of last
     # birthday", "what did we do on Diwali last year?".
     "memory_recall_event",
+    # Explicit memory log — Astha proactively asks Vesper to remember
+    # something. Stored as a tagged interaction; recallable later via
+    # memory_recall. Phrases: "Vesper, remember that I love biryani",
+    # "Vesper, log this: [text]", "Vesper, yaad rakhna ki Devesh ke
+    # papa ka birthday June 12 hai".
+    "memory_log",
 ]
 
 _INTENT_SCHEMA = {
@@ -551,6 +557,14 @@ These are the most common confusions. Resolve them in this order:
   birthday last year", "Diwali pe pichle saal kya hua tha". A bare
   "what did I play yesterday" stays as `memory_recall` (free-form);
   this intent is event-scoped specifically.
+
+- `memory_log` — params: {{"text": <string, the thing to remember>}}.
+  Astha asks Vesper to explicitly remember something. The text param
+  is what to store. Triggered by "Vesper, remember that <X>", "Vesper,
+  log this: <X>", "Vesper, yaad rakhna ki <X>", "Vesper, ye yaad
+  rakh: <X>". Distinct from `chat`: chat is a conversation; this is
+  a write-to-memory action. The classifier extracts the user's `<X>`
+  payload into `text`, NOT including the trigger phrase.
 
 ## Format
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}

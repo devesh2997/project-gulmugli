@@ -902,6 +902,59 @@ INTENT_TESTS = [
         "tags": ["astha_jokes", "boundary"],
     },
 
+    # ── Year-round companion intents (Phases 2.3 / 3.3 / 5.2 / 2.4) ──
+    # These intents wrap small, well-defined behaviours: play a memo,
+    # play a recorded song, sing happy birthday, log a fact, recall a
+    # past birthday. Each gets one Hinglish + one English case.
+    {
+        "input": "Vesper, sorry shona",
+        "intent": "sorry_mode",
+        "params": {},
+        "desc": "Apology mode invocation (project_ag callback)",
+        "tier": "easy",
+        "tags": ["sorry_mode", "hinglish"],
+    },
+    {
+        "input": "Vesper, sing for me",
+        "intent": "besura_play",
+        "params": {},
+        "desc": "Play a Devesh-recorded singing clip",
+        "tier": "easy",
+        "tags": ["besura"],
+    },
+    {
+        "input": "Vesper, Devesh ne kuch chhoda hai mere liye",
+        "intent": "voice_memo_play",
+        "params": {},
+        "desc": "Voice memo recall (no specific topic)",
+        "tier": "easy",
+        "tags": ["voice_memo", "hinglish"],
+    },
+    {
+        "input": "Vesper, sing happy birthday",
+        "intent": "sing_happy_birthday",
+        "params": {},
+        "desc": "Personalized happy-birthday recording",
+        "tier": "easy",
+        "tags": ["birthday_song"],
+    },
+    {
+        "input": "Vesper, remember that Astha loves biryani",
+        "intent": "memory_log",
+        "params": {"text": lambda v: "biryani" in str(v).lower()},
+        "desc": "Explicit memory log — Astha's food preference",
+        "tier": "medium",
+        "tags": ["memory_log"],
+    },
+    {
+        "input": "Vesper, last year mere birthday pe kya kiya tha",
+        "intent": "memory_recall_event",
+        "params": {},
+        "desc": "Year-over-year event recall — Hinglish",
+        "tier": "medium",
+        "tags": ["memory_recall_event", "hinglish"],
+    },
+
     # ── Birthday quiz (Phase 5.4) ───────────────────────────────
     # Hard-mode boundary: a plain "let's play a quiz" stays in generic
     # `quiz`. Only relationship-framed wording maps to `birthday_quiz`.
