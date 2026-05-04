@@ -278,6 +278,163 @@ def test_events_trigger_requires_auth():
     assert r.status_code == 401, f"expected 401, got {r.status_code}"
 
 
+# ── Test: yaadein loader + endpoints ──────────────────────────────────
+
+
+def _make_yaadein_fixture(tmp_root):
+    """
+    Build an isolated photos directory with a small captions.yaml and
+    a couple of fake image bytes. Returns the directory path.
+    """
+    from pathlib import Path
+    photos_dir = Path(tmp_root) / "media" / "photos"
+    photos_dir.mkdir(parents=True, exist_ok=True)
+    # Three "image" files. Bytes don't matter — the loader only checks
+    # the suffix, and the API's FileResponse streams whatever's there.
+    (photos_dir / "001.jpg").write_bytes(b"\xff\xd8fake-jpg")
+    (photos_dir / "002.jpg").write_bytes(b"\xff\xd8fake-jpg-2")
+    (photos_dir / "003.png").write_bytes(b"\x89PNGfake")
+    # An entry in the YAML with explicit order; one without a YAML
+    # entry to verify auto-include.
+    (photos_dir / "captions.yaml").write_text(
+        "music: null\n"
+        "photos:\n"
+        "  - file: 002.jpg\n"
+        '    caption: "second photo 🥰"\n'
+        "    order: 2\n"
+        "  - file: 001.jpg\n"
+        '    caption: "first photo 😇"\n'
+        "    order: 1\n",
+        encoding="utf-8",
+    )
+    return photos_dir
+
+
+def test_yaadein_loader_orders_and_auto_includes(tmp_path):
+    """
+    The loader should:
+      - sort entries with explicit `order` first (asc),
+      - then auto-include unlisted on-disk photos with empty captions,
+      - return music=None when YAML has `music: null`.
+    """
+    from providers.yaadein.local import load_photos
+    photos_dir = _make_yaadein_fixture(tmp_path)
+    pack = load_photos(photos_dir)
+    assert pack.music is None
+    # 001 (order 1), 002 (order 2), 003 (auto-included)
+    files = [p.file for p in pack.photos]
+    assert files == ["001.jpg", "002.jpg", "003.png"], files
+    # Captions on the YAML-listed entries, empty on the auto-included.
+    captions = {p.file: p.caption for p in pack.photos}
+    assert "first photo" in captions["001.jpg"]
+    assert "second photo" in captions["002.jpg"]
+    assert captions["003.png"] == ""
+
+
+def test_yaadein_loader_handles_missing_dir(tmp_path):
+    """A missing photos dir is fine — empty list, no exception."""
+    from pathlib import Path
+    from providers.yaadein.local import load_photos
+    pack = load_photos(Path(tmp_path) / "does-not-exist")
+    assert pack.photos == []
+    assert pack.music is None
+
+
+def test_yaadein_loader_skips_path_traversal_in_yaml(tmp_path):
+    """A captions.yaml entry with a path-like file should be rejected."""
+    from pathlib import Path
+    from providers.yaadein.local import load_photos
+    photos_dir = Path(tmp_path) / "photos"
+    photos_dir.mkdir()
+    (photos_dir / "good.jpg").write_bytes(b"\xff\xd8")
+    (photos_dir / "captions.yaml").write_text(
+        "photos:\n"
+        "  - file: ../etc/passwd\n"
+        '    caption: "evil"\n'
+        "  - file: good.jpg\n"
+        '    caption: "ok"\n',
+        encoding="utf-8",
+    )
+    pack = load_photos(photos_dir)
+    assert [p.file for p in pack.photos] == ["good.jpg"]
+
+
+def test_yaadein_photo_endpoint_rejects_path_traversal():
+    """
+    `/api/yaadein/photo/{filename}` MUST reject `..`, absolute paths,
+    and any other escape attempt with 400. Even with auth disabled,
+    the path check applies before the file lookup.
+    """
+    client, _ = _build_test_app(auth_enabled=False)
+    # A few classic traversal attempts; each should be 400 (not 404).
+    for evil in ["../etc/passwd", "..%2Fetc%2Fpasswd", ".hidden", "sub/file.jpg"]:
+        # FastAPI URL-decodes path params, so `..%2F` becomes `../`. We
+        # skip that one when the client itself doesn't decode (TestClient
+        # passes through raw); 400 OR 404 is acceptable for the URL-encoded
+        # variant since the route path won't even match.
+        r = client.get(f"/api/yaadein/photo/{evil}")
+        assert r.status_code in (400, 404), (
+            f"path '{evil}' must not be served (got {r.status_code})"
+        )
+
+
+def test_yaadein_list_returns_404_when_no_event(monkeypatch):
+    """
+    When `event_manager.current()` returns None (most days of the year),
+    `/api/yaadein/list` returns 404 with a clean message.
+    """
+    from api.routers import yaadein as yaadein_router
+    monkeypatch.setattr(
+        yaadein_router, "_active_pack_or_404",
+        lambda: (_ for _ in ()).throw(
+            __import__("fastapi").HTTPException(status_code=404, detail="no active event")
+        ),
+    )
+    client, _ = _build_test_app(auth_enabled=False)
+    r = client.get("/api/yaadein/list")
+    assert r.status_code == 404, r.text
+
+
+def test_yaadein_list_endpoint_returns_manifest(monkeypatch, tmp_path):
+    """
+    With a stubbed active event pointing at a fixture pack dir, the
+    /list endpoint returns the expected manifest shape.
+    """
+    from pathlib import Path
+    from api.routers import yaadein as yaadein_router
+
+    photos_dir = _make_yaadein_fixture(tmp_path)
+    fixture_pack_dir = Path(photos_dir.parent.parent)  # tmp_root
+
+    # Build a fake ActiveEvent the route can introspect. We only need
+    # `pack_dir` and `pack.display_name` + `pack_id` for the response.
+    # The class body re-assigns `pack_dir`, so the source value is held
+    # in `fixture_pack_dir` (not `pack_dir`) to avoid Python's class
+    # scope name-resolution gotcha.
+    class _FakePack:
+        display_name = "Test Pack"
+    class _FakeActive:
+        pack_id = "test-pack"
+        pack_dir = fixture_pack_dir
+        pack = _FakePack()
+
+    monkeypatch.setattr(yaadein_router, "_active_pack_or_404", lambda: _FakeActive())
+
+    client, _ = _build_test_app(auth_enabled=False)
+    r = client.get("/api/yaadein/list")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["pack_id"] == "test-pack"
+    assert body["display_name"] == "Test Pack"
+    assert body["music_url"] is None
+    assert isinstance(body["photos"], list)
+    assert len(body["photos"]) == 3
+    # Each photo entry has photo_url + caption.
+    for p in body["photos"]:
+        assert p["photo_url"].startswith("/api/yaadein/photo/")
+        assert "caption" in p
+
+
 # ── Test 6: CORS headers configured safely ────────────────────────────
 
 def test_cors_does_not_send_allow_credentials_with_wildcard_origin():
@@ -311,6 +468,62 @@ def run_api_smoke_tests() -> dict:
     Invoked by tests/runner.py — runs all tests above and returns the
     standard {total, passed, total_latency, tests} dict.
     """
+    # Some yaadein tests use pytest fixtures (tmp_path, monkeypatch).
+    # The runner harness here does NOT spin up pytest, so we provide
+    # manual replacements: a tempfile dir that we clean up after, and
+    # a tiny monkeypatch context that records + restores attribute
+    # mutations. This keeps the suite runnable both via the runner
+    # (CI/dashboard) and via `pytest tests/test_api_smoke.py` (dev).
+    import tempfile
+    import shutil
+    from contextlib import contextmanager
+    from pathlib import Path
+
+    @contextmanager
+    def _tmp_path():
+        d = Path(tempfile.mkdtemp(prefix="yaadein-test-"))
+        try:
+            yield d
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    class _Monkeypatch:
+        def __init__(self):
+            self._undo = []
+        def setattr(self, target, name, value):
+            old = getattr(target, name)
+            self._undo.append((target, name, old))
+            setattr(target, name, value)
+        def restore(self):
+            for target, name, old in reversed(self._undo):
+                setattr(target, name, old)
+
+    @contextmanager
+    def _monkeypatch():
+        mp = _Monkeypatch()
+        try:
+            yield mp
+        finally:
+            mp.restore()
+
+    def _wrap_tmp(fn):
+        def runner():
+            with _tmp_path() as p:
+                fn(p)
+        return runner
+
+    def _wrap_monkey(fn):
+        def runner():
+            with _monkeypatch() as mp:
+                fn(mp)
+        return runner
+
+    def _wrap_both(fn):
+        def runner():
+            with _monkeypatch() as mp, _tmp_path() as p:
+                fn(mp, p)
+        return runner
+
     tests_to_run = [
         ("status endpoint returns basic info", test_status_endpoint_returns_basic_info),
         ("settings GET requires token when auth on", test_settings_get_requires_token_when_auth_on),
@@ -323,6 +536,18 @@ def run_api_smoke_tests() -> dict:
         ("events theme/tokens 200 for known pack", test_events_theme_tokens_endpoint_known_pack_returns_json),
         ("events /trigger requires auth", test_events_trigger_requires_auth),
         ("CORS does not combine wildcard origin + credentials", test_cors_does_not_send_allow_credentials_with_wildcard_origin),
+        ("yaadein loader orders + auto-includes",
+         _wrap_tmp(test_yaadein_loader_orders_and_auto_includes)),
+        ("yaadein loader handles missing dir",
+         _wrap_tmp(test_yaadein_loader_handles_missing_dir)),
+        ("yaadein loader rejects path-traversal in YAML",
+         _wrap_tmp(test_yaadein_loader_skips_path_traversal_in_yaml)),
+        ("yaadein /photo rejects path traversal",
+         test_yaadein_photo_endpoint_rejects_path_traversal),
+        ("yaadein /list 404s when no active event",
+         _wrap_monkey(test_yaadein_list_returns_404_when_no_event)),
+        ("yaadein /list returns manifest with stub event",
+         _wrap_both(test_yaadein_list_endpoint_returns_manifest)),
     ]
 
     results = []

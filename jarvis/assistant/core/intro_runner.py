@@ -98,6 +98,9 @@ class IntroContext:
     face_ui: Optional[Any] = None
     """Used by `dashboard_event` and `dashboard_hint`. None = no-op."""
 
+    music_provider: Optional[Any] = None
+    """Used by `start_playlist` steps. None = playlist steps no-op."""
+
     template_vars: Dict[str, str] = field(default_factory=dict)
     """{{ keys }} substituted in `speak` text and `dashboard_hint` text."""
 
@@ -143,6 +146,7 @@ class IntroRunner:
             "dashboard_event": self._run_dashboard_event,
             "speak":           self._run_speak,
             "dashboard_hint":  self._run_dashboard_hint,
+            "start_playlist":  self._run_start_playlist,
         }
 
     # ── Public API ─────────────────────────────────────────────────
@@ -354,6 +358,41 @@ class IntroRunner:
             },
             ctx,
         )
+
+    def _run_start_playlist(self, step: Dict[str, Any], ctx: IntroContext) -> None:
+        """
+        Load a custom playlist YAML and start the first song.
+
+        Step shape:
+            - step: start_playlist
+              path: media/songs/playlist.yaml   # relative to pack dir, or absolute
+              video: false                       # optional, default false
+
+        Best-effort: missing music_provider, missing playlist file, or
+        empty playlist all log + return without raising.
+        """
+        # Lazy import to avoid coupling intro_runner to the playlist module
+        # at import time (and to keep the test suite's mock surface small).
+        from core.custom_playlist import load_playlist, play_first
+
+        rel = step.get("path", "media/songs/playlist.yaml")
+        if not isinstance(rel, str) or not rel:
+            raise ValueError("start_playlist: missing `path` field")
+        path = self._resolve_path(rel, ctx)
+        playlist = load_playlist(path)
+        if playlist.is_empty:
+            log.info("intro_runner: start_playlist — empty playlist at %s", path)
+            return
+        if ctx.music_provider is None:
+            log.info("intro_runner: start_playlist — no music_provider, skipping")
+            return
+        title = play_first(
+            playlist, ctx.music_provider, video=bool(step.get("video", False))
+        )
+        if title is None:
+            log.warning("intro_runner: start_playlist failed (search/play)")
+        else:
+            log.info("intro_runner: start_playlist playing %r", title)
 
     # ── Helpers ────────────────────────────────────────────────────
 

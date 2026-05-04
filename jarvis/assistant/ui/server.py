@@ -422,6 +422,29 @@ class FaceUI:
         # TODO: v2 — broadcast mood to clients
         pass
 
+    def push_event(self, event_type: str, payload: Optional[dict] = None) -> None:
+        """
+        Generic event broadcast — used by features that don't warrant a
+        dedicated state-tracking method on FaceUI.
+
+        Currently used for `yaadein_start` / `yaadein_stop`. The dashboard
+        listens on its WebSocket for these `type` values and toggles the
+        slideshow overlay accordingly. Payload is merged into the message
+        body (so e.g. `push_event("yaadein_start", {"music": "x.mp3"})`
+        becomes `{"type": "yaadein_start", "music": "x.mp3"}`).
+
+        Why a generic method instead of `start_yaadein`/`stop_yaadein`?
+        Yaadein has no server-side state worth tracking on FaceUI (the
+        dashboard owns the active flag, the photo cursor, etc.). A
+        dedicated method per ephemeral feature bloats this class fast;
+        `push_event` keeps surface area flat. State-bearing features
+        (now_playing, ambient, story) keep their typed methods.
+        """
+        msg = {"type": event_type}
+        if payload:
+            msg.update(payload)
+        self._broadcast(msg)
+
     # ── Internal ────────────────────────────────────────────────
 
     def _broadcast(self, message: dict) -> None:

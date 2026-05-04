@@ -1,6 +1,76 @@
-# Birthday quiz pack — questions about Astha, the relationship, inside jokes.
-# Final question has a recorded reveal answer.
-questions: []
+# Birthday quiz — questions about Astha, your relationship, inside jokes.
+# Loaded by core/birthday_quiz.py at startup. Each question has a delivery
+# script + a list of acceptable answers (case-insensitive contains-match
+# against STT text). The quiz ends with a heartfelt recorded reveal.
+#
+# Phase 7.5 — these are placeholder questions seeded from project_ag
+# captions, the food preferences in config.yaml, and the music tastes
+# (Arijit Singh / Coldplay / Coke Studio). Devesh will replace them
+# with real questions during the final-content pass.
+
+shuffle_questions: true
+question_count: 5
+
+questions:
+  - id: q_favorite_food
+    question: "What does Astha love most? Biryani, pasta, or pani puri?"
+    expected_answers:
+      - "biryani"
+    on_correct: "Of course it's biryani. Tum predictable ho us baare mein."
+    on_wrong: "Aww, biryani actually. Tumne khud hi bola tha."
+    tags: [taste, easy]
+
+  - id: q_favorite_snack
+    question: "Astha ka favorite quick snack — momos ya pani puri?"
+    expected_answers:
+      - "momos"
+      - "momo"
+    on_correct: "Momos! Roz hi to maangti ho."
+    on_wrong: "Momos hai actually. Pani puri second place pe hai."
+    tags: [taste, easy]
+
+  - id: q_favorite_singer
+    question: "Astha ka favorite singer — Arijit Singh ya Atif Aslam?"
+    expected_answers:
+      - "arijit"
+      - "arijit singh"
+    on_correct: "Yes! Arijit Singh, har playlist mein."
+    on_wrong: "Arijit Singh hai. Tumne mujhe to woh hi sunaya hai."
+    tags: [music, easy]
+
+  - id: q_favorite_band
+    question: "Astha ka favorite English band — Coldplay, One Direction, ya Maroon 5?"
+    expected_answers:
+      - "coldplay"
+    on_correct: "Coldplay, obviously. Yellow tumhara go-to song hai."
+    on_wrong: "Coldplay hai actually. Yellow yaad hai?"
+    tags: [music, medium]
+
+  - id: q_coke_studio
+    question: "Wo Pakistani show jismein Astha ke favorite covers aate hain — kya naam tha?"
+    expected_answers:
+      - "coke studio"
+      - "coke"
+    on_correct: "Coke Studio! Tumne hi to mujhe introduce karaya tha."
+    on_wrong: "Coke Studio. Pasoori humne saath sunaa tha, yaad hai?"
+    tags: [music, medium]
+
+  - id: q_first_meeting
+    question: "Aaj se kuch saal pehle, jab humne pehli baar baat ki thi — woh kahan se shuru hua tha?"
+    expected_answers:
+      - "yahaan se"
+      - "yahaan"
+      - "here"
+      - "from here"
+    on_correct: "Yahaan se sab shuru hua. Project AG ka pehla photo yaad hai?"
+    on_wrong: "Yahaan se sab shuru hua. Pehla caption tha — 'Yahaan se sab shuru hua.'"
+    tags: [memory, hard]
+
+# The final reveal — played after all questions, regardless of score.
+# Devesh records the audio in Phase 7.1; until then, the engine
+# falls back to TTS-on-text using `fallback_text`.
 final_reveal:
-  audio_file: null   # path to your recorded answer
-  fallback_text: null
+  intro: "Aur ab ek aakhri cheez. Devesh ne yeh special message chhoda hai tumhare liye."
+  audio_file: media/sounds/quiz_reveal.wav
+  fallback_text: "Devesh wants you to know — you've been the best year of his life. Happy birthday, shona."
+  outro: "Happy birthday, Astha. Saara saal pyaar."

@@ -125,6 +125,26 @@ def set_quiz_provider(quiz_provider) -> None:
     _quiz_provider_ref = quiz_provider
 
 
+# ── Birthday quiz state ─────────────────────────────────────────────
+# Module-level singleton session — same rationale as `_story_state` and
+# `_quiz_provider_ref`: one assistant per process, multiple handlers +
+# the prefilter need to read/mutate this. The session, when non-None,
+# means a birthday quiz is mid-flow and the next user utterance is the
+# answer to the most recently asked question (not a new intent).
+_birthday_quiz_session = None
+_birthday_quiz_lock = threading.Lock()
+
+
+def _birthday_quiz_is_active() -> bool:
+    """
+    Check if a birthday quiz session is mid-flow. Used by the prefilter
+    to route plain user input to the birthday quiz answer handler instead
+    of through the LLM classifier.
+    """
+    with _birthday_quiz_lock:
+        return _birthday_quiz_session is not None
+
+
 # ── Helpers ──────────────────────────────────────────────────────
 
 def _forecast_day_name(date_str: str) -> str:
@@ -1386,6 +1406,7 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
         pack_dir=active.pack_dir,
         voice_router=assistant.get("voice_router"),
         face_ui=assistant.get("face_ui"),
+        music_provider=assistant.get("music"),
         template_vars={
             "event_name": active.pack.display_name,
             "pack_id": active.pack_id,
@@ -1400,6 +1421,282 @@ def _handle_event_trigger(assistant: dict, intent: Intent) -> Optional[str]:
     # Return empty: the intro script handles its own speaking, and we
     # don't want the dispatcher to speak a follow-up ack over the audio.
     return ""
+
+
+def _handle_yaadein_show(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Start the photo slideshow on the dashboard.
+
+    Pushes a `yaadein_start` event to FaceUI (which forwards to the
+    React kiosk + the Flutter API WS). Optional payload: if the active
+    pack's captions.yaml has a `music:` field, we forward the filename
+    so the dashboard can play the matching audio file via
+    `/api/yaadein/music`.
+
+    Returns "" so the dispatcher doesn't speak an ack on top of the
+    slideshow. The slideshow is a visual surface; speaking "starting
+    yaadein" over its first photo would step on the moment.
+
+    Failure modes:
+      - No active event today → still push the event; the dashboard
+        component itself fetches `/api/yaadein/list` and will degrade
+        to its own "no photos" state. This handler stays cheap.
+      - face_ui missing → log and fall through to a spoken ack so the
+        user knows the command was heard.
+    """
+    face_ui = assistant.get("face_ui")
+    if face_ui is None:
+        return intent.response or "Yaadein dikhana abhi possible nahi hai — dashboard offline lagta hai."
+
+    payload: dict = {}
+    # Surface the music filename if captions.yaml configured one. The
+    # dashboard plays the audio via `/api/yaadein/music` regardless of
+    # filename, but exposing it here means the React component can
+    # decide "no music? skip the audio element" without an extra
+    # round-trip.
+    try:
+        from core.event_manager import get_event_manager
+        from providers.yaadein.local import load_photos
+
+        active = get_event_manager().current()
+        if active is not None:
+            pack = load_photos(active.pack_dir / "media" / "photos")
+            if pack.music:
+                payload["music"] = pack.music
+    except Exception as e:
+        # The slideshow still works without music; don't crash the
+        # handler if the pack lookup fails.
+        log.debug("yaadein_show: could not resolve pack music — %s", e)
+
+    face_ui.push_event("yaadein_start", payload)
+    log.info("yaadein_show: dispatched yaadein_start (music=%s)",
+             payload.get("music"))
+    return ""
+
+
+def _handle_yaadein_stop(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Stop the photo slideshow on the dashboard.
+
+    Symmetric with `_handle_yaadein_show`. The dashboard listens for
+    `yaadein_stop` and dismisses the overlay (which also pauses the
+    background music element). Returns "" so we don't speak over the
+    fade-out.
+    """
+    face_ui = assistant.get("face_ui")
+    if face_ui is None:
+        return intent.response or ""
+    face_ui.push_event("yaadein_stop")
+    log.info("yaadein_stop: dispatched yaadein_stop")
+    return ""
+
+
+def _resolve_active_pack_dir() -> Optional["Path"]:
+    """
+    Locate the astha-birthday pack dir (or any active pack's dir) for
+    media-resolving handlers (sorry/besura/voice memos/sing happy birthday).
+    Returns None if event_manager isn't loaded or the pack isn't found.
+    """
+    from pathlib import Path  # noqa: F401  (typing for the return signature)
+    from core.event_manager import get_event_manager
+    em = get_event_manager()
+    for p in em.list_packs():
+        if p.pack_id == "astha-birthday":
+            return p.pack_dir
+    return None
+
+
+def _handle_sorry_mode(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Apology mode: pick a memo tagged 'sorry'/'apology' and play it,
+    then queue the calming playlist if available.
+
+    Year-round feature — works even outside the birthday pack's date
+    range, since "sorry shona" is a relationship channel, not an event.
+    """
+    from core.voice_memos import MemoContext, VoiceMemoLibrary, play_memo
+
+    pack_dir = _resolve_active_pack_dir()
+    if pack_dir is None:
+        return intent.response or "Sorry mode abhi available nahi hai."
+
+    memos_yaml = pack_dir / "media" / "voice_memos" / "memos.yaml"
+    sorry_dir = pack_dir / "media" / "sorry"
+
+    # Try the memos library first (preferred). If empty, fall back to a
+    # raw scan of the sorry/ directory for any wav/mp3.
+    lib = VoiceMemoLibrary(memos_yaml)
+    memo = lib.pick_by_tag("sorry") or lib.pick_by_tag("apology")
+    played = False
+    if memo is not None:
+        ctx = MemoContext(
+            bank_dir=pack_dir / "media" / "voice_memos"
+        )
+        played = play_memo(memo, ctx)
+
+    if not played:
+        # Fallback: any audio in sorry/ folder.
+        from core.audio_playback import play_file as _play
+        if sorry_dir.is_dir():
+            candidates = list(sorry_dir.glob("*.wav")) + list(sorry_dir.glob("*.mp3"))
+            if candidates:
+                import random as _r
+                played = _play(_r.choice(candidates), blocking=True)
+
+    if not played:
+        return intent.response or "Sorry shona — Devesh ne abhi koi message record nahi kiya."
+
+    # Queue calming playlist if it exists. Best-effort, ignore failures.
+    try:
+        from core.custom_playlist import load_playlist, play_first
+        playlist = load_playlist(pack_dir / "media" / "songs" / "playlist.yaml")
+        if not playlist.is_empty:
+            play_first(playlist, assistant.get("music"))
+    except Exception:
+        pass
+
+    return ""
+
+
+def _handle_besura_play(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Play one of Devesh's pre-recorded singing clips.
+
+    Reads `events/<pack>/media/besura/clips.yaml` for the metadata,
+    picks one at random (or by title if `intent.params.title` is given),
+    and plays via core.audio_playback.
+    """
+    from core.audio_playback import play_file as _play
+    import random as _r
+    import yaml as _yaml
+
+    pack_dir = _resolve_active_pack_dir()
+    if pack_dir is None:
+        return intent.response or "Abhi kuch record nahi hai."
+
+    bank = pack_dir / "media" / "besura" / "clips.yaml"
+    requested_title = (intent.params or {}).get("title", "")
+
+    clips_meta: list[dict] = []
+    if bank.is_file():
+        try:
+            with bank.open() as f:
+                doc = _yaml.safe_load(f) or {}
+            raw = doc.get("clips") or []
+            if isinstance(raw, list):
+                clips_meta = [c for c in raw if isinstance(c, dict)]
+        except _yaml.YAMLError as e:
+            log.warning("besura_play: bank YAML error: %s", e)
+
+    # If no metadata, fall back to listing the directory directly.
+    besura_dir = pack_dir / "media" / "besura"
+    if not clips_meta:
+        if besura_dir.is_dir():
+            clips_meta = [
+                {"file": p.name, "title": p.stem}
+                for p in (list(besura_dir.glob("*.wav")) +
+                          list(besura_dir.glob("*.mp3")))
+            ]
+
+    if not clips_meta:
+        return (intent.response
+                or "Devesh ne abhi koi gaana record nahi kiya — "
+                   "ek important TODO hai roadmap mein.")
+
+    # Pick by title if requested, else random.
+    chosen = None
+    if requested_title:
+        wanted = requested_title.lower()
+        for c in clips_meta:
+            if wanted in c.get("title", "").lower():
+                chosen = c
+                break
+    if chosen is None:
+        chosen = _r.choice(clips_meta)
+
+    file_rel = chosen.get("file")
+    if not isinstance(file_rel, str) or not file_rel:
+        return intent.response or "Recording missing hai."
+    file_path = besura_dir / file_rel
+    if not file_path.is_file():
+        log.warning("besura_play: file missing: %s", file_path)
+        return intent.response or "Recording missing hai."
+
+    note = chosen.get("note", "")
+    title = chosen.get("title", file_rel)
+    log.info("besura_play: playing %r (%s)", title, note)
+    _play(file_path, blocking=False)
+    # Brief spoken intro so it doesn't feel like a random audio file appearing.
+    return f"Devesh ne ye gaaya — {title}."
+
+
+def _handle_voice_memo_play(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Play a recorded voice memo, optionally filtered by topic tag.
+
+    intent.params.topic = optional string. If absent, picks the
+    'default'-tagged memo (or random if none tagged default).
+    """
+    from core.voice_memos import MemoContext, VoiceMemoLibrary, play_memo
+
+    pack_dir = _resolve_active_pack_dir()
+    if pack_dir is None:
+        return intent.response or "Abhi koi message available nahi hai."
+
+    bank = pack_dir / "media" / "voice_memos" / "memos.yaml"
+    lib = VoiceMemoLibrary(bank)
+    topic = (intent.params or {}).get("topic", "")
+
+    memo = lib.pick_by_tag(topic) if isinstance(topic, str) and topic else lib.pick_default()
+    if memo is None:
+        # No memo matched — list what IS available so the user knows.
+        available = lib.list_available()
+        if not available:
+            return intent.response or "Devesh ne abhi koi message nahi chhoda."
+        titles = ", ".join(m.title for m in available[:5])
+        return (intent.response
+                or f"Is topic pe message nahi mila. Jo available hai: {titles}.")
+
+    ctx = MemoContext(bank_dir=pack_dir / "media" / "voice_memos")
+    ok = play_memo(memo, ctx)
+    if not ok:
+        return intent.response or "Audio file missing hai is memo ki."
+    log.info("voice_memo_play: played %r (topic=%r)", memo.title, topic)
+    return ""
+
+
+def _handle_sing_happy_birthday(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Plays the personalized recorded happy-birthday clip.
+
+    Looks for `events/<pack>/media/songs/happy_birthday.wav` (or .mp3).
+    Falls back to a TTS line if the file isn't recorded yet.
+    """
+    from core.audio_playback import play_file as _play
+
+    pack_dir = _resolve_active_pack_dir()
+    if pack_dir is None:
+        return intent.response or "Happy birthday!"
+
+    songs_dir = pack_dir / "media" / "songs"
+    for ext in (".wav", ".mp3", ".m4a"):
+        path = songs_dir / f"happy_birthday{ext}"
+        if path.is_file():
+            log.info("sing_happy_birthday: playing %s", path.name)
+            _play(path, blocking=False)
+            return ""
+
+    # File not yet recorded — best we can do is a spoken line. The
+    # subject's name comes from the active pack's display_name.
+    from core.event_manager import get_event_manager
+    em = get_event_manager()
+    active = em.current()
+    subject = active.pack.display_name if active else ""
+    if "Birthday" in subject:
+        # "Astha's Birthday" → "Astha"
+        subject = subject.replace("'s Birthday", "").replace(" Birthday", "")
+    line = f"Happy birthday to you, happy birthday to you. Happy birthday dear {subject}, happy birthday to you!"
+    return line
 
 
 def _handle_astha_jokes(assistant: dict, intent: Intent) -> Optional[str]:
@@ -1444,6 +1741,150 @@ def _handle_astha_jokes(assistant: dict, intent: Intent) -> Optional[str]:
     return ""
 
 
+def _handle_birthday_quiz(assistant: dict, intent: Intent) -> Optional[str]:
+    """
+    Birthday quiz mode — playful "how well does Vesper know us" quiz
+    with a heartfelt recorded reveal at the end.
+
+    Flow:
+      1. On the first call (action="start" or no active session), pick
+         a fresh QuizSession from the engine, ask the first question
+         via voice_router.say, stash the session in module state,
+         and return "" so the dispatcher doesn't speak an ack on top.
+      2. Subsequent user utterances arrive here as action="answer" via
+         the prefilter (which routes them while a session is active).
+         We judge, speak the on_correct/on_wrong reply, and ask the
+         next question. When questions run out, we run the reveal
+         and clear the session.
+      3. action="quit" at any point ends the session cleanly.
+
+    The quiz is held in module-level state (_birthday_quiz_session)
+    rather than on the assistant dict because:
+      - It's a per-process singleton (one assistant per process).
+      - The prefilter (lives in core.prefilter) needs to peek at it
+        without taking an `assistant` dict reference.
+      - Same reason _quiz_provider_ref / _story_state are module-level.
+    """
+    global _birthday_quiz_session
+
+    from core.birthday_quiz import (
+        QuizContext, get_birthday_quiz_engine,
+    )
+    from core.event_manager import get_event_manager
+
+    action = intent.params.get("action", "start")
+
+    voice_router = assistant.get("voice_router")
+
+    # bank_dir resolves the relative `audio_file` path in the reveal.
+    bank_dir = None
+    em = get_event_manager()
+    try:
+        for p in em.list_packs():
+            if p.pack_id == "astha-birthday":
+                bank_dir = p.pack_dir
+                break
+    except Exception as e:
+        log.warning("birthday_quiz: could not resolve pack_dir: %s", e)
+
+    def _ctx() -> "QuizContext":
+        return QuizContext(voice_router=voice_router, bank_dir=bank_dir)
+
+    def _say(text: str) -> None:
+        if not text:
+            return
+        if voice_router is None:
+            log.info("birthday_quiz: would say %r (no voice_router)", text[:60])
+            return
+        say = getattr(voice_router, "say", None)
+        if callable(say):
+            try:
+                say(text)
+            except Exception as e:
+                log.warning("birthday_quiz: say failed: %s", e)
+
+    # ── action: quit ──────────────────────────────────────────────
+    if action == "quit":
+        with _birthday_quiz_lock:
+            session = _birthday_quiz_session
+            _birthday_quiz_session = None
+        if session is None:
+            return intent.response or "No birthday quiz running right now."
+        return intent.response or "Quiz band kar diya. Phir kabhi khelenge."
+
+    # ── action: answer (in-flight) ────────────────────────────────
+    if action == "answer":
+        with _birthday_quiz_lock:
+            session = _birthday_quiz_session
+        if session is None:
+            return "There's no birthday quiz running right now."
+
+        try:
+            user_answer = intent.params.get("answer", "") or intent.meta.get("original_input", "")
+            result = session.judge_answer(user_answer)
+        except Exception as e:
+            log.warning("birthday_quiz: judge_answer failed: %s", e)
+            with _birthday_quiz_lock:
+                _birthday_quiz_session = None
+            return "Quiz mein kuch gadbad ho gayi — chalo phir kabhi try karte hain."
+
+        # Speak the per-question reaction (on_correct / on_wrong).
+        if result.response:
+            _say(result.response)
+
+        # Next question, or reveal if the list is exhausted.
+        next_q = session.next_question()
+        if next_q is not None:
+            _say(next_q.question)
+            return ""
+
+        # Done — run the reveal, then clear the session.
+        try:
+            reveal_result = session.run_reveal(_ctx())
+            log.info(
+                "birthday_quiz: reveal delivered=%s detail=%s score=%d/%d",
+                reveal_result.delivered, reveal_result.detail,
+                session.score(), session.total,
+            )
+        except Exception as e:
+            log.warning("birthday_quiz: reveal failed: %s", e)
+        finally:
+            with _birthday_quiz_lock:
+                _birthday_quiz_session = None
+        return ""
+
+    # ── action: start (default) ───────────────────────────────────
+    # Build a fresh session. If an old one is hanging around (e.g.,
+    # the user said "birthday quiz" mid-flow), drop it and start over.
+    try:
+        engine = get_birthday_quiz_engine()
+        session = engine.start_session()
+    except Exception as e:
+        log.warning("birthday_quiz: could not start session: %s", e)
+        return intent.response or "Quiz abhi load nahi ho paaya — sorry."
+
+    first = session.next_question()
+    if first is None:
+        # Empty bank — speak the reveal directly so the user still gets
+        # something, then no-op the session.
+        log.info("birthday_quiz: empty bank — running reveal-only")
+        try:
+            session.run_reveal(_ctx())
+        except Exception as e:
+            log.warning("birthday_quiz: reveal-only failed: %s", e)
+        return ""
+
+    with _birthday_quiz_lock:
+        _birthday_quiz_session = session
+
+    # Optional intro line, then the first question.
+    intro_line = "Chalo, ek chhota sa quiz khelte hain. Dekhte hain tum mujhe kitna jaanti ho."
+    _say(intro_line)
+    _say(first.question)
+    log.info("birthday_quiz: started session with %d question(s)", session.total)
+    return ""
+
+
 # ════════════════════════════════════════════════════════════════
 #  Dispatch table — single source of truth for "which handler runs"
 # ════════════════════════════════════════════════════════════════
@@ -1477,6 +1918,13 @@ _DISPATCH: Dict[str, Callable[[dict, Intent], Optional[str]]] = {
     "system":             _handle_system,
     "event_trigger":      _handle_event_trigger,
     "astha_jokes":        _handle_astha_jokes,
+    "birthday_quiz":      _handle_birthday_quiz,
+    "yaadein_show":       _handle_yaadein_show,
+    "yaadein_stop":       _handle_yaadein_stop,
+    "sorry_mode":         _handle_sorry_mode,
+    "besura_play":        _handle_besura_play,
+    "voice_memo_play":    _handle_voice_memo_play,
+    "sing_happy_birthday": _handle_sing_happy_birthday,
 }
 
 

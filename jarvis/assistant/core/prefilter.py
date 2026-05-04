@@ -358,6 +358,78 @@ def _match_system(text: str) -> list[Intent] | None:
     return None
 
 
+def _match_birthday_quiz_answer(text: str) -> list[Intent] | None:
+    """
+    While a birthday quiz is mid-flow, route plain user input to the
+    birthday_quiz handler as an `answer` action. Same context-sensitive
+    pattern as `_match_quiz`'s "score"/"hint" — only fires when a session
+    is active.
+
+    The check is a lazy import + state peek (no Ollama call), so this is
+    near-zero cost when no quiz is running. When a session IS running,
+    bypassing the LLM is critical: the user's answer ("biryani",
+    "Arijit Singh", "yahaan se") should NOT be re-classified as a
+    music_play / chat / something-else intent.
+
+    "Quit" / "stop" while a session is active routes here too, so the
+    user can bail out without waiting for the reveal.
+    """
+    try:
+        from core.intent_handler import _birthday_quiz_is_active
+        if not _birthday_quiz_is_active():
+            return None
+    except (ImportError, AttributeError):
+        return None
+
+    t = text.strip().lower()
+    if not t:
+        return None
+
+    # Quit phrases — match these FIRST so users can always escape.
+    if re.fullmatch(
+        r"(quit|stop|cancel|exit|end|"
+        r"birthday\s+quiz\s+(quit|stop|band|end|cancel)\s*(karo?)?|"
+        r"quiz\s+(band|stop|cancel|end)\s*(karo?)?|"
+        r"band\s+karo?|chhodo|rehne\s+do)",
+        t,
+    ):
+        return [Intent(name="birthday_quiz", params={"action": "quit"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    # Anything else → judged as an answer. Pass the raw user input as
+    # the `answer` param so the handler can match against expected_answers.
+    return [Intent(
+        name="birthday_quiz",
+        params={"action": "answer", "answer": text.strip()},
+        response="",
+        confidence=1.0,
+        meta={"source": "prefilter", "original_input": text.strip()},
+    )]
+
+
+def _match_birthday_quiz_start(text: str) -> list[Intent] | None:
+    """
+    Fast-path for the obvious birthday-quiz start phrasings. Only the
+    most unambiguous wordings — anything fuzzy stays with the LLM.
+    """
+    t = text.strip().lower()
+
+    if re.fullmatch(
+        r"(birthday\s+quiz(\s+khelte\s+hain?|\s+start\s*(karo?)?|\s+chalao)?|"
+        r"birthday\s+quiz\s+khelo|"
+        r"quiz\s+me\s+on\s+us|"
+        r"start\s+(the\s+)?birthday\s+quiz|"
+        r"play\s+(the\s+)?birthday\s+quiz)",
+        t,
+    ):
+        return [Intent(name="birthday_quiz", params={"action": "start"},
+                       response="", confidence=1.0,
+                       meta={"source": "prefilter"})]
+
+    return None
+
+
 def _match_quiz(text: str) -> list[Intent] | None:
     """Match unambiguous quiz commands."""
     t = text.strip().lower()
@@ -859,7 +931,55 @@ def _match_ambient(text: str) -> list[Intent] | None:
     return None
 
 
+# ── Angry-Astha "kya hua" easter egg ────────────────────────────────
+# project_ag had a hardcoded gag: when Devesh asked "kya hua", Astha
+# replied "Kuch nahi." This carries over as a prefilter shortcut that
+# ONLY fires when the user is in `astha_angry` personality mode. It
+# beats the LLM by ~3s and lands the punchline INSTANTLY — which is
+# exactly what makes the joke work. (A 3-second pause before "kuch
+# nahi" defeats the deadpan delivery.)
+_KYA_HUA_RE = re.compile(
+    r"^\s*(?:kya|kya?)\s*hua\s*[?]?$",
+    re.IGNORECASE,
+)
+
+
+def _match_astha_angry_kya_hua(cleaned: str) -> list[Intent] | None:
+    """Personality-gated: fires only when astha_angry is the active personality."""
+    if not _KYA_HUA_RE.match(cleaned):
+        return None
+    # Lazy import to avoid circulars at module-load time.
+    try:
+        from core.personality import personality_manager
+    except Exception:
+        return None
+    active = getattr(personality_manager, "active", None)
+    if active is None or getattr(active, "id", None) != "astha_angry":
+        return None
+    # Hardcoded zero-latency punchline. Map to `chat` so the existing
+    # chat handler delivers it (the response field is what gets spoken;
+    # the message param keeps the input around for memory logging).
+    return [Intent(
+        name="chat",
+        params={"message": cleaned},
+        response="Kuch nahi.",
+        confidence=1.0,
+        meta={"source": "prefilter", "shortcut": "astha_angry_kya_hua"},
+    )]
+
+
 PREFILTER_CHAIN = [
+    # Personality-gated shortcuts go FIRST — they're cheap, they only
+    # fire when their personality is active, and they short-circuit
+    # before any generic regex tries to claim the input.
+    _match_astha_angry_kya_hua,
+    # Birthday-quiz answer routing must run BEFORE every other matcher:
+    # while a quiz session is mid-flow, plain user utterances like
+    # "biryani" / "Arijit Singh" are answers, not separate intents.
+    # The matcher self-gates on session state (returns None when no
+    # quiz is active), so it's a cheap no-op outside the quiz flow.
+    _match_birthday_quiz_answer,
+    _match_birthday_quiz_start,
     _match_ambient,
     _match_timer,
     _match_weather,

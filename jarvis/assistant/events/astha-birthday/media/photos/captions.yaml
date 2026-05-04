@@ -1,0 +1,36 @@
+# Yaadein — photo captions for the slideshow.
+#
+# Drop your chronological photos into this folder and add an entry per
+# photo below. Captions are in project_ag voice — Hinglish, specific to
+# the memory, with emoji where they earn it.
+#
+# Schema:
+#   music: optional path (relative to this directory) to a background
+#          track that plays during the slideshow. WAV / MP3 supported.
+#   photos:
+#     - file:    REQUIRED — image filename in this directory (jpg/png).
+#       caption: optional — text overlaid on the photo. Empty/omitted
+#                renders the photo with no caption box.
+#       order:   optional integer — explicit sort order. When present on
+#                ALL entries, sort by `order` ascending. When missing,
+#                we fall back to sorting by filename. Mixing the two is
+#                fine: entries WITH `order` come first (sorted by order),
+#                entries WITHOUT come after (sorted by filename).
+#
+# Photos in the directory that have NO entry here are auto-included with
+# an empty caption — keeps drop-and-go workflow alive when you've added
+# photos but haven't yet written captions for them. Sorted by filename
+# alongside any explicit `order:` entries that have no caption.
+
+music: null
+
+photos:
+  - file: 001.jpg
+    caption: "Yahaan se sab shuru hua 😇"
+    order: 1
+  - file: 002.jpg
+    caption: "Tum kitni excited rehti shopping mein 🥰"
+    order: 2
+  - file: 003.jpg
+    caption: "Our first holi together 😇"
+    order: 3

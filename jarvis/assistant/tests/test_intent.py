@@ -901,6 +901,78 @@ INTENT_TESTS = [
         "tier": "medium",
         "tags": ["astha_jokes", "boundary"],
     },
+
+    # ── Birthday quiz (Phase 5.4) ───────────────────────────────
+    # Hard-mode boundary: a plain "let's play a quiz" stays in generic
+    # `quiz`. Only relationship-framed wording maps to `birthday_quiz`.
+    {
+        "input": "Vesper, birthday quiz khelte hain",
+        "intent": "birthday_quiz",
+        "params": {},
+        "desc": "Explicit birthday-quiz invocation, Hinglish",
+        "tier": "easy",
+        "tags": ["birthday_quiz", "hinglish"],
+    },
+    {
+        "input": "Vesper, quiz me on us",
+        "intent": "birthday_quiz",
+        "params": {},
+        "desc": "Relationship-framed quiz request",
+        "tier": "easy",
+        "tags": ["birthday_quiz"],
+    },
+    {
+        "input": "Vesper, kitna jaanti ho mujhe",
+        "intent": "birthday_quiz",
+        "params": {},
+        "desc": "How-well-do-you-know-me framing → birthday quiz",
+        "tier": "medium",
+        "tags": ["birthday_quiz", "hinglish"],
+    },
+
+    # ── Yaadein (photo slideshow) ───────────────────────────────
+    # The keyword "yaadein" or the explicit "slideshow"/"memories"
+    # noun must route here; a bare "show me" or "stop" stays generic.
+    {
+        "input": "Vesper, mujhe yaadein dikhao",
+        "intent": "yaadein_show",
+        "params": {},
+        "desc": "Hinglish trigger using the yaadein keyword",
+        "tier": "easy",
+        "tags": ["yaadein", "hinglish"],
+    },
+    {
+        "input": "Vesper, show me memories",
+        "intent": "yaadein_show",
+        "params": {},
+        "desc": "English trigger using the memories keyword",
+        "tier": "easy",
+        "tags": ["yaadein"],
+    },
+    {
+        "input": "Vesper, slideshow start karo",
+        "intent": "yaadein_show",
+        "params": {},
+        "desc": "Hinglish 'slideshow' invocation",
+        "tier": "medium",
+        "tags": ["yaadein", "hinglish"],
+    },
+    {
+        "input": "Vesper, slideshow band karo",
+        "intent": "yaadein_stop",
+        "params": {},
+        "desc": "Stop yaadein — Hinglish 'band karo'",
+        "tier": "medium",
+        "tags": ["yaadein", "hinglish"],
+    },
+    {
+        "input": "Vesper, stop yaadein",
+        "intent": "yaadein_stop",
+        "params": {},
+        "desc": "Stop yaadein — explicit yaadein keyword + stop",
+        "tier": "easy",
+        "tags": ["yaadein"],
+    },
 ]
 
 

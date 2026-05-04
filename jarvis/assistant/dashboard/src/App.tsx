@@ -29,6 +29,7 @@ import { TimerWidget } from './components/TimerWidget'
 import { WeatherWidget } from './components/WeatherWidget'
 import { AmbientIndicator } from './components/AmbientIndicator'
 import { ConfettiLayer } from './components/ConfettiLayer'
+import { Yaadein } from './components/Yaadein'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import type { TokenValue } from './types/assistant'
 
@@ -291,6 +292,12 @@ function AppContent() {
           burst on `vesper:confetti-burst` window event. Pointer-events
           none, sits above content but below the ErrorBoundary fallback. */}
       <ConfettiLayer />
+
+      {/* Yaadein — full-screen photo slideshow. Self-contained: subscribes
+          to `yaadein_start` / `yaadein_stop` over its own WS listener and
+          renders nothing until activated. z-index 60 — above panels and
+          music player, below ErrorBoundary's fallback. */}
+      <Yaadein />
     </div>
   )
 }

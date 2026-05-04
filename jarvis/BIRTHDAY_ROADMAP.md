@@ -898,6 +898,23 @@ deadline pressure. Each one gets the same quality bar as the rest.
 
 ---
 
+# HARDWARE ASSEMBLY — see separate notes
+
+The hardware assembly track is a deferred decision (Devesh wants thinking
+time before committing to a soldering / pre-soldered / USB path). Full
+context, photos analysis, three viable paths, soldering equipment list,
+connection diagrams, and shopping lists are all preserved at:
+
+  **[`jarvis/05-the-body/HARDWARE_NOTES.md`](05-the-body/HARDWARE_NOTES.md)**
+
+Pull that doc forward whenever the conversation circles back to physical
+build. Software development on Mac is unblocked by the hardware decision —
+audio I/O is the only piece that needs hardware to do its final test, and
+the launch sequence software runs the same code path on Mac (via afplay)
+as it would on Jetson (via paplay/aplay).
+
+---
+
 # OPEN QUESTIONS / DECISIONS DEFERRED
 
 Track here so we don't lose context across sessions. When you give the

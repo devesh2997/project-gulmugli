@@ -110,6 +110,37 @@ _VALID_INTENTS = [
     # specific bait-and-switch *style*. Corpus lives at
     # events/astha-birthday/jokes/astha_jokes.yaml.
     "astha_jokes",
+    # Birthday quiz — playful "how well does Vesper know us" mini-game
+    # with a heartfelt recorded reveal at the end. Hand-curated
+    # questions about Astha live at events/astha-birthday/quiz/about_us.yaml.
+    # Distinct from the generic `quiz` intent (LLM-generated trivia):
+    # this is finite, relationship-themed, and reveal-anchored.
+    "birthday_quiz",
+    # Yaadein — full-screen photo slideshow on the dashboard with
+    # captions in Hinglish. Voice-triggered by "show me memories" /
+    # "yaadein dikhao" / "photos chalu karo" / "slideshow start karo".
+    # Photos + captions live at events/<pack>/media/photos/captions.yaml.
+    # The slideshow ends when photos exhaust OR the user says
+    # `yaadein_stop` ("slideshow band karo" / "stop yaadein").
+    "yaadein_show",
+    "yaadein_stop",
+    # Sorry mode — apology channel from project_ag. Plays a recorded
+    # apology voice memo + queues a calming playlist. Phrases:
+    # "Vesper, sorry shona", "Vesper, sorry mode", "Vesper, naraz mat ho".
+    "sorry_mode",
+    # Besura — Devesh's pre-recorded singing clips. Phrases:
+    # "Vesper, sing for me", "Devesh ki gaane sunao", "play besura".
+    "besura_play",
+    # Voice memo recall by topic — different from `birthday_quiz` (a
+    # game) and from `astha_jokes` (humor). These are letters from
+    # Devesh accessed by mood/topic. Phrases: "Devesh ne kuch chhoda
+    # hai mere liye?", "agar main udaas hoon", "Devesh ka birthday
+    # message".
+    "voice_memo_play",
+    # Sing happy birthday — plays the personalized recording for the
+    # active event subject. Phrases: "sing happy birthday", "Astha ke
+    # liye happy birthday gaao".
+    "sing_happy_birthday",
 ]
 
 _INTENT_SCHEMA = {
@@ -457,6 +488,55 @@ These are the most common confusions. Resolve them in this order:
   joke requests: a plain "tell me a joke" stays in `chat` (generic
   one-liner); only phrasings that explicitly invoke Astha's style or
   the phasaa-do/silly-question pattern map to this.
+
+- `birthday_quiz` — params: {{}}. The hand-curated "how well does Vesper
+  know us" relationship quiz, ending with a heartfelt recorded reveal.
+  Triggered by phrasings like "birthday quiz khelte hain", "ek game
+  khelte hain", "quiz me on us", "kitna jaanti ho mujhe", "let's play
+  the birthday game". DISTINCT from the generic `quiz` intent (which
+  is open-domain LLM trivia): birthday_quiz only fires when the user
+  invokes the relationship/birthday/"about us" framing, OR an explicit
+  "birthday quiz" wording. A bare "let's play a quiz" with no relationship
+  hint stays in generic `quiz`. Bare "ek game khelte hain" leans
+  birthday_quiz.
+
+- `yaadein_show` — params: {{}}. Starts the full-screen photo slideshow
+  ("yaadein") on the dashboard. Triggered by "mujhe yaadein dikhao",
+  "show me memories", "photos chalu karo", "slideshow start karo",
+  "memories dikhao", "tasveerein dikhao". The word "yaadein" (Hindi for
+  "memories") is the strongest signal — when present, this intent wins
+  even over generic media verbs like "show". A bare "show me photos"
+  with no other context maps here. NOT `music_play` (no song requested).
+  NOT `chat` (the user wants the slideshow surface, not a conversation).
+
+- `yaadein_stop` — params: {{}}. Ends the slideshow. Triggered by
+  "slideshow band karo", "stop yaadein", "memories band karo",
+  "yaadein bandh karo", "close the slideshow", "exit yaadein". A bare
+  "stop" while NO slideshow is running stays as `music_control`
+  (action="stop") — context here is the literal yaadein/slideshow word
+  in the utterance, not the standalone verb.
+
+- `sorry_mode` — params: {{}}. Apology channel — plays a recorded
+  apology memo from Devesh + queues a calming playlist. Triggered by
+  "Vesper, sorry shona", "Vesper, sorry mode", "Vesper, naraz mat ho",
+  "Vesper, mujhe sorry bol". Distinct from `chat` apologies (which are
+  generic): this maps to the dedicated personality channel and plays
+  pre-recorded audio.
+
+- `besura_play` — params: {{}}. Plays one of Devesh's recorded singing
+  clips. Triggered by "Vesper, sing for me", "Devesh ki gaane sunao",
+  "play besura", "Devesh ka gaana lagao". Distinct from `music_play`
+  (which searches YouTube): this is the personal-recording channel.
+
+- `voice_memo_play` — params: {{"topic": <string, optional>}}. Plays
+  a recorded voice memo from Devesh, optionally filtered by topic
+  (sad / birthday / love / etc.). Triggered by "Devesh ne kuch chhoda
+  hai mere liye?", "Devesh ka message sunao", "agar main udaas hoon"
+  (topic="sad"), "Devesh ka birthday message" (topic="birthday").
+
+- `sing_happy_birthday` — params: {{}}. Plays the personalized
+  happy-birthday recording. Triggered by "sing happy birthday",
+  "Astha ke liye happy birthday gaao", "happy birthday gaa do".
 
 ## Format
 {{"intents": [{{"intent": "...", "params": {{...}}}}], "response": "<short ack in character>"}}

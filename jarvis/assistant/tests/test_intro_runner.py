@@ -47,6 +47,7 @@ def _make_ctx(tmp: Path, **overrides) -> IntroContext:
         "pack_dir": tmp,
         "voice_router": MagicMock(name="voice_router"),
         "face_ui": MagicMock(name="face_ui"),
+        "music_provider": MagicMock(name="music_provider"),
         "template_vars": {},
     }
     base.update(overrides)
@@ -315,6 +316,70 @@ def test_template_substitution_handles_missing_keys():
         # `name` substituted, `unknown` left as-is so a dev sees the hole.
         assert "Astha" in rendered
         assert "{{ unknown }}" in rendered
+
+
+def test_start_playlist_calls_play_first():
+    """start_playlist loads the YAML and feeds the first query to music_provider."""
+    with tempfile.TemporaryDirectory() as tmp_str:
+        tmp = Path(tmp_str)
+        # Drop a playlist file the runner can resolve relative to pack_dir.
+        (tmp / "playlist.yaml").write_text("""
+songs:
+  - youtube_search: "test song"
+shuffle: false
+loop: false
+""")
+        script = _write_script(tmp, """
+- step: start_playlist
+  path: playlist.yaml
+""")
+        # Mock the music provider; play_first will call .search and .play.
+        from unittest.mock import MagicMock
+        mp = MagicMock()
+        mp.search = MagicMock(return_value=[MagicMock(title="test song")])
+        mp.play = MagicMock(return_value=True)
+
+        ctx = _make_ctx(tmp, music_provider=mp)
+        result = IntroRunner(script).run(ctx)
+        assert result.completed == 1
+        assert result.failures == []
+        mp.search.assert_called_once_with("test song", limit=1)
+        assert mp.play.call_count == 1
+
+
+def test_start_playlist_no_music_provider_noop():
+    with tempfile.TemporaryDirectory() as tmp_str:
+        tmp = Path(tmp_str)
+        (tmp / "playlist.yaml").write_text("""
+songs:
+  - youtube_search: "x"
+""")
+        script = _write_script(tmp, """
+- step: start_playlist
+  path: playlist.yaml
+""")
+        ctx = _make_ctx(tmp, music_provider=None)
+        result = IntroRunner(script).run(ctx)
+        assert result.completed == 1
+        assert result.failures == []
+
+
+def test_start_playlist_missing_file_noop():
+    with tempfile.TemporaryDirectory() as tmp_str:
+        tmp = Path(tmp_str)
+        script = _write_script(tmp, """
+- step: start_playlist
+  path: ghost.yaml
+""")
+        from unittest.mock import MagicMock
+        mp = MagicMock()
+        ctx = _make_ctx(tmp, music_provider=mp)
+        result = IntroRunner(script).run(ctx)
+        # Step "completed" because empty playlist is a logged no-op, not a failure.
+        assert result.completed == 1
+        assert result.failures == []
+        # Provider should NOT have been touched.
+        mp.search.assert_not_called()
 
 
 def test_dashboard_hint_routes_through_dashboard_event():

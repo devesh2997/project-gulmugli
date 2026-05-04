@@ -86,6 +86,12 @@ _FILLER_PHRASES: dict[str, dict[str, list[str]]] = {
         "en": ["Mmhm,", "One sec babe.", "Hmm,"],
         "hi": ["Hmm,", "Ek minute,", "Haan jaan,"],
     },
+    "astha_angry": {
+        # Angry-Astha personality keeps fillers minimal — the whole gag
+        # is "minimum-effort response." No warm "Haan jaan" here.
+        "en": ["Hmm.", "Okay.", "Whatever."],
+        "hi": ["Hmm.", "Theek hai.", "Kya?"],
+    },
     "_default": {
         "en": ["Mm,", "One moment.", "Let me think."],
         "hi": ["Haan,", "Ek second.", "Sochne do."],
@@ -116,6 +122,12 @@ _ERROR_PHRASES: dict[str, dict[str, list[str]]] = {
                "Hmm, that didn't work. Say it again?"],
         "hi": ["Arey, kuch problem hui. Phir bolo na?",
                "Hmm, samajh nahi aaya. Dobara bolo?"],
+    },
+    "astha_angry": {
+        # Even errors stay clipped in Angry-Astha mode — no "babe", no
+        # apologies. The personality contract is: never soften.
+        "en": ["Didn't work.", "Try again. Whatever."],
+        "hi": ["Nahi chala.", "Phir bolo. Kya farak padta hai."],
     },
     "_default": {
         "en": ["Sorry, something went wrong. Please try again.",

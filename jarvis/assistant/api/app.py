@@ -129,6 +129,7 @@ def create_api(assistant: dict) -> Optional["FastAPI"]:
     from api.routers.ambient import router as ambient_router
     from api.routers.settings import router as settings_router
     from api.routers.audio import router as audio_router
+    from api.routers.yaadein import router as yaadein_router
     app.include_router(weather_router, tags=["weather"])
     app.include_router(quiz_router, tags=["quiz"])
     app.include_router(timer_router, tags=["timer"])
@@ -139,6 +140,11 @@ def create_api(assistant: dict) -> Optional["FastAPI"]:
     app.include_router(ambient_router, tags=["ambient"])
     app.include_router(settings_router, tags=["settings"])
     app.include_router(audio_router, tags=["audio"])
+    # Yaadein photo slideshow — birthday pack feature. Auth-protected
+    # (LAN-only product, but `/list` enumerates personal photos and
+    # `/photo/{file}` serves them, so we don't want a same-WiFi peer
+    # to harvest them without the bearer token).
+    app.include_router(yaadein_router, tags=["yaadein"])
 
     return app
 

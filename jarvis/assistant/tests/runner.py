@@ -110,18 +110,41 @@ def run_suite(suite_name: str, brain) -> dict:
         # No Ollama, no real sleeps (sleep_fn injected). Runs in <1s.
         from tests.test_astha_jokes import run_astha_jokes_tests
         return run_astha_jokes_tests()
+    elif suite_name == "birthday_quiz":
+        # Pure unit tests for core/birthday_quiz.py — pack loading,
+        # session shuffling, judge_answer matching, score computation,
+        # reveal step (audio + fallback text), parser edge cases.
+        # No Ollama, no real sleeps (sleep_fn injected). Runs in <1s.
+        from tests.test_birthday_quiz import run_birthday_quiz_tests
+        return run_birthday_quiz_tests()
     elif suite_name == "trigger_state":
         # Pure unit tests for core/trigger_state.py — persistence,
         # idempotency, atomic write, corrupt-file recovery. Runs in <1s.
         from tests.test_trigger_state import run_trigger_state_tests
         return run_trigger_state_tests()
+    elif suite_name == "astha_angry_prefilter":
+        # Personality-gated "kya hua → kuch nahi" easter egg from
+        # project_ag. Verifies the gating works in both directions.
+        from tests.test_astha_angry_prefilter import run_astha_angry_prefilter_tests
+        return run_astha_angry_prefilter_tests()
+    elif suite_name == "custom_playlist":
+        # Pure unit tests for core/custom_playlist.py — YAML parse, queue
+        # iteration with shuffle/loop, play_first error paths. Runs in <1s.
+        from tests.test_custom_playlist import run_custom_playlist_tests
+        return run_custom_playlist_tests()
+    elif suite_name == "voice_memos":
+        # Pure unit tests for core/voice_memos.py — bank loading, tag
+        # lookup, available_from gating, parser edge cases. Runs in <1s.
+        from tests.test_voice_memos import run_voice_memos_tests
+        return run_voice_memos_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
 ALL_SUITES = ["api_smoke", "event_manager", "intro_runner", "astha_jokes",
-              "trigger_state", "prefilter", "intent", "enrichment",
-              "personality", "knowledge", "latency", "integration"]
+              "birthday_quiz", "trigger_state", "astha_angry_prefilter",
+              "custom_playlist", "voice_memos", "prefilter", "intent",
+              "enrichment", "personality", "knowledge", "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:

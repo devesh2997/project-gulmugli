@@ -1,0 +1,24 @@
+# Astha's birthday auto-queued playlist.
+#
+# When the event triggers, the assistant searches for the first song
+# below via YouTube Music and starts playback. Subsequent songs are
+# advanced as the music ends (or via a "next" voice command).
+#
+# `shuffle: true` re-orders before each pass — every song plays once
+# before any repeats.
+# `loop: true` restarts the list after exhaustion.
+#
+# Replace the placeholder list with Astha's actual favorites in
+# Phase 7.5 of BIRTHDAY_ROADMAP.md. The seeds below are known classics
+# safe-bet for an Indian birthday until you finalize.
+
+songs:
+  - youtube_search: "Tum Jiyo Hazaaron Saal"
+  - youtube_search: "Baar Baar Din Ye Aaye"
+  - youtube_search: "Sajni Arijit Singh"
+  - youtube_search: "Tum Hi Ho Aashiqui 2"
+  - youtube_search: "Channa Mereya Ae Dil Hai Mushkil"
+  - youtube_search: "Tujhe Kitna Chahne Lage Hum"
+
+shuffle: true
+loop: true
