@@ -228,6 +228,52 @@ def trigger_event() -> Any:
     }
 
 
+@router.get("/health")
+def events_health() -> Any:
+    """
+    Diagnostic snapshot of the event-pack subsystem. Unauthenticated
+    so the dashboard / dev can introspect without a token. Surfaces:
+
+      - All loaded packs (id + display_name + features count)
+      - The currently-active pack (or null)
+      - Per-pack triggered state for the current year
+
+    Used by the dashboard's "what's wired up" debug panel and by
+    Phase 6.1 dress-rehearsal scripts to verify state at a glance.
+    """
+    from datetime import datetime
+    em = get_event_manager()
+    store = get_trigger_store()
+    year = datetime.now().year
+
+    packs_summary = []
+    for p in em.list_packs():
+        packs_summary.append({
+            "pack_id": p.pack_id,
+            "display_name": p.display_name,
+            "feature_count": len(p.features),
+            "auto_midnight": bool(p.trigger_config.get("auto_midnight", False)),
+            "is_triggered_this_year": store.is_triggered(p.pack_id, year=year),
+        })
+
+    active = em.current()
+    active_summary = None
+    if active is not None:
+        active_summary = {
+            "pack_id": active.pack_id,
+            "is_today": active.is_today,
+            "is_eve": active.is_eve,
+            "is_aftermath": active.is_aftermath,
+            "days_until": active.days_until,
+        }
+
+    return {
+        "year": year,
+        "active": active_summary,
+        "packs": packs_summary,
+    }
+
+
 @router.post("/{pack_id}/reset", dependencies=[Depends(verify_token)])
 def reset_event_trigger(pack_id: str) -> Any:
     """

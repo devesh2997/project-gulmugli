@@ -278,6 +278,27 @@ def test_events_trigger_requires_auth():
     assert r.status_code == 401, f"expected 401, got {r.status_code}"
 
 
+def test_events_health_endpoint_returns_summary():
+    """
+    GET /api/events/health is unauthenticated. Returns a snapshot of
+    loaded packs + active state. Smoke-test the shape; values vary
+    with what's in events/.
+    """
+    client, _ = _build_test_app(auth_enabled=False)
+    r = client.get("/api/events/health")
+    assert r.status_code == 200, f"got {r.status_code}: {r.text}"
+    body = r.json()
+    assert "year" in body
+    assert "packs" in body
+    assert "active" in body
+    assert isinstance(body["packs"], list)
+    if body["packs"]:
+        first = body["packs"][0]
+        for key in ("pack_id", "display_name", "feature_count",
+                    "auto_midnight", "is_triggered_this_year"):
+            assert key in first, f"missing key {key} in pack summary"
+
+
 def test_events_trigger_returns_409_outside_event_day():
     """
     With no active event today, POST /trigger returns 409.
@@ -631,6 +652,7 @@ def run_api_smoke_tests() -> dict:
         ("events /current returns active or null", test_events_current_returns_active_or_null),
         ("events theme/tokens 404 for unknown pack", test_events_theme_tokens_endpoint_unknown_pack_404s),
         ("events theme/tokens 200 for known pack", test_events_theme_tokens_endpoint_known_pack_returns_json),
+        ("events /health returns summary", test_events_health_endpoint_returns_summary),
         ("events /trigger requires auth", test_events_trigger_requires_auth),
         ("events /trigger 409 outside event day", test_events_trigger_returns_409_outside_event_day),
         ("events /trigger lifecycle persists state", test_events_trigger_persists_state_and_current_reflects_it),
