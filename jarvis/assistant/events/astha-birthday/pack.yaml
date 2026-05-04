@@ -29,11 +29,14 @@ trigger:
   # These are training examples, NOT regex patterns — the LLM generalizes from
   # them. At least 3 are required so the classifier has variation to learn from.
   manual_phrases:
+    # Eval-validated phrases (intent_eval 2026-05-05): these reliably
+    # classify to event_trigger. Others ("light it up", "kick it off")
+    # were dropped because they collide with light_control / generic
+    # chat — the classifier confidently picks the wrong intent.
+    # Stick to these or train a custom wake-word for the launch.
     - "vesper, project ag begins"
     - "vesper, ek surprise hai"
-    - "vesper, light it up"
     - "vesper, astha ka surprise shuru karo"
-    - "vesper, kick it off"
 
 # Features this pack enables. Each name resolves to an already-registered
 # handler in the assistant. Adding a name here doesn't implement it; it
