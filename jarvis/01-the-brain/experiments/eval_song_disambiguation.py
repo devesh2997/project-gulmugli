@@ -508,19 +508,28 @@ def evaluate_one(brain, tc: dict) -> dict[str, Any]:
         intents = brain.classify_intent(user_input)
     except Exception as e:
         out["error"] = f"classify_intent: {e}"
+        out["passed"] = False
         return out
     out["classify_ms"] = int((time.time() - t0) * 1000)
 
     if not intents:
         out["error"] = "classify_intent returned empty"
+        out["passed"] = False
         return out
     intent = intents[0]
     out["intent"] = intent.name
-    out["raw_query"] = intent.params.get("query", "")
+    # Defensive: model occasionally returns `params` as a string. Handle.
+    raw_params = intent.params
+    if isinstance(raw_params, dict):
+        out["raw_query"] = raw_params.get("query", "")
+    else:
+        out["raw_query"] = ""
     out["intent_correct"] = intent.name == "music_play"
 
     if not out["intent_correct"]:
-        return out  # nothing else to test
+        # Without music_play, no song to evaluate — case fails by definition.
+        out["passed"] = False
+        return out
 
     raw_query = out["raw_query"]
 
@@ -530,6 +539,7 @@ def evaluate_one(brain, tc: dict) -> dict[str, Any]:
         enriched_query = brain.enrich_query(raw_query)
     except Exception as e:
         out["error"] = f"enrich_query: {e}"
+        out["passed"] = False
         return out
     out["enrich_ms"] = int((time.time() - t0) * 1000)
     out["enriched_query"] = enriched_query
