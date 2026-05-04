@@ -346,8 +346,13 @@ memory:
 api:
   enabled: true
   port: 8766                    # HTTP + WebSocket port (dashboard uses 8765)
-  auth_enabled: false           # Set true before deployment. False = no token needed (dev mode).
-  token: ""                     # Bearer token for auth (only used when auth_enabled: true).
+  # ⚠ auth_enabled defaults TRUE. The API binds 0.0.0.0:8766 so the
+  # Flutter companion + Mac client + dashboard can reach it on the LAN.
+  # Without auth, anyone on the same WiFi can hit /api/settings and
+  # mutate config.yaml. Only flip to false on a fully-trusted single-
+  # host LAN during local development.
+  auth_enabled: true
+  token: ""                     # Bearer token. Empty = auto-generate at startup (logged at INFO).
   discovery:
     enabled: true               # Register via mDNS/Zeroconf so the app can find us
     service_name: "jarvis"      # mDNS service name: _jarvis._tcp.local.

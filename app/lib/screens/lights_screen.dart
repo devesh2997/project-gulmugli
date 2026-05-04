@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../state/providers.dart';
+import '../widgets/debounced_slider.dart';
 
 /// Light control screen — on/off, color, brightness, scenes.
 class LightsScreen extends ConsumerWidget {
@@ -71,14 +72,19 @@ class LightsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Brightness', style: TextStyle(fontWeight: FontWeight.w600)),
-                    Slider(
+                    // Sliders fire onChanged on every drag tick (~60Hz).
+                    // Without debouncing, dragging from 10 → 80 sends ~70
+                    // POST requests to Tuya in a second, which the broker
+                    // either rate-limits or queues badly. We use a local
+                    // ephemeral Slider widget that buffers the drag and
+                    // only commits on release.
+                    DebouncedSlider(
                       value: brightness.toDouble(),
-                      min: 1,
-                      max: 100,
-                      divisions: 99,
-                      label: '$brightness%',
-                      onChanged: (v) =>
-                          api?.lightControl('brightness', value: v.round().toString()),
+                      min: 1, max: 100, divisions: 99,
+                      labelFormat: (v) => '${v.round()}%',
+                      onCommit: (v) => api?.lightControl(
+                        'brightness', value: v.round().toString(),
+                      ),
                     ),
                   ],
                 ),

@@ -27,6 +27,7 @@ import { ReminderNotification } from './components/ReminderNotification'
 import { TimerWidget } from './components/TimerWidget'
 import { WeatherWidget } from './components/WeatherWidget'
 import { AmbientIndicator } from './components/AmbientIndicator'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 type PanelId = 'transcript' | 'settings' | 'controls' | null
 
@@ -273,9 +274,15 @@ function AppContent() {
 
 export function App() {
   return (
-    <TokenProvider>
-      <AppContent />
-    </TokenProvider>
+    // ErrorBoundary at the root: if any deep widget (avatar, music
+    // player, transcript) throws during render, the kiosk shows a
+    // recoverable fallback instead of a blank screen. The boundary
+    // self-resets after 8s so transient errors clear themselves.
+    <ErrorBoundary>
+      <TokenProvider>
+        <AppContent />
+      </TokenProvider>
+    </ErrorBoundary>
   )
 }
 

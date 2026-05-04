@@ -350,6 +350,25 @@ class ConfigManager:
 
         Returns a list of setting dicts, each with the schema fields
         plus a "value" field containing the current config value.
+
+        SECURITY INVARIANT
+        ------------------
+        This method is the ONLY way the API exposes config values to
+        unauthenticated/external clients (via /api/settings). It returns
+        ONLY the paths declared in `SETTINGS_SCHEMA` — a curated allowlist
+        of safe-to-display knobs (model name, brightness defaults, etc.).
+        It deliberately does NOT include:
+          - lights.devices         (Tuya local_keys)
+          - api.token              (bearer token)
+          - any path containing "secret", "key", "_id", "_token"
+
+        If a future contributor adds an entry to SETTINGS_SCHEMA, audit
+        whether the path's value can leak credentials. When in doubt,
+        keep it OUT of the schema and provide a separate, well-named
+        endpoint (e.g., POST /api/lights/credentials) that takes auth.
+
+        `update()` enforces the same allowlist: only paths in
+        SETTINGS_SCHEMA can be modified via the API.
         """
         settings = []
         for schema in SETTINGS_SCHEMA:

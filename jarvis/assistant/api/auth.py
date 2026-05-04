@@ -1,19 +1,28 @@
 """
 Authentication for the companion app API.
 
-Currently DISABLED for development. All endpoints are open.
-Auth will be re-enabled before deployment (see TODO below).
-
-When re-enabled:
-- V1 uses a simple static bearer token stored in config.yaml
-- Token is auto-generated (UUID4) on first startup if the config field is empty
+V1 mechanism — single bearer token.
+- Token is read from config.yaml → api.token (persistent), or auto-generated
+  (UUID4) at first startup and logged loudly so the user can copy it into
+  the Flutter app's connect screen.
 - REST: Authorization: Bearer <token> header
 - WebSocket: ?token=<token> query parameter
+- Auth is **enabled by default** (`api.auth_enabled: true`). This is a
+  LAN-only product but the API binds to 0.0.0.0:8766; on any non-trusted
+  network (Airbnb / friend's WiFi / cafe) every endpoint is reachable
+  from any peer on the same SSID, including `/api/settings` which can
+  mutate config.yaml. Without auth, that's an unprotected admin surface.
+- For local development on a fully trusted single-host LAN, set
+  `auth_enabled: false` in config.yaml (the dev's own Mac running the
+  Mac client + the Jetson on the same router behind NAT). Don't ship
+  this default flipped.
 
-TODO: Re-enable auth before deployment by setting api.auth_enabled: true
-      in config.yaml. All the plumbing is here, just bypassed.
+A first-run token is generated AND printed loudly even when auth is on
+so the Flutter pairing flow has something to ingest. Scrape from
+journalctl: `grep "API token" /tmp/jarvis.log | tail -1`.
 """
 
+import threading
 import uuid
 
 from fastapi import Depends, HTTPException, Query, status
@@ -29,11 +38,21 @@ _security = HTTPBearer(auto_error=False)
 # ── Token management ────────────────────────────────────────────
 
 _api_token: str = ""
+# Lazy-init can race in a multi-threaded app server: two concurrent
+# requests both see _api_token == "" and both generate different UUIDs;
+# whichever loses the assignment race causes the other request's token
+# to silently become invalid. Guard the lazy init under a lock.
+_api_token_lock = threading.Lock()
 
 
 def _auth_enabled() -> bool:
-    """Check if auth is enabled in config. Defaults to False during dev."""
-    return config.get("api", {}).get("auth_enabled", False)
+    """
+    Check if auth is enabled in config.
+
+    Defaults to **True** — see module docstring. A local dev who explicitly
+    wants auth off must set `api.auth_enabled: false` in config.yaml.
+    """
+    return config.get("api", {}).get("auth_enabled", True)
 
 
 def get_api_token() -> str:
@@ -48,12 +67,22 @@ def get_api_token() -> str:
     if _api_token:
         return _api_token
 
-    configured = config.get("api", {}).get("token", "")
-    if configured:
-        _api_token = configured
-    else:
-        _api_token = str(uuid.uuid4())
-        if _auth_enabled():
+    with _api_token_lock:
+        # Double-check under lock — another thread may have set this
+        # between the unlocked early-return above and acquiring the lock.
+        if _api_token:
+            return _api_token
+
+        configured = config.get("api", {}).get("token", "")
+        if configured:
+            _api_token = configured
+        else:
+            _api_token = str(uuid.uuid4())
+            # Always log the generated token loudly so the Flutter app's
+            # one-time pairing flow has something to scrape, regardless
+            # of whether auth is currently enforced. The token is for
+            # LAN clients on a trusted network; it's not a secret in the
+            # production-security sense.
             log.info(
                 "No API token configured. Generated token for this session:\n"
                 "  %s\n"

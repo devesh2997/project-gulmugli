@@ -25,7 +25,8 @@ class JarvisApp extends ConsumerStatefulWidget {
   ConsumerState<JarvisApp> createState() => _JarvisAppState();
 }
 
-class _JarvisAppState extends ConsumerState<JarvisApp> {
+class _JarvisAppState extends ConsumerState<JarvisApp>
+    with WidgetsBindingObserver {
   /// Notifier that the router listens to — fires whenever connection
   /// status changes so redirect logic re-evaluates.
   final _refreshNotifier = _ConnectionRefreshNotifier();
@@ -73,10 +74,42 @@ class _JarvisAppState extends ConsumerState<JarvisApp> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _router.dispose();
     _refreshNotifier.dispose();
     super.dispose();
+  }
+
+  /// React to app lifecycle changes. The big one: iOS suspends WebSocket
+  /// connections within ~30 seconds of going into the background. When
+  /// the user re-opens the app, the OS may have already torn the socket
+  /// down without the WsClient noticing — meaning the UI shows stale
+  /// state for up to 30 seconds while the next exponential-backoff
+  /// retry fires. Forcing a reconnect on resume eliminates that gap.
+  ///
+  /// Android's behaviour is more lenient (sockets can survive a few
+  /// minutes of background) but the reconnect is cheap, so we do it
+  /// unconditionally on every resume.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Read manager off Riverpod safely; ref.read is allowed in
+      // lifecycle callbacks. The manager is process-lifetime.
+      final manager = ref.read(connectionManagerProvider);
+      // If we never had creds, tryReconnect is a no-op (returns false
+      // immediately). If we did, this kicks the WS without waiting on
+      // its backoff timer. We deliberately do NOT await — lifecycle
+      // callbacks should be fire-and-forget.
+      manager.tryReconnect();
+      manager.forceReconnect();
+    }
   }
 
   @override

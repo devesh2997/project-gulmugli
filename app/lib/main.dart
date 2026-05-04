@@ -4,18 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'state/providers.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Create the Riverpod container so we can try auto-reconnect before
-  // the widget tree builds.
   final container = ProviderContainer();
 
-  // Try to reconnect using saved credentials.
-  // If this fails (no saved creds, or server unreachable), the app
-  // shows the connect screen instead.
+  // Kick off auto-reconnect WITHOUT awaiting. The previous version
+  // awaited tryReconnect() which, on a slow or absent network, made
+  // the user stare at the iOS launch image / Android splash for up to
+  // 15 seconds (the Dio connectTimeout). The connect screen renders
+  // immediately now; if reconnection succeeds, the GoRouter redirect
+  // moves the user to /home automatically thanks to the connection
+  // status notifier.
+  //
+  // Failure modes covered:
+  //   - No saved creds → tryReconnect returns false fast → stays on /connect
+  //   - Saved creds but server unreachable → connect timeouts in background,
+  //     status flips to disconnected → user can edit IP and retry
+  //   - Saved creds, server up → reconnect completes, redirect to /home
   final manager = container.read(connectionManagerProvider);
-  await manager.tryReconnect();
+  // ignore: discarded_futures
+  manager.tryReconnect();
 
   runApp(
     UncontrolledProviderScope(

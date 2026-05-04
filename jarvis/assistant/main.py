@@ -419,10 +419,41 @@ def build_assistant() -> dict:
 
                 # mDNS discovery — register the API so the Flutter app
                 # can find the server on the LAN without manual IP entry.
+                # Also register an atexit + SIGTERM handler that unregisters
+                # the service on clean shutdown. Without that, the service
+                # record stays advertised until its TTL expires (~120s),
+                # so a Flutter app that opened during the window between
+                # Jetson restart and the next service record refresh would
+                # see a stale "Jarvis" entry pointing at no listener and
+                # report "Could not connect."
                 if api_cfg.get("discovery", {}).get("enabled", True):
                     try:
-                        from api.discovery import register_service
+                        from api.discovery import register_service, unregister_service
                         register_service(api_cfg)
+                        import atexit, signal
+                        atexit.register(unregister_service)
+                        # systemd's `systemctl stop` sends SIGTERM. The
+                        # default Python handler raises SystemExit, which
+                        # WILL fire atexit. But on some shells/CI runners
+                        # SIGTERM hits before atexit is wired up; install
+                        # an explicit handler for symmetry.
+                        try:
+                            _prev_term = signal.getsignal(signal.SIGTERM)
+                            def _sigterm(_sig, _frm):
+                                try:
+                                    unregister_service()
+                                finally:
+                                    if callable(_prev_term):
+                                        _prev_term(_sig, _frm)
+                                    else:
+                                        # Default — exit cleanly
+                                        raise SystemExit(143)
+                            signal.signal(signal.SIGTERM, _sigterm)
+                        except (ValueError, OSError):
+                            # signal.signal must be called from main thread;
+                            # if main.py is ever imported as a library this
+                            # would fail. Best effort.
+                            pass
                     except Exception as e:
                         log.debug("mDNS registration skipped: %s", e)
         except Exception as e:
@@ -939,6 +970,66 @@ def main():
 
     _poll_thread = threading.Thread(target=_position_poll_loop, name="position-poller", daemon=True)
     _poll_thread.start()
+
+    # Wake-word listener watchdog. The OpenWakeWord listener thread runs
+    # forever in a daemon thread; if it crashes (mic disconnect, ALSA
+    # device removal, ONNX glitch — all observed), the previous behavior
+    # was: log silently and the assistant goes deaf with no signal. The
+    # monitor restarts the listener up to 3 times in a 5-minute window.
+    # If it keeps crashing, we surface the failure and stop trying so
+    # the user notices something is wrong instead of seeing infinite
+    # restart spam.
+    def _wake_watchdog_loop():
+        import time as _time
+        ww = assistant.get("wake_word")
+        if ww is None or not hasattr(ww, "is_alive"):
+            # Old wake word provider without is_alive() — nothing to monitor.
+            return
+        crash_history: list[float] = []
+        while True:
+            _time.sleep(15.0)
+            try:
+                # Only check while we believe we should be listening:
+                # is_alive() returns False both when (a) we explicitly
+                # called stop_listening (correct behaviour) and (b) when
+                # the thread died unexpectedly. Heuristic: if _running
+                # is True (set by start_listening), we EXPECT the thread
+                # to be alive. is_alive() reads both, so a False here
+                # while we're "supposed to be listening" means a crash.
+                if not getattr(ww, "_running", False):
+                    continue  # not currently listening — nothing to do
+                if ww.is_alive():
+                    continue  # healthy
+
+                now = _time.time()
+                # Drop crashes older than the 5-minute window
+                crash_history[:] = [t for t in crash_history if now - t < 300]
+                crash_history.append(now)
+                if len(crash_history) > 3:
+                    log.error(
+                        "Wake-word listener has crashed %d times in 5 minutes — "
+                        "giving up auto-restart. Microphone or audio stack is "
+                        "unhealthy. Service restart required.",
+                        len(crash_history),
+                    )
+                    return
+                log.warning(
+                    "Wake-word listener thread died — restarting (attempt %d/3 in window).",
+                    len(crash_history),
+                )
+                try:
+                    cb = ww._callback  # save the registered callback
+                    if cb is not None:
+                        ww.start_listening(cb)
+                except Exception as e:
+                    log.error("Wake-word restart failed: %s", e)
+            except Exception as e:
+                log.debug("Wake-watchdog loop error: %s", e)
+
+    _wake_watchdog_thread = threading.Thread(
+        target=_wake_watchdog_loop, name="wake-watchdog", daemon=True,
+    )
+    _wake_watchdog_thread.start()
 
     if args.wake:
         run_wake_word_mode(assistant)

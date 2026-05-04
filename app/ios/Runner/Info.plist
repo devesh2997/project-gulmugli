@@ -66,5 +66,36 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- ====================================================================
+	     LAN connectivity — required for talking to the JARVIS Jetson at
+	     http://192.168.x.x:8766 from an iPhone. Without these keys, iOS
+	     blocks every HTTP and WebSocket call before it leaves the device.
+	     ==================================================================== -->
+
+	<!-- App Transport Security: allow plain HTTP within the local network.
+	     Public-internet HTTPS requirement remains in effect (we don't set
+	     NSAllowsArbitraryLoads). This is the recommended pattern for apps
+	     that talk to a private LAN device. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<!-- iOS 14+ shows a one-time prompt the first time the app touches the
+	     local network (any LAN IP). The string here is what the user sees;
+	     keep it user-friendly and explain the *why* in two short clauses. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Jarvis Companion connects to your Jarvis on the local network so it can show what music is playing and control your smart lights.</string>
+
+	<!-- Bonjour / mDNS service types this app will browse for. Without this,
+	     iOS blocks the nsd plugin's discovery silently — no error, no log,
+	     just no devices ever appear. Match the type registered server-side
+	     by jarvis/assistant/api/discovery.py: '_jarvis._tcp.local.'. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_jarvis._tcp</string>
+	</array>
 </dict>
 </plist>

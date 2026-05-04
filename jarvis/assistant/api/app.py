@@ -71,13 +71,21 @@ def create_api(assistant: dict) -> Optional["FastAPI"]:
     # Store the assistant dict so routes can access it.
     app.state.assistant = assistant
 
-    # CORS — allow all origins for LAN use.
-    # The app runs on phones on the same network; restrictive CORS
-    # would only cause headaches with zero security benefit on LAN.
+    # CORS for the dashboard + Flutter web build + Mac client.
+    # `allow_origins=["*"]` is fine here because we use bearer-token auth
+    # — there are no cookies in the request flow, so wildcard origin is
+    # a non-issue from a CSRF perspective. `allow_credentials` MUST be
+    # False when origin is wildcard (browser spec requires it; the prior
+    # `True` was both spec-invalid and a foot-gun if someone later added
+    # cookie auth without revisiting this).
+    #
+    # If we ever switch to cookie auth or add a session cookie, pin
+    # allow_origins to the specific dashboard/Flutter web origins and
+    # flip allow_credentials back on.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

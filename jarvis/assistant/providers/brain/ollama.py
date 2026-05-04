@@ -684,7 +684,16 @@ class OllamaBrainProvider(BrainProvider):
 
         start = time.time()
         # stream=True keeps the response open as a chunked HTTP stream.
-        resp = self._session.post(f"{self.endpoint}/api/generate", json=payload, stream=True)
+        # Timeout tuple: (connect, read). Large generous read timeout — 90s
+        # — because streaming generation can legitimately take that long
+        # for a chat reply on Jetson 8B-shared. But ANY timeout is critical:
+        # without one, an Ollama wedge (NvMap fragmentation, CUDA driver
+        # hang — both observed on Jetson) blocks every pipeline worker
+        # forever and the entire intent executor dies.
+        resp = self._session.post(
+            f"{self.endpoint}/api/generate",
+            json=payload, stream=True, timeout=(5, 90),
+        )
         full_text = ""
         eval_count = 0
         eval_duration = 0
@@ -765,7 +774,16 @@ class OllamaBrainProvider(BrainProvider):
             payload["format"] = "json"
 
         start = time.time()
-        resp = self._session.post(f"{self.endpoint}/api/generate", json=payload)
+        # Same rationale as the streaming path: bounded read timeout
+        # so a wedged Ollama can't pin pipeline workers indefinitely.
+        # 60s read covers worst-case classify (cold KV cache + max
+        # output) on Jetson at ~22 tok/s; chat-fast generations hit
+        # the per-call num_predict cap (typically 60-200 tokens) so
+        # they finish in well under the budget.
+        resp = self._session.post(
+            f"{self.endpoint}/api/generate",
+            json=payload, timeout=(5, 60),
+        )
         latency = time.time() - start
 
         data = resp.json()
@@ -939,5 +957,8 @@ class OllamaBrainProvider(BrainProvider):
             return raw_query
 
     def list_models(self) -> list[str]:
-        resp = self._session.get(f"{self.endpoint}/api/tags")
+        # Short timeout: this is a metadata call (cheap on Ollama's side),
+        # used for healthcheck and one-off CLI listing — failing fast is
+        # better than blocking on a hung daemon.
+        resp = self._session.get(f"{self.endpoint}/api/tags", timeout=(3, 10))
         return [m["name"] for m in resp.json().get("models", [])]

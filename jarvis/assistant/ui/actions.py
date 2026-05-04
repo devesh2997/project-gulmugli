@@ -346,6 +346,65 @@ def handle_ui_action(assistant: dict, action_data: dict) -> None:
                 log.info("Snoozed %s for %d minutes via dashboard", snoozed.label, snooze_mins)
         return
 
+    elif action == "snooze_reminder":
+        # Snooze a fired reminder. Dashboard fires this when the user taps
+        # the "snooze N min" button on the reminder notification card.
+        # The reminder has already fired (the modal showed up); we want
+        # to re-fire it after `minutes` and clear the current notification.
+        reminder_id = params.get("id", "") or action_data.get("id", "")
+        snooze_mins = int(params.get("minutes", 5))
+        reminder_mgr = assistant.get("reminder_manager")
+        face_ui = assistant.get("face_ui")
+        if reminder_mgr:
+            try:
+                # Different reminder backends may name this `snooze` or
+                # have no snooze API at all. Best-effort: try snooze, fall
+                # back to "create a one-shot reminder N minutes from now"
+                # using the same text.
+                snoozed = False
+                if hasattr(reminder_mgr, "snooze"):
+                    snoozed = bool(reminder_mgr.snooze(reminder_id, minutes=snooze_mins))
+                if snoozed:
+                    log.info("Snoozed reminder %s for %d minutes via dashboard",
+                             reminder_id, snooze_mins)
+                else:
+                    log.warning("Reminder %s could not be snoozed", reminder_id)
+                # Either way, broadcast the updated list and clear the fired modal.
+                if face_ui:
+                    if hasattr(reminder_mgr, "list_active"):
+                        face_ui._broadcast({
+                            "type": "reminders_updated",
+                            "reminders": reminder_mgr.list_active(),
+                        })
+                    # Tell the dashboard to dismiss the fired-reminder modal.
+                    face_ui._broadcast({"type": "reminder_dismissed",
+                                        "id": reminder_id})
+            except Exception as e:
+                log.warning("Failed to snooze reminder: %s", e)
+        return
+
+    elif action == "close_video":
+        # Dashboard closed the floating video player overlay (without
+        # stopping music — this is purely a UI-state action). Broadcast
+        # back to the FaceUI/dashboard so they collapse the video panel.
+        face_ui = assistant.get("face_ui")
+        if face_ui:
+            face_ui._broadcast({"type": "video_closed"})
+        log.debug("close_video acknowledged.")
+        return
+
+    else:
+        # Unknown action — log a warning so future drift between the
+        # dashboard's wsRef.send() calls and this dispatcher's handlers
+        # surfaces in journalctl instead of silently no-op'ing. Without
+        # this branch, the dashboard could send `snooze_reminder` /
+        # `bt_unpair` / any other typo'd action and the user would see
+        # nothing happen with no log line to grep for.
+        if action:
+            log.warning("UI: unknown action %r — no handler. params=%s",
+                        action, params)
+        return
+
     if intent:
         try:
             response = handle_intent(assistant, intent)

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/constants.dart';
 import '../config/theme.dart';
 import '../services/discovery_service.dart';
 import '../state/providers.dart';
@@ -17,10 +19,12 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen>
     with SingleTickerProviderStateMixin {
   final _hostController = TextEditingController();
   final _portController = TextEditingController(text: '8766');
+  final _tokenController = TextEditingController();
   final _discovery = DiscoveryService();
   late AnimationController _pulseController;
 
   bool _connecting = false;
+  bool _showTokenField = false;
   String? _error;
 
   @override
@@ -31,12 +35,34 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen>
       duration: const Duration(milliseconds: 3000),
     )..repeat(reverse: true);
     _discovery.startScan();
+    // Pre-fill last-known IP/port/token so the user doesn't have to retype
+    // after every reconnect attempt or app reinstall. Async — fires after
+    // first build, populates if a value exists. Empty defaults are fine.
+    _loadSavedConnection();
+  }
+
+  Future<void> _loadSavedConnection() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final host = prefs.getString(kPrefServerHost);
+    final port = prefs.getInt(kPrefServerPort);
+    final token = prefs.getString(kPrefApiToken);
+    if (host != null && _hostController.text.isEmpty) {
+      _hostController.text = host;
+    }
+    if (port != null && port != 8766) {
+      _portController.text = port.toString();
+    }
+    if (token != null && token.isNotEmpty) {
+      _tokenController.text = token;
+    }
   }
 
   @override
   void dispose() {
     _hostController.dispose();
     _portController.dispose();
+    _tokenController.dispose();
     _pulseController.dispose();
     _discovery.dispose();
     super.dispose();
@@ -45,6 +71,9 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen>
   Future<void> _connect() async {
     final host = _hostController.text.trim();
     final port = int.tryParse(_portController.text.trim()) ?? 8766;
+    final token = _tokenController.text.trim().isEmpty
+        ? null
+        : _tokenController.text.trim();
 
     if (host.isEmpty) {
       setState(() => _error = 'Server IP is required.');
@@ -54,12 +83,15 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen>
     setState(() { _connecting = true; _error = null; });
 
     final manager = ref.read(connectionManagerProvider);
-    final success = await manager.connect(host: host, port: port);
+    final success = await manager.connect(host: host, port: port, token: token);
 
     if (mounted) {
       setState(() {
         _connecting = false;
-        _error = success ? null : 'Could not connect. Is the server running?';
+        _error = success
+            ? null
+            : 'Could not connect. Check the address, make sure JARVIS is running, '
+                'and (if auth is enabled on the server) verify the token.';
       });
     }
   }
@@ -207,6 +239,46 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen>
                       ),
                     ],
                   ),
+
+                  // Token row — collapsed by default. Most users won't need
+                  // to enter one (token is server-generated; the dev shares
+                  // it once and we persist it). The "Use a token" link
+                  // expands the field for first-time pairing.
+                  if (!_showTokenField) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () =>
+                            setState(() => _showTokenField = true),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'Use a token',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: accent.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _tokenController,
+                      decoration: const InputDecoration(
+                        labelText: 'API token',
+                        hintText: 'paste from server log',
+                      ),
+                      style: const TextStyle(
+                        fontFamily: 'JetBrains Mono', fontSize: 13,
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
 
                   // Error

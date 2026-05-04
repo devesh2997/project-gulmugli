@@ -343,6 +343,25 @@ class OpenWakeWordProvider(WakeWordProvider):
                         log.debug("Resuming wake word detection...")
 
         except Exception as e:
-            if self._running:
-                log.error("Wake word listener crashed: %s", e)
+            # ALWAYS log loudly — losing wake word means the assistant
+            # silently goes deaf. Log even if `_running` was cleared
+            # concurrently by `stop_listening` (race window between
+            # stop_listening setting _running=False and the listener
+            # noticing it). The previous code logged only when _running
+            # was True at the moment of the exception, hiding most
+            # mid-stop crashes.
+            log.error("Wake word listener crashed: %s", e, exc_info=True)
             self._running = False
+            self._mic_released.set()  # unblock anyone waiting on pause
+
+    def is_alive(self) -> bool:
+        """
+        True iff the listener thread is running AND the mic loop is
+        actively processing audio. Used by main.py's monitor to detect
+        a silent listener crash and either restart or surface it.
+        """
+        return (
+            self._running
+            and self._thread is not None
+            and self._thread.is_alive()
+        )

@@ -105,6 +105,24 @@ class YouTubeMusicProvider(MusicProvider):
     def __init__(self, **kwargs):
         music_config = config.get("music", {})
         self.ytm = YTMusic()
+        # ytmusicapi uses requests under the hood with NO default timeout.
+        # When YouTube hangs (which happens — observed during ISP issues
+        # and rate-limit pressure), every search call would block its
+        # pipeline worker forever. Patch the underlying requests.Session
+        # to inject a default timeout if the caller didn't set one. This
+        # is reaching into a private attr (`_session`) but ytmusicapi has
+        # no public timeout knob; pinning ytmusicapi==1.12 minimizes the
+        # risk that the attr name changes from under us.
+        try:
+            _orig_request = self.ytm._session.request
+
+            def _request_with_timeout(method, url, **kw):
+                kw.setdefault("timeout", (5, 15))
+                return _orig_request(method, url, **kw)
+
+            self.ytm._session.request = _request_with_timeout
+        except AttributeError:
+            log.warning("Could not patch ytmusicapi session timeout — searches may hang indefinitely on a wedged YT response.")
         self.default_limit = music_config.get("search_results", 5)
         self.auto_play_first = music_config.get("auto_play_first", True)
         self.player = music_config.get("player", "mpv")

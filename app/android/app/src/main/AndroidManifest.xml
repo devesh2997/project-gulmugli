@@ -1,8 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Network permissions required by both debug AND release builds.
+         The debug variant manifest used to declare INTERNET on its own,
+         which meant `flutter run` worked but a release build shipped a
+         binary that couldn't make a single HTTP/WebSocket call.
+         Declaring here applies to all build variants. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <!-- mDNS / Bonjour browsing on Android requires multicast lock. The
+         `nsd` Flutter plugin holds a multicast lock while scanning. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+
     <application
         android:label="jarvis_companion"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

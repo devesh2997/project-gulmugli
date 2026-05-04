@@ -27,6 +27,12 @@ class ConnectionManager {
 
   String? _host;
   int _port = kDefaultApiPort;
+  bool _disposed = false;
+
+  /// Subscription to the WS messages stream. Tracked so we cancel before
+  /// re-listening on each reconnect — prevents the broadcast controller
+  /// from fanning out to multiple stale listeners.
+  StreamSubscription? _wsSub;
 
   final _statusController = StreamController<ConnectionStatus>.broadcast();
 
@@ -87,13 +93,16 @@ class ConnectionManager {
       await prefs.setInt(kPrefServerPort, port);
       if (token != null) await prefs.setString(kPrefApiToken, token);
 
-      // Start WebSocket (no token needed in dev mode)
+      // Start WebSocket (token only required when api.auth_enabled=true on server)
       _wsClient?.dispose();
       _wsClient = WsClient(host: host, port: port, token: token ?? '');
       _wsClient!.connect();
 
-      // Listen for WS disconnect to update status
-      _wsClient!.messages.listen((msg) {
+      // Cancel any prior WS-message subscription before re-listening so
+      // the broadcast controller doesn't end up fanning to N stale
+      // ConnectionManager listeners after multiple reconnect cycles.
+      _wsSub?.cancel();
+      _wsSub = _wsClient!.messages.listen((msg) {
         if (msg['type'] == '_connected') {
           _setStatus(ConnectionStatus.connected);
         } else if (msg['type'] == '_disconnected') {
@@ -114,10 +123,18 @@ class ConnectionManager {
 
   /// Disconnect from the server.
   void disconnect() {
+    _wsSub?.cancel();
+    _wsSub = null;
     _wsClient?.dispose();
     _wsClient = null;
     _apiClient = null;
     _setStatus(ConnectionStatus.disconnected);
+  }
+
+  /// Force an immediate WS reconnect bypassing backoff. Used when the app
+  /// returns to the foreground after iOS suspended sockets.
+  void forceReconnect() {
+    _wsClient?.forceReconnect();
   }
 
   /// Clear saved connection info.
@@ -130,11 +147,17 @@ class ConnectionManager {
   }
 
   void dispose() {
+    _disposed = true;
+    _wsSub?.cancel();
     _wsClient?.dispose();
     _statusController.close();
   }
 
   void _setStatus(ConnectionStatus s) {
+    // Don't push to a closed controller — guards against late-arriving
+    // WS events fired during/after dispose (e.g., a background reconnect
+    // timer firing one tick after the user navigated away).
+    if (_disposed) return;
     if (_status != s) {
       _status = s;
       _statusController.add(s);

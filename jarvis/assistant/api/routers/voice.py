@@ -37,7 +37,7 @@ import wave
 import threading
 from queue import Queue, Empty
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -480,6 +480,7 @@ def _audio_chunk_sse(index: int, sentence: str, wav: bytes | None) -> bytes:
 
 @router.post("/api/voice/stream")
 async def voice_stream(
+    request: Request,
     audio: UploadFile = File(...),
     play_local: bool = False,
     filler: bool = True,
@@ -717,8 +718,30 @@ async def voice_stream(
             return vr.speak(text, active_personality) if vr else None
 
         def _synth_worker():
+            # Self-healing exit: time out on idle so a leaked worker
+            # eventually dies on its own. The streaming generator is
+            # supposed to send WORKER_SENTINEL at the end of every
+            # request's event_stream, but if it's cancelled before
+            # reaching that line (client disconnect mid-stream, server
+            # shutdown, exception escaping the generator), the worker
+            # would block forever on synth_in.get(). The 60s idle
+            # timeout caps that leak window — even under sustained
+            # disconnect storms, leaked workers GC themselves within
+            # a minute, well before they accumulate enough to fragment
+            # the Jetson's 8GB shared memory.
+            #
+            # 60s is generous: the longest legitimate idle we expect is
+            # the gap between LLM token streaming and the first sentence
+            # boundary, typically <5s. If we ever see legitimate idles
+            # >60s the worker will incorrectly exit early — but that's
+            # easy to spot in logs and we can tune up.
+            from queue import Empty as _Empty
             while True:
-                item = synth_in.get()
+                try:
+                    item = synth_in.get(timeout=60.0)
+                except _Empty:
+                    log.debug("TTS worker idle timeout — exiting (likely a leaked instance from a disconnected stream).")
+                    return
                 if item is WORKER_SENTINEL:
                     return
                 idx, sentence = item
@@ -734,6 +757,20 @@ async def voice_stream(
             target=_synth_worker, name="tts-worker", daemon=True
         )
         synth_thread.start()
+
+        # Track whether the sentinel has already been put on the worker
+        # queue so the cleanup `finally` doesn't double-send it (which is
+        # harmless but creates a queue.put backlog under disconnect storms).
+        _worker_signalled = [False]
+
+        def _signal_worker_exit():
+            if _worker_signalled[0]:
+                return
+            _worker_signalled[0] = True
+            try:
+                synth_in.put(WORKER_SENTINEL)
+            except Exception:
+                pass  # queue is unbounded so this should never raise
 
         def fire_sentence(text: str):
             """Queue TTS synth for `text` in the single worker thread."""
@@ -870,8 +907,8 @@ async def voice_stream(
                         first_audio_emitted = True
                     yield _audio_chunk_sse(idx, sent, wav)
                     emitted += 1
-            # Stop the TTS worker
-            synth_in.put(WORKER_SENTINEL)
+            # Stop the TTS worker (idempotent — finally will skip if already signalled)
+            _signal_worker_exit()
             timings["total_ms"] = (time.monotonic() - t_total) * 1000
             yield _sse("done", {
                 "timings": timings,
@@ -1266,8 +1303,8 @@ async def voice_stream(
                     yield _audio_chunk_sse(idx, sent, wav)
                     emitted += 1
 
-        # Tell the worker to exit
-        synth_in.put(WORKER_SENTINEL)
+        # Tell the worker to exit (idempotent — finally will skip if already signalled)
+        _signal_worker_exit()
         timings["total_ms"] = (time.monotonic() - t_total) * 1000
         yield _sse("done", {"timings": timings})
 

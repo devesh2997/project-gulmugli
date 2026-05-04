@@ -7,7 +7,7 @@
  * The panel background subtly tints with the current light colour.
  */
 
-import { useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { AssistantStore } from '../types/assistant'
 import { LightOrb } from './lights/LightOrb'
@@ -115,10 +115,41 @@ function ColorStrip({ currentColor, on, onColorChange }: {
 
 function BrightnessSlider({ brightness, on, color, onChange }: {
   brightness: number; on: boolean; color: string
+  /**
+   * Called with the final value when the user releases (and at most
+   * once every 250ms during drag, for visual feedback). Previously
+   * called on EVERY pointermove tick, which spammed the Tuya broker
+   * with 30+ requests per second of drag and caused noticeable lag /
+   * drops. The Tuya bulb does not need 60Hz updates to look smooth —
+   * 4Hz is plenty.
+   */
   onChange: (val: number) => void
 }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
+  // Local copy of the value so the UI animates smoothly even though we
+  // throttle the upstream onChange. Starts in sync with the prop and
+  // re-syncs when not dragging.
+  const [localValue, setLocalValue] = useState(brightness)
+  // Last-committed value — used to decide whether the throttle should
+  // fire (skip if no change).
+  const lastCommittedRef = useRef(brightness)
+  // Throttle timer for intermediate commits during a drag.
+  const throttleRef = useRef<number | null>(null)
+
+  // Re-sync from prop when external state changes and we're not dragging.
+  useEffect(() => {
+    if (!draggingRef.current) {
+      setLocalValue(brightness)
+      lastCommittedRef.current = brightness
+    }
+  }, [brightness])
+
+  const commit = useCallback((val: number) => {
+    if (val === lastCommittedRef.current) return
+    lastCommittedRef.current = val
+    onChange(val)
+  }, [onChange])
 
   const computeValue = useCallback((clientX: number) => {
     if (!trackRef.current) return brightness
@@ -127,20 +158,45 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
     return Math.round(ratio * 100)
   }, [brightness])
 
+  const scheduleThrottled = useCallback((val: number) => {
+    if (throttleRef.current !== null) return // already pending
+    throttleRef.current = window.setTimeout(() => {
+      throttleRef.current = null
+      if (draggingRef.current) {
+        commit(val)
+      }
+    }, 250)
+  }, [commit])
+
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     draggingRef.current = true
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    onChange(computeValue(e.clientX))
-  }, [computeValue, onChange])
+    const v = computeValue(e.clientX)
+    setLocalValue(v)
+    commit(v)  // first touch fires immediately for responsiveness
+  }, [computeValue, commit])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingRef.current) return
-    onChange(computeValue(e.clientX))
-  }, [computeValue, onChange])
+    const v = computeValue(e.clientX)
+    setLocalValue(v)
+    scheduleThrottled(v)
+  }, [computeValue, scheduleThrottled])
 
   const handlePointerUp = useCallback(() => {
     draggingRef.current = false
-  }, [])
+    if (throttleRef.current !== null) {
+      window.clearTimeout(throttleRef.current)
+      throttleRef.current = null
+    }
+    // Final commit at release — guarantees the device ends on the
+    // user's last position even if no throttle window had elapsed.
+    commit(localValue)
+  }, [commit, localValue])
+
+  // Use the local value for rendering so the UI is always smooth, even
+  // when external prop updates lag behind the active drag.
+  const displayValue = localValue
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -165,7 +221,7 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
       >
         {/* Filled portion */}
         <motion.div
-          animate={{ width: `${brightness}%` }}
+          animate={{ width: `${displayValue}%` }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           style={{
             height: '100%', borderRadius: 6,
@@ -176,7 +232,7 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
         />
         {/* Thumb */}
         <motion.div
-          animate={{ left: `${brightness}%` }}
+          animate={{ left: `${displayValue}%` }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           style={{
             position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)',
@@ -200,7 +256,7 @@ function BrightnessSlider({ brightness, on, color, onChange }: {
         fontSize: 12, color: 'var(--text-secondary)',
         fontFamily: 'monospace', minWidth: 32, textAlign: 'right',
       }}>
-        {brightness}%
+        {displayValue}%
       </span>
     </div>
   )

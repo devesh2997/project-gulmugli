@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../config/theme.dart';
 import '../state/providers.dart';
+import 'debounced_slider.dart';
 
 /// Controls panel — slides in from right, quick access to features.
 ///
@@ -202,10 +203,14 @@ class _VolumeSlider extends ConsumerWidget {
               activeTrackColor: accent.withValues(alpha: 0.6),
               thumbColor: accent,
             ),
-            child: Slider(
+            child: DebouncedSlider(
               value: volume.toDouble(),
-              min: 0, max: 100,
-              onChanged: (v) => manager.api?.setVolume(v.round()),
+              min: 0, max: 100, divisions: 100,
+              labelFormat: (v) => '${v.round()}',
+              // Throttle to 4×/s while dragging so the user gets some
+              // audible response, but the API isn't hammered.
+              intermediateInterval: const Duration(milliseconds: 250),
+              onCommit: (v) => manager.api?.setVolume(v.round()),
             ),
           ),
         ),

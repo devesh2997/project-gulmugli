@@ -55,6 +55,7 @@ from core.interfaces import Personality, VoiceProvider
 from core.registry import get_provider, list_providers
 from core.logger import get_logger
 from core.audio_focus import AudioFocusManager, AudioChannel
+from core.personality import personality_manager
 
 log = get_logger("voice.router")
 
@@ -184,14 +185,30 @@ class VoiceRouter:
         log.warning("No voice providers available. Responses will be text-only.")
         return None, ""
 
-    def speak(self, text: str, personality: Personality) -> bytes | None:
+    def speak(self, text: str, personality: Personality | None = None) -> bytes | None:
         """
         Synthesize text using the appropriate provider for this personality.
 
+        `personality` defaults to the currently-active personality from
+        `personality_manager`. Most callers (timer fire, reminder fire,
+        wake-from-sleep, etc.) just want "speak this in the current voice"
+        without threading the personality through every closure — passing
+        explicit `personality` only matters when you want a DIFFERENT voice
+        than the active one (e.g. when the streaming voice path uses the
+        chat reply's personality verbatim).
+
         Returns WAV bytes, or None if voice is disabled/unavailable.
+
+        Defending against a real bug we hit in production: three call
+        sites in main.py (timer fire, reminder fire, sleep wake) used to
+        call `speak(message)` without a personality, raising TypeError
+        every time those events fired.
         """
         if not self._enabled:
             return None
+
+        if personality is None:
+            personality = personality_manager.active
 
         provider, voice_model = self._resolve_provider(personality)
         if provider is None:

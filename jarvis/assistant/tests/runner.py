@@ -86,11 +86,19 @@ def run_suite(suite_name: str, brain) -> dict:
     elif suite_name == "integration":
         from tests.test_integration import run_integration_tests
         return run_integration_tests()
+    elif suite_name == "api_smoke":
+        # FastAPI TestClient smoke tests — auth, CORS, audio cache, chat
+        # heuristic. Don't hit Ollama or YT; runs in <1s. Best-suited
+        # to be the FIRST suite run (catches API regressions before any
+        # heavier suite spends 5min on the LLM).
+        from tests.test_api_smoke import run_api_smoke_tests
+        return run_api_smoke_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
 
-ALL_SUITES = ["prefilter", "intent", "enrichment", "personality", "knowledge", "latency", "integration"]
+ALL_SUITES = ["api_smoke", "prefilter", "intent", "enrichment", "personality",
+              "knowledge", "latency", "integration"]
 
 
 def run_all(suites: list[str] = None) -> dict:
