@@ -34,17 +34,22 @@ acrylic version.
 
 ## What this script outputs
 
-Same as v4 + a printed side panel:
+A standalone, all-FDM bundle — no acrylic step, no DXF in the
+folder. The bundle is self-contained for handoff to a single
+print shop.
 
   stl-v4-solid/
     jarvis-frame-v4.stl              ← unchanged from v4
     jarvis-back-panel-v4.stl         ← unchanged from v4
     jarvis-led-diffuser-v4.stl       ← unchanged from v4
-    jarvis-side-panel-v4.dxf         ← unchanged from v4 (kept for
-                                        future acrylic swap)
     jarvis-side-panel-v4.stl         ← NEW. Printed PETG side panel.
                                         Print TWO from this one STL —
                                         the panel is symmetric.
+
+(The acrylic-windowed variant lives separately under
+generate_enclosure_v4.py / stl-v4/. The two bundles are kept
+disjoint on purpose so each can be sent to a vendor without
+explaining the other.)
 
 ## Run
 
@@ -66,7 +71,7 @@ import numpy as np
 from generate_enclosure_v3 import (
     Frame, Screen, Jetson, ReSpeaker, Speaker,
     build_frame_meshes, build_back_panel_meshes,
-    build_led_diffuser_meshes, write_acrylic_dxf,
+    build_led_diffuser_meshes,
     box, cyl_y, merge, to_stl_mesh,
 )
 from generate_enclosure_v4 import make_v4_frame
@@ -200,8 +205,6 @@ def main():
     print(f"\n{'═' * 70}")
     print(f"  JARVIS Enclosure v4-solid — fully printed (no acrylic step)")
     print(f"  Form factor: {F.W} × {F.H} × {F.D} mm")
-    print(f"  Same dimensions as v4; adds a printed side panel")
-    print(f"  designed to swap with acrylic later (zero frame changes).")
     print(f"  Output to: {out_dir}")
     print(f"{'═' * 70}\n")
 
@@ -245,17 +248,9 @@ def main():
     print(f"  ✓ {spath}")
     print(f"    {len(sf)} triangles, {os.path.getsize(spath) / 1024:.1f} KB")
 
-    # Acrylic side panel DXF — kept for future swap
-    print("\n→ Acrylic side panel DXF (kept for future clear-window swap)")
-    dxf_path = os.path.join(out_dir, "jarvis-side-panel-v4.dxf")
-    write_acrylic_dxf(dxf_path, F)
-    print(f"  ✓ {dxf_path}")
-    print(f"    {os.path.getsize(dxf_path)} bytes")
-
     print(f"\n{'═' * 70}")
     print(f"  ✓ All v4-solid files generated.")
     print(f"  Print plan: 1× frame, 1× back panel, 1× LED diffuser, 2× side panel.")
-    print(f"  Future swap: laser-cut 2× from the DXF, pop off PETG, pop on acrylic.")
     print(f"{'═' * 70}\n")
 
 

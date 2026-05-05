@@ -1,12 +1,12 @@
 VESPER ENCLOSURE V4 — PRINT-SHOP HANDOFF BUNDLE
-==================================================
+================================================
 
-This folder contains everything needed to produce the windowed
-(acrylic-sided) variant of the enclosure. Pair with
-PRINT_SHOP_BRIEF.md (one directory up) for the full job spec.
+This folder is a self-contained handoff for the FDM print shop
+plus a laser-cut shop. Pair with PRINT_SHOP_BRIEF.md (in this
+folder) for the full job spec.
 
-FILES
------
+FILES (3 STL + 1 DXF)
+---------------------
 
   jarvis-frame-v4.stl          1×  PETG matte black     ~340g  ~14-16h
   jarvis-back-panel-v4.stl     1×  PETG matte black     ~80g   ~3-4h
@@ -66,9 +66,3 @@ QUESTIONS
 For tolerance / material / orientation questions, reply to the order
 or contact the requester. Designs are parametric and minor changes
 regenerate quickly.
-
----
-
-Generator: jarvis/05-the-body/designs/generate_enclosure_v4.py
-Schema:    parametric Python (numpy-stl). Re-runs are deterministic.
-Version:   v4 (2026-05-05)

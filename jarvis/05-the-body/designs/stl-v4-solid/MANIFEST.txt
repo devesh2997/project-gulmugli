@@ -1,27 +1,21 @@
-VESPER ENCLOSURE V4-SOLID — PRINT-SHOP HANDOFF BUNDLE
-======================================================
+VESPER ENCLOSURE V4 — PRINT-SHOP HANDOFF BUNDLE
+================================================
 
-A fully 3D-printed variant of v4 — no acrylic step needed. Side
-panels are PETG, dimensioned to be drop-in interchangeable with
-the laser-cut acrylic version (same magnet positions, same outer
-dimensions, same washer mount).
+This folder is a self-contained handoff for a single print shop.
+Pair with PRINT_SHOP_BRIEF.md (in this folder) for the full job
+spec.
 
-The included DXF is kept for a possible future swap to acrylic
-side panels; it is NOT used by this bundle and can be ignored
-for the current order.
-
-FILES (4 STL + 1 DXF)
----------------------
+FILES (4 STL)
+-------------
 
   jarvis-frame-v4.stl          1×  PETG matte black     ~340g  ~14-16h
   jarvis-back-panel-v4.stl     1×  PETG matte black     ~80g   ~3-4h
   jarvis-led-diffuser-v4.stl   1×  Clear/natural PLA    ~3g    ~45m
   jarvis-side-panel-v4.stl     2×  PETG matte black     ~25g   ~1.5h each
-  jarvis-side-panel-v4.dxf     —   (not used by this bundle)
 
 PRINT TWO COPIES OF THE SIDE PANEL (left + right are identical).
 
-Total filament budget for the all-PETG print: ~470g.
+Total filament budget: ~470g.
 
 DIMENSIONS (mm)
 ---------------
@@ -59,7 +53,7 @@ POST-PRINT NOTES
 ----------------
 
 The side panels each have 4 small dimple bumps on the inside
-face, marking centers for 12mm flat-bottom washer pockets that
+face, marking centers for 12mm flat-bottom hardware pockets that
 the requester drills post-print (1.2mm deep). These are not
 intended to be drilled by the print shop — leave the dimples
 intact as drill markers.
@@ -77,9 +71,3 @@ QUESTIONS
 For tolerance / material / orientation questions, reply to the
 order or contact the requester. Designs are parametric and minor
 changes regenerate quickly.
-
----
-
-Generator: jarvis/05-the-body/designs/generate_enclosure_v4_solid.py
-Schema:    parametric Python (numpy-stl). Re-runs are deterministic.
-Version:   v4-solid (2026-05-05)
