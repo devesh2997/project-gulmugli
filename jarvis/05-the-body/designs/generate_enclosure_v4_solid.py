@@ -75,6 +75,7 @@ from generate_enclosure_v3 import (
     box, cyl_y, merge, to_stl_mesh,
 )
 from generate_enclosure_v4 import make_v4_frame
+from mesh_union import pieces_to_watertight_mesh
 
 
 # ── New: printed side panel (interchangeable with the acrylic) ──────
@@ -208,45 +209,50 @@ def main():
     print(f"  Output to: {out_dir}")
     print(f"{'═' * 70}\n")
 
+    def emit(label: str, pieces, filename: str):
+        """Boolean-union the primitive pieces, then export as a single
+        watertight STL. This replaces the v3-era 'naive merge of triangle
+        soup' approach which produced multi-body, non-manifold output
+        that strict slicers (Bambu Studio) reject as broken."""
+        print(label)
+        mesh = pieces_to_watertight_mesh(pieces)
+        path = os.path.join(out_dir, filename)
+        mesh.export(path)
+        size_kb = os.path.getsize(path) / 1024
+        ok = "✓" if (mesh.is_watertight and mesh.body_count == 1) else "✗"
+        print(f"  {ok} {path}")
+        print(
+            f"    {len(mesh.faces)} triangles, {size_kb:.1f} KB, "
+            f"watertight={mesh.is_watertight}, bodies={mesh.body_count}"
+        )
+
     # Frame
-    print("→ Frame (main body, opaque PETG, ~14-16h FDM print)")
-    fp = build_frame_meshes(F, S, J, SP, R)
-    fv, ff = merge(*fp)
-    fm = to_stl_mesh(fv, ff)
-    fpath = os.path.join(out_dir, "jarvis-frame-v4.stl")
-    fm.save(fpath)
-    print(f"  ✓ {fpath}")
-    print(f"    {len(ff)} triangles, {os.path.getsize(fpath) / 1024:.1f} KB")
+    emit(
+        "→ Frame (main body, opaque PETG, ~14-16h FDM print)",
+        build_frame_meshes(F, S, J, SP, R),
+        "jarvis-frame-v4.stl",
+    )
 
     # Back panel
-    print("\n→ Back panel (snap-fit, opaque PETG, ~3-4h print)")
-    bp = build_back_panel_meshes(F, J)
-    bv, bf_ = merge(*bp)
-    bm = to_stl_mesh(bv, bf_)
-    bpath = os.path.join(out_dir, "jarvis-back-panel-v4.stl")
-    bm.save(bpath)
-    print(f"  ✓ {bpath}")
-    print(f"    {len(bf_)} triangles, {os.path.getsize(bpath) / 1024:.1f} KB")
+    emit(
+        "\n→ Back panel (snap-fit, opaque PETG, ~3-4h print)",
+        build_back_panel_meshes(F, J),
+        "jarvis-back-panel-v4.stl",
+    )
 
     # LED diffuser
-    print("\n→ LED bar diffuser (frosted/natural PLA, ~1h print)")
-    lp = build_led_diffuser_meshes(F)
-    lv, lf = merge(*lp)
-    lm = to_stl_mesh(lv, lf)
-    lpath = os.path.join(out_dir, "jarvis-led-diffuser-v4.stl")
-    lm.save(lpath)
-    print(f"  ✓ {lpath}")
-    print(f"    {len(lf)} triangles, {os.path.getsize(lpath) / 1024:.1f} KB")
+    emit(
+        "\n→ LED bar diffuser (frosted/natural PLA, ~1h print)",
+        build_led_diffuser_meshes(F),
+        "jarvis-led-diffuser-v4.stl",
+    )
 
-    # NEW: Printed side panel (PETG)
-    print("\n→ Side panel (PETG, ~1.5h print) — print TWICE for left + right")
-    sp_meshes = build_side_panel_meshes(F)
-    sv, sf = merge(*sp_meshes)
-    sm = to_stl_mesh(sv, sf)
-    spath = os.path.join(out_dir, "jarvis-side-panel-v4.stl")
-    sm.save(spath)
-    print(f"  ✓ {spath}")
-    print(f"    {len(sf)} triangles, {os.path.getsize(spath) / 1024:.1f} KB")
+    # Printed side panel (PETG)
+    emit(
+        "\n→ Side panel (PETG, ~1.5h print) — print TWICE for left + right",
+        build_side_panel_meshes(F),
+        "jarvis-side-panel-v4.stl",
+    )
 
     print(f"\n{'═' * 70}")
     print(f"  ✓ All v4-solid files generated.")
