@@ -1,9 +1,9 @@
 VESPER ENCLOSURE V4 — PRINT-SHOP HANDOFF BUNDLE
 ==================================================
 
-Send this entire folder to the print shop along with PRINT_SHOP_BRIEF.md
-(located one directory up). The four files here are everything the
-shop needs to produce the enclosure.
+This folder contains everything needed to produce the windowed
+(acrylic-sided) variant of the enclosure. Pair with
+PRINT_SHOP_BRIEF.md (one directory up) for the full job spec.
 
 FILES
 -----
@@ -35,9 +35,9 @@ PRINT SETTINGS (FDM)
 PRINT ORIENTATION
 -----------------
 
-  jarvis-frame-v4.stl:       FRONT face DOWN on build plate
-                             (gives the cleanest screen-side finish)
-  jarvis-back-panel-v4.stl:  Flat side DOWN, port cluster face UP
+  jarvis-frame-v4.stl:        FRONT face DOWN on build plate
+                              (gives the cleanest screen-side finish)
+  jarvis-back-panel-v4.stl:   Flat side DOWN, port cluster face UP
   jarvis-led-diffuser-v4.stl: Flat (any orientation, no supports)
 
 LASER-CUT SETTINGS
@@ -50,21 +50,12 @@ LASER-CUT SETTINGS
                 (typical 80W CO₂ at ~20mm/s, 100% power)
   Edge:        Polished cut edge from cast acrylic is sufficient
 
-EXPECTED COST (India, May 2026)
--------------------------------
-
-  PETG frame + back panel:       ₹2,300 – ₹3,100
-  PLA LED diffuser:              ₹100   – ₹200
-  Acrylic side panels (×2):      ₹400   – ₹700
-  ----------------------------------------
-  Total bundle:                  ₹2,800 – ₹4,000
-
 SANITY CHECKS
 -------------
 
 Before printing, the slicer should report all three STLs as MANIFOLD
-meshes (no holes / inverted normals). If anything is flagged, contact
-the requester before continuing.
+meshes (no holes / inverted normals). If anything is flagged, please
+contact the requester before continuing.
 
 The frame fits any modern desktop FDM build volume (200 × 145 × 70mm
 fits comfortably on Prusa MK4, Bambu A1/X1, Ender 3 V2, Creality K1).
@@ -74,10 +65,10 @@ QUESTIONS
 
 For tolerance / material / orientation questions, reply to the order
 or contact the requester. Designs are parametric and minor changes
-(screen swap, different speaker, larger format) regenerate quickly.
+regenerate quickly.
 
 ---
 
 Generator: jarvis/05-the-body/designs/generate_enclosure_v4.py
 Schema:    parametric Python (numpy-stl). Re-runs are deterministic.
-Version:   v4 (2026-05-05) — buffer-padded for hardware flexibility
+Version:   v4 (2026-05-05)
