@@ -1,0 +1,96 @@
+VESPER ENCLOSURE V5 — PRINT-SHOP HANDOFF BUNDLE
+================================================
+
+This folder is a self-contained handoff for a single print shop.
+Pair with PRINT_SHOP_BRIEF.md (in this folder) for the full job
+spec.
+
+FILES (5 STL)
+-------------
+
+  jarvis-frame-v5.stl              1×  PETG matte black     ~340g  ~14-16h
+  jarvis-back-panel-v5.stl         1×  PETG matte black     ~75g   ~3-4h
+  jarvis-led-diffuser-v5.stl       1×  Clear/natural PLA    ~3g    ~45m
+  jarvis-side-panel-left-v5.stl    1×  PETG matte black     ~22g   ~1.5h
+  jarvis-side-panel-right-v5.stl   1×  PETG matte black     ~17g   ~1.5h
+
+The two side panels are DIFFERENT — print each one once. The
+right panel has a port aperture for cable access; the left is
+solid.
+
+Total filament budget: ~460g.
+
+DIMENSIONS (mm)
+---------------
+
+  Frame envelope:      200 × 145 × 70   (W × H × D)
+                       feet drop 10mm below base
+  Back panel:          200 × 145 × 2.5
+  LED diffuser:        174.7 × 11.7 × 4   (0.3mm clearance vs slot)
+  Side panel (each):   63.2 × 112.7 × 3   (0.3mm clearance vs opening)
+
+PRINT SETTINGS (FDM)
+--------------------
+
+  Layer height:    0.2mm (frame, back panel, side panels)
+                   0.15mm (LED diffuser — finer for light transmission)
+  Walls:           4 perimeters (1.6mm wall thickness)
+  Infill:          20% (frame, back panel, side panels)
+                   100% (LED diffuser only)
+  Supports:        Tree, only on bottoms of internal standoffs.
+                   Side panels and LED diffuser need NO supports.
+  Build plate:     70°C bed for PETG, 60°C for PLA
+  Speed:           50mm/s outer, 80mm/s infill
+  Brim:            5mm for PETG (improves first-layer adhesion)
+
+PRINT ORIENTATION
+-----------------
+
+  jarvis-frame-v5.stl:                FRONT face DOWN on build plate.
+                                      Feet point UP during print, no
+                                      supports needed.
+  jarvis-back-panel-v5.stl:           Flat side DOWN, standoffs UP.
+  jarvis-led-diffuser-v5.stl:         Flat (any orientation, no supports).
+  jarvis-side-panel-left-v5.stl:      INSIDE FACE DOWN (washer-pocket
+                                      side against the build plate).
+  jarvis-side-panel-right-v5.stl:     INSIDE FACE DOWN. The port
+                                      aperture is a clean through-hole.
+
+POST-PRINT NOTES
+----------------
+
+  - Screen mounting: the frame has 4 standoffs on the inside of the
+    front face for the 7" LCD. Drill 4mm holes 4mm deep into each
+    standoff for M3 brass inserts; press the inserts in with a
+    soldering iron.
+  - Speaker mounting: the bottom plate has a 50mm circular aperture
+    surrounded by a 56mm OD × 6mm tall mounting ring. Drill 3-4
+    M3 holes around the ring to bolt the speaker driver flange.
+  - Magnet pockets: the frame has 4 magnet pockets (6mm dia × ~3mm
+    deep) at the front corners of each side opening (8 total).
+    Press-fit N42 6×3mm disc magnets into each pocket at assembly.
+  - Side panels: each panel has 2 washer pockets at the front edge
+    matching the magnet pockets in the frame. Glue 12mm steel
+    washers into the pockets to engage with the magnets.
+
+SANITY CHECKS
+-------------
+
+Before printing, slicer should report all five STLs as MANIFOLD
+meshes AND single-body (1 connected component). Frame fits any
+modern desktop FDM (200 × 155 × 70 mm including the feet
+fits Prusa MK4, Bambu A1/X1, Ender 3 V2, Creality K1).
+
+QUESTIONS
+---------
+
+For tolerance / material / orientation questions, reply to the
+order or contact the requester. Designs are parametric and minor
+changes regenerate quickly.
+
+---
+
+Generator: jarvis/05-the-body/designs/enclosure_geometry.py
+Schema:    parametric Python (numpy-stl + manifold3d). Re-runs are
+           deterministic.
+Version:   v5 (corrected geometry, 2026-05-07)

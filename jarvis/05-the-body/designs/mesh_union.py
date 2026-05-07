@@ -35,9 +35,21 @@ guarantees.
 
 ## Usage
 
+Simple union (legacy, all positive geometry):
+
   pieces = build_frame_meshes(...)                   # generator output
   mesh   = pieces_to_watertight_mesh(pieces)          # one closed solid
   mesh.export("frame.stl")
+
+Union + subtract (new, for face-with-cutouts geometry):
+
+  positives = [box(W, H, t), ...standoffs..., ...feet...]
+  negatives = [box(slit_w, slit_h, slit_d, ...), ...]   # cutouts
+  mesh = pieces_to_watertight_mesh(positives, negatives)
+
+The CSG difference correctly produces a single watertight body even
+when slit-shaped cutouts would otherwise split the geometry into
+disconnected strips (the original bug).
 
 ## Dependencies
 
@@ -84,25 +96,12 @@ def _piece_to_outward_manifold(
     return man
 
 
-def pieces_to_watertight_mesh(
+def _pieces_to_manifolds(
     pieces: List[Tuple[np.ndarray, np.ndarray]],
-    snap_digits: int = 4,
-) -> trimesh.Trimesh:
-    """
-    Boolean-union a list of primitive pieces into one watertight mesh.
-
-    Each entry in `pieces` must be (verts, faces) — a closed primitive
-    solid, as produced by the generator's `box(...)` / `cyl_*(...)`
-    helpers. Returns a trimesh.Trimesh that is single-body and
-    watertight, ready for any slicer (PrusaSlicer, Cura, Bambu Studio,
-    OrcaSlicer).
-    """
-    if not pieces:
-        raise ValueError("pieces is empty")
-
-    # 1. Build a properly-oriented manifold per piece, skipping any that
-    # are zero-volume.
-    manifolds: List[m3d.Manifold] = []
+) -> List[m3d.Manifold]:
+    """Convert a list of primitive (verts, faces) pieces into a list of
+    properly-oriented Manifold solids, skipping zero-volume entries."""
+    out: List[m3d.Manifold] = []
     for v, f in pieces:
         bb = np.ptp(np.asarray(v), axis=0)
         if (bb < 1e-6).any():
@@ -110,19 +109,51 @@ def pieces_to_watertight_mesh(
         try:
             man = _piece_to_outward_manifold(v, f)
             if man.volume() > 0:
-                manifolds.append(man)
+                out.append(man)
         except RuntimeError:
             continue
+    return out
 
-    if not manifolds:
-        raise RuntimeError("no valid primitives to union")
 
-    # 2. Boolean-union all primitives. Manifold3d's '+' operator unions.
-    union = manifolds[0]
-    for m in manifolds[1:]:
+def pieces_to_watertight_mesh(
+    pieces: List[Tuple[np.ndarray, np.ndarray]],
+    negatives: List[Tuple[np.ndarray, np.ndarray]] | None = None,
+    snap_digits: int = 4,
+) -> trimesh.Trimesh:
+    """
+    Boolean-union a list of positive primitives, optionally subtract a
+    list of negative primitives (cutouts), and return one watertight
+    single-body mesh.
+
+    Each entry in `pieces` and `negatives` must be (verts, faces) — a
+    closed primitive solid, as produced by the generator's `box(...)`
+    / `cyl_*(...)` helpers.
+
+    The subtractive path is the correct way to model "face with
+    rectangular slits" or "face with circular cutout" — the prior
+    "decompose into strips around the cutout" approach produced
+    face-coincident geometry that manifold3d treats as separate
+    bodies. Use positive-then-negate instead.
+    """
+    if not pieces:
+        raise ValueError("pieces is empty")
+
+    # 1. Build oriented manifolds for positives and negatives.
+    pos = _pieces_to_manifolds(pieces)
+    if not pos:
+        raise RuntimeError("no valid positive primitives")
+    neg = _pieces_to_manifolds(negatives or [])
+
+    # 2. Union positives.
+    union = pos[0]
+    for m in pos[1:]:
         union = union + m
 
-    # 3. Convert back to trimesh, snap-and-merge to absorb float32→64
+    # 3. Subtract negatives.
+    for m in neg:
+        union = union - m
+
+    # 4. Convert back to trimesh, snap-and-merge to absorb float32→64
     # rounding artifacts, fix winding for sanity.
     out = union.to_mesh()
     verts = np.asarray(out.vert_properties[:, :3], dtype=np.float64)
