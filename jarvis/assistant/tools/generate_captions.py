@@ -248,28 +248,60 @@ VOICE SAMPLES:
   used it once, never reuse)
 - "Just" as a hedge ("just a moment", "just us")
 
-# Reasoning — silent before output
-
-Before writing, silently consider:
-  (a) What is THIS specific photo showing? (Look at the image data.)
-  (b) What's the chapter context saying about this period?
-  (c) What's the metadata saying (time, place, burst, days-since)?
-  (d) What would Devesh notice and remember about this exact moment?
-
-Then write ONE line, in his voice, that captures THAT specific moment.
-
 # Chapter index — the album's story arc
 
 {chapter_index}
 
-# Output format
+# Output format — STRICT
 
-Exactly one of:
-  (a) The caption text. Plain string. First character is the caption.
-  (b) The literal token <NO_CAPTION>
+Your entire response is EITHER:
+  (a) The caption text — nothing else. The very first character of
+      your response is the very first character of the caption. The
+      very last character of your response is the last character of
+      the caption (typically a letter, period, or emoji).
+  (b) The literal seven-character string `<NO_CAPTION>` — nothing else.
 
-NEVER include quotation marks, "Caption:" labels, JSON, commentary,
-or preamble. Your first character is the caption's first character.
+You may NOT include ANY of the following in your response:
+  - Reasoning, analysis, or explanation ("Looking at this photo...")
+  - Phrases like "Caption:" / "Here is the caption:" / "I think..."
+  - Quotation marks around the caption
+  - Markdown formatting
+  - Multiple options or alternatives
+  - Preamble, commentary, or hedging
+  - The words "considering", "given that", "since this is"
+
+EXAMPLE OF CORRECT RESPONSE (single line, just the caption):
+  Meri pehli birthday with you 🎂
+
+EXAMPLE OF INCORRECT RESPONSE (NEVER do this):
+  Looking at this photo, I can see Astha at her birthday celebration.
+  Given the chapter context about the office, I'll caption:
+
+  Meri pehli birthday with you 🎂
+
+The incorrect example leaks reasoning into the output. The correct
+example is just the caption. Imagine your response will be pasted
+directly under the photo with zero post-processing — anything you
+write that isn't the caption itself shows up as garbage on the
+slideshow.
+
+If your response includes any pre-amble like "Looking at this photo"
+or "Given the context", you've failed the format check. Strip
+EVERYTHING except the caption itself.
+
+# When `<NO_CAPTION>` is the right answer
+
+ONLY use `<NO_CAPTION>` in these specific situations:
+  - The photo is a near-duplicate of an earlier burst photo
+    (`burst_size > 1` AND this isn't the most expressive one)
+  - The photo is a quiet portrait that genuinely needs no words
+    (rare — most photos benefit from a caption)
+  - The photo is purely scenic with no people / story moment
+
+Default to WRITING a caption. <NO_CAPTION> is the exception, not
+the rule. About 1 in 6 photos in a typical slideshow should be silent.
+If you're tempted to go silent because you're unsure what to write,
+that means you should write something specific instead.
 """
 
 
@@ -283,6 +315,8 @@ class PhotoTask:
     chapter_title: str
     chapter_position: str   # e.g. "3 of 46"
     enriched: dict          # all fields from enriched_metadata.json (or {})
+    keep: bool = False      # user marked this for the slideshow
+    highlight: bool = False # user marked this as a visual climax
 
 
 def load_api_key() -> str:
@@ -386,6 +420,8 @@ def build_photo_tasks(
             chapter_title=titles.get(ch, ""),
             chapter_position=f"{ch_pos} of {len(ch_files)}",
             enriched=enriched.get(fname, {}),
+            keep=bool(entry.get("keep", False)),
+            highlight=bool(entry.get("highlight", False)),
         ))
     return tasks
 
@@ -489,6 +525,20 @@ def generate_caption(
         + (f" — {task.chapter_title}" if task.chapter_title else "")
         + f" (position {task.chapter_position})",
     ]
+    # ── Crucial: tell Claude when the user has explicitly chosen this
+    # photo. If burst_size > 1 but the user picked THIS shot, it
+    # means this is the one — go write a caption, don't go silent.
+    if task.highlight:
+        context_lines.append(
+            "  STATUS: HIGHLIGHTED by user — this is a visual climax. "
+            "Write a strong, specific caption."
+        )
+    elif task.keep:
+        context_lines.append(
+            "  STATUS: KEPT by user — they explicitly chose this photo "
+            "for the slideshow. Write a caption. If this is a burst, "
+            "the user already picked THIS shot — do NOT go silent."
+        )
     enriched_block = format_enriched_context(task)
     if enriched_block:
         context_lines.append(enriched_block)
@@ -526,6 +576,27 @@ def generate_caption(
     )
 
     caption = resp.content[0].text.strip()
+
+    # ── Safety net: strip leaked reasoning ─────────────────────────
+    # Sometimes Claude leaks its internal reasoning into the output
+    # (e.g., "Looking at this photo carefully... <newline>... <caption>").
+    # Post-process: if the response has multiple lines, take only the
+    # LAST non-empty line. The reasoning is always above; the caption
+    # is always last.
+    if "\n" in caption:
+        lines = [l.strip() for l in caption.splitlines() if l.strip()]
+        if lines:
+            caption = lines[-1]
+    # Also strip common preamble phrases that might appear inline.
+    for prefix in ("Caption:", "caption:", "Here's the caption:",
+                   "I'll write:", "Final caption:"):
+        if caption.startswith(prefix):
+            caption = caption[len(prefix):].strip()
+    # Strip wrapping quotes
+    if (caption.startswith('"') and caption.endswith('"')) or \
+       (caption.startswith("'") and caption.endswith("'")):
+        caption = caption[1:-1].strip()
+
     # Handle the NO_CAPTION token cleanly
     if caption == "<NO_CAPTION>":
         caption = ""
@@ -554,19 +625,49 @@ def estimate_cost(usage: dict) -> float:
 def filter_tasks(
     tasks: list[PhotoTask], captions_doc: dict, args
 ) -> list[PhotoTask]:
-    """Apply --chapter / --file / --missing-only / --force flags."""
+    """Apply --chapter / --file / --missing-only / --force / --skipped-too /
+    --include-undecided flags.
+
+    Default targeting:
+      - Skipped photos: excluded (waste of money — won't be in slideshow).
+        Override with --skipped-too.
+      - Undecided photos: excluded (user hasn't decided to keep these yet).
+        Override with --include-undecided OR --all.
+      - Kept + Highlighted: included.
+    """
     entries = {p["file"]: p for p in captions_doc.get("photos", [])}
 
     out = []
     for t in tasks:
+        entry = entries.get(t.file, {})
+
+        # Filename / chapter filters first
         if args.chapter and t.chapter != args.chapter:
             continue
         if args.file and t.file != args.file:
             continue
-        if args.missing_only and entries.get(t.file, {}).get("caption"):
+
+        # Skip photos (user explicitly excluded from slideshow)
+        if entry.get("skip") and not args.skipped_too and not args.all:
             continue
-        if not args.force and not args.missing_only and not args.all and not args.chapter and not args.file:
+
+        # Undecided photos (user hasn't decided yet)
+        is_undecided = (not entry.get("keep")
+                        and not entry.get("highlight")
+                        and not entry.get("skip"))
+        if is_undecided and not args.include_undecided and not args.all:
             continue
+
+        # `--missing-only`: skip photos that already have a non-empty
+        # caption.
+        if args.missing_only and entry.get("caption"):
+            continue
+
+        # Default deny when no selection flag set
+        if (not args.force and not args.missing_only and not args.all
+                and not args.chapter and not args.file):
+            continue
+
         out.append(t)
     return out
 
@@ -597,6 +698,14 @@ def main() -> int:
                         help="Only photos without a caption yet")
     parser.add_argument("--force", action="store_true",
                         help="Re-generate even photos that already have captions")
+    parser.add_argument("--skipped-too", action="store_true",
+                        help="Also caption photos marked skip:true (default: "
+                        "skipped photos are excluded since they won't appear "
+                        "in the slideshow anyway)")
+    parser.add_argument("--include-undecided", action="store_true",
+                        help="Also caption photos not yet decided (default: "
+                        "only KEEP + HIGHLIGHT photos are captioned, since "
+                        "undecided photos may end up skipped)")
     parser.add_argument("--model", default="claude-sonnet-4-5")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

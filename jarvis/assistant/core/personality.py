@@ -46,6 +46,29 @@ class PersonalityManager:
               ...
     """
 
+    @staticmethod
+    def _compose_tone(tone: str, examples: list) -> str:
+        """
+        Append a `Voice samples` block to the tone description so the LLM
+        has concrete anchor phrases for the character.
+
+        Returns the original tone unchanged when `examples` is empty —
+        existing personalities without samples behave exactly as before.
+        """
+        tone = (tone or "").rstrip()
+        clean = [str(e).strip() for e in (examples or []) if str(e).strip()]
+        if not clean:
+            return tone
+        bullets = "\n".join(f"- {e}" for e in clean)
+        suffix = (
+            "\n\n## Voice samples (anchor phrases — match this register)\n"
+            "These are real, in-character phrases. Mirror this energy, "
+            "rhythm, and code-switching. Do NOT quote them verbatim "
+            "unless the moment calls for it.\n"
+            f"{bullets}"
+        )
+        return f"{tone}{suffix}" if tone else suffix.lstrip()
+
     def __init__(self):
         pcfg = config.get("personalities", {})
         self._profiles: dict[str, Personality] = {}
@@ -53,11 +76,20 @@ class PersonalityManager:
 
         # Load all profiles from config
         for pid, pdata in pcfg.get("profiles", {}).items():
+            raw_tone = pdata.get("tone", "")
+            tone_examples = pdata.get("tone_examples", []) or []
+            # If the personality ships voice samples, fold them into the
+            # tone string here — that way every existing `p.tone` consumer
+            # (classifier prompt, chat handler, story, quiz, etc.) gets
+            # the anchors automatically. Keeping the raw list on the
+            # dataclass too in case a future consumer wants structured
+            # access (e.g., for the dashboard).
+            composed_tone = self._compose_tone(raw_tone, tone_examples)
             self._profiles[pid] = Personality(
                 id=pid,
                 display_name=pdata.get("display_name", pid.title()),
                 description=pdata.get("description", ""),
-                tone=pdata.get("tone", ""),
+                tone=composed_tone,
                 voice_provider=pdata.get("voice_provider", ""),
                 voice_model=pdata.get("voice_model", ""),
                 fallback_voice=pdata.get("fallback_voice", ""),
@@ -68,6 +100,7 @@ class PersonalityManager:
                 music_preferences=pdata.get("music_preferences", {}),
                 wake_word=pdata.get("wake_word", ""),
                 avatar_type=pdata.get("avatar_type", "orb"),
+                tone_examples=list(tone_examples),
             )
 
         # If no personalities defined at all, create a fallback from the

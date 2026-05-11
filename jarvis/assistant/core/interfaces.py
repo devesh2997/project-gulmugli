@@ -92,6 +92,12 @@ class Personality:
     music_preferences: dict = field(default_factory=dict)  # override global prefs, empty = use global
     wake_word: str = ""               # optional per-personality wake word
     avatar_type: str = "orb"          # dashboard avatar: orb, pixel, light, caricature (extensible)
+    tone_examples: list = field(default_factory=list)  # canonical voice samples (anchors)
+                                      # — short, in-character phrases SHE would actually
+                                      # say. Loaded from config and appended into the
+                                      # composed `tone` string at PersonalityManager load
+                                      # time, so every consumer of `p.tone` automatically
+                                      # benefits without code changes.
 
 
 @dataclass
