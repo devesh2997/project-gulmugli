@@ -413,16 +413,20 @@ def _make_yaadein_fixture(tmp_root):
     (photos_dir / "002.jpg").write_bytes(b"\xff\xd8fake-jpg-2")
     (photos_dir / "003.png").write_bytes(b"\x89PNGfake")
     # An entry in the YAML with explicit order; one without a YAML
-    # entry to verify auto-include.
+    # entry to verify auto-include. `keep: true` on both YAML entries
+    # so the curated-mode API surfaces them (the default for /list is
+    # only_curated=True; un-flagged entries get excluded in that mode).
     (photos_dir / "captions.yaml").write_text(
         "music: null\n"
         "photos:\n"
         "  - file: 002.jpg\n"
         '    caption: "second photo 🥰"\n'
         "    order: 2\n"
+        "    keep: true\n"
         "  - file: 001.jpg\n"
         '    caption: "first photo 😇"\n'
-        "    order: 1\n",
+        "    order: 1\n"
+        "    keep: true\n",
         encoding="utf-8",
     )
     return photos_dir

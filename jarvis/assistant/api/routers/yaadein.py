@@ -64,7 +64,7 @@ import mimetypes
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse, JSONResponse
 
 from api.auth import verify_token
@@ -104,10 +104,17 @@ def _photos_dir_for(active: ActiveEvent) -> Path:
     return active.pack_dir / "media" / "photos"
 
 
-def _load_pack_or_empty(active: ActiveEvent) -> YaadeinPack:
-    """Load the pack's photos via the provider, with logging on miss."""
+def _load_pack_or_empty(active: ActiveEvent, *, only_curated: bool = True) -> YaadeinPack:
+    """
+    Load the pack's photos via the provider, with logging on miss.
+
+    `only_curated` defaults to True for the production API — the
+    dashboard slideshow shows the user's keep/highlight subset, not the
+    full 500-photo dump. Debug callers (e.g., `?include_all=true`) can
+    flip this to see everything except explicit `skip:true`.
+    """
     photos_dir = _photos_dir_for(active)
-    return load_photos(photos_dir)
+    return load_photos(photos_dir, only_curated=only_curated)
 
 
 def _safe_resolve(photos_dir: Path, filename: str) -> Path:
@@ -152,18 +159,31 @@ def _safe_resolve(photos_dir: Path, filename: str) -> Path:
 
 
 @router.get("/list", dependencies=[Depends(verify_token)])
-def list_photos() -> Any:
+def list_photos(
+    include_all: bool = Query(
+        False,
+        description=(
+            "Debug-only: when true, return every non-skipped photo "
+            "(including undecided entries). Default is curated-subset only."
+        ),
+    ),
+) -> Any:
     """
     Return the slideshow manifest for the active event. See module
     docstring for the response shape.
+
+    Default mode returns only photos the curator marked `keep:true` or
+    `highlight:true` in captions.yaml. Pass `?include_all=true` to fall
+    back to the permissive legacy behavior for debugging.
     """
     active = _active_pack_or_404()
-    pack = _load_pack_or_empty(active)
+    pack = _load_pack_or_empty(active, only_curated=not include_all)
 
     photos_payload = [
         {
             "photo_url": f"/api/yaadein/photo/{p.file}",
             "caption": p.caption,
+            "highlight": p.highlight,
         }
         for p in pack.photos
     ]

@@ -457,6 +457,9 @@ async function loadState() {
   } else if (f.undecided_only) {
     chip.innerText = 'Undecided only';
     chip.style.display = '';
+  } else if (f.slideshow_only) {
+    chip.innerText = 'Slideshow only (kept + highlight)';
+    chip.style.display = '';
   } else {
     chip.style.display = 'none';
   }
@@ -771,7 +774,8 @@ def _migrate_entry(entry: dict) -> dict:
 
 def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
               start_at: int, chapter_filter: int | None = None,
-              undecided_only: bool = False) -> FastAPI:
+              undecided_only: bool = False,
+              slideshow_only: bool = False) -> FastAPI:
     app = FastAPI(title="Vesper Curate")
 
     # captions.yaml is the source of truth; we hold it in memory between writes
@@ -819,6 +823,8 @@ def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
                 continue
             if undecided_only and not is_undecided:
                 continue
+            if slideshow_only and not (entry.get("keep") or entry.get("highlight")):
+                continue
 
             photos.append({
                 "file": fname,
@@ -854,6 +860,7 @@ def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
             "filter": {
                 "chapter": chapter_filter,
                 "undecided_only": undecided_only,
+                "slideshow_only": slideshow_only,
             },
         }
 
@@ -927,6 +934,10 @@ def main() -> int:
     parser.add_argument("--undecided-only", action="store_true",
                         help="Filter view to only photos that haven't been "
                         "keep/skip/highlight'd yet.")
+    parser.add_argument("--slideshow-only", action="store_true",
+                        help="Filter view to ONLY photos in the slideshow "
+                        "(keep + highlight). Useful for reviewing/editing "
+                        "captions on the final selection.")
     parser.add_argument("--no-browser", action="store_true",
                         help="Don't auto-open the browser")
     args = parser.parse_args()
@@ -968,7 +979,8 @@ def main() -> int:
 
     app = build_app(captions_path, photos_dir, enriched_path, start_at,
                     chapter_filter=args.chapter,
-                    undecided_only=args.undecided_only)
+                    undecided_only=args.undecided_only,
+                    slideshow_only=args.slideshow_only)
 
     url = f"http://127.0.0.1:{args.port}"
     print(f"\n  Vesper Curate")
@@ -985,6 +997,10 @@ def main() -> int:
                         if not p.get('keep') and not p.get('skip')
                         and not p.get('highlight'))
         print(f"  Filter:   undecided only ({undecided} photos)")
+    if args.slideshow_only:
+        in_show = sum(1 for p in doc['photos']
+                      if p.get('keep') or p.get('highlight'))
+        print(f"  Filter:   slideshow only ({in_show} photos — kept + highlighted)")
     print(f"\n  Keyboard:  K=Keep  S=Skip  H=Highlight  U=Undecided"
           f"  ←→=Nav  J=NextChapter  D=ToggleSidebar  C=EditCaption")
     print()
