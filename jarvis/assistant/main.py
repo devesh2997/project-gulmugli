@@ -126,14 +126,30 @@ def build_assistant() -> dict:
     # Bluetooth auto-reconnect daemon — keeps the preferred speaker
     # (e.g., Marshall Willen II on the Jetson) connected across power
     # cycles, range changes, and multi-point switches from other sources.
-    # The daemon is inert (no thread spawned) when:
-    #   - no preferred_mac is configured, or
-    #   - the audio provider doesn't expose Bluetooth methods, or
-    #   - bluetoothctl isn't installed (Mac dev — uses blueutil instead).
+    # The daemon ALSO runs the device resolver every tick: it consults
+    # audio.output_priority + audio.input_priority + the persistent
+    # AudioOverrideStore and flips the default sink/source when needed.
+    #
+    # The daemon spawns when EITHER (a) a preferred BT mac is configured,
+    # OR (b) the resolver has something to do (audio provider + priority
+    # lists). Both flavours coexist on the same 30s tick.
     bt_cfg = audio_cfg.get("bluetooth", {}) or {}
     bt_mac = (bt_cfg.get("preferred_mac") or "").strip()
+    output_priority = audio_cfg.get("output_priority", []) or []
+    input_priority = audio_cfg.get("input_priority", []) or []
     audio = assistant.get("audio")
-    if bt_mac and audio is not None and hasattr(audio, "bluetooth_pair"):
+
+    # Override store — persistent user-pinned device choice. Stored next
+    # to data/event_triggers.json so all runtime state lives under
+    # assistant/data/. Mirrors trigger_state.py's path resolution.
+    from core.audio_override import AudioOverrideStore
+    override_store = AudioOverrideStore()
+    assistant["audio_override_store"] = override_store
+
+    wants_bt = bool(bt_mac) and audio is not None and hasattr(audio, "bluetooth_pair")
+    wants_resolver = audio is not None and (bool(output_priority) or bool(input_priority))
+
+    if wants_bt or wants_resolver:
         try:
             from core.audio_session import AudioSessionManager
             session_mgr = AudioSessionManager(
@@ -141,6 +157,10 @@ def build_assistant() -> dict:
                 device_name=bt_cfg.get("device_name", "") or "",
                 reconnect_interval_s=int(bt_cfg.get("reconnect_interval_s", 30) or 30),
                 auto_reconnect=bool(bt_cfg.get("auto_reconnect", True)),
+                audio_provider=audio,
+                output_priority=output_priority,
+                input_priority=input_priority,
+                override_store=override_store,
             )
             session_mgr.start()
             assistant["audio_session"] = session_mgr
@@ -154,13 +174,21 @@ def build_assistant() -> dict:
             except Exception:
                 pass
         except Exception as e:
-            log.warning("AudioSession: failed to start (%s). Bluetooth auto-reconnect disabled.", e)
+            log.warning(
+                "AudioSession: failed to start (%s). "
+                "Bluetooth auto-reconnect AND device resolver disabled.", e,
+            )
             assistant["audio_session"] = None
     else:
         assistant["audio_session"] = None
-        if not bt_mac:
-            log.debug("AudioSession: no audio.bluetooth.preferred_mac in config — auto-reconnect disabled.")
-        else:
+        if not bt_mac and not (output_priority or input_priority):
+            log.debug(
+                "AudioSession: no preferred_mac and no priority lists in config — "
+                "daemon inert.",
+            )
+        elif audio is None:
+            log.debug("AudioSession: no audio provider — daemon inert.")
+        elif bt_mac and not hasattr(audio, "bluetooth_pair"):
             log.debug("AudioSession: audio provider lacks Bluetooth methods — auto-reconnect disabled.")
 
     # Voice (TTS) — smart routing per personality with fallback

@@ -276,6 +276,24 @@ class CoreAudioProvider(AudioOutputProvider):
         except Exception as e:
             log.error("Failed to switch input: %s", e)
 
+    # ── Card profile control (no-op on macOS) ────────────────────
+    # macOS doesn't expose Bluetooth A2DP/HFP profile selection as a
+    # programmatic surface — CoreAudio negotiates profiles internally
+    # based on which apps want input vs output. We accept this
+    # limitation: the dev box is Mac, the deployment target is Jetson,
+    # and only the PulseAudio path actually needs this.
+
+    def set_card_profile(self, card_name: str, profile_name: str) -> bool:
+        log.debug(
+            "set_card_profile is a no-op on macOS (%s -> %s)",
+            card_name, profile_name,
+        )
+        return False
+
+    def get_card_for_device(self, device_name: str) -> Optional[str]:
+        log.debug("get_card_for_device is a no-op on macOS (%s)", device_name)
+        return None
+
     # ── Bluetooth (delegates to BluetoothHelper) ─────────────────
 
     def bluetooth_scan(self, timeout: int = 10) -> list[dict]:

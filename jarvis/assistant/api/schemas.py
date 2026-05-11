@@ -313,3 +313,16 @@ class BluetoothDeviceInfo(BaseModel):
 
 class BluetoothActionRequest(BaseModel):
     mac_address: str
+
+
+class AudioOverrideRequest(BaseModel):
+    """
+    Pin an output/input device by name (PulseAudio sink/source name).
+
+    `null` on either side means "clear that pin and fall back to the
+    priority list". Either side may be omitted to leave that side
+    untouched (the endpoint reads model_fields_set to tell the
+    "omitted" case from "explicit null").
+    """
+    output: Optional[str] = None
+    input: Optional[str] = None

@@ -1,0 +1,485 @@
+{
+  "timestamp": "2026-05-11T21:21:41.749404",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "audio_session": {
+      "total": 51,
+      "passed": 51,
+      "total_latency": 0.1119089126586914,
+      "tests": [
+        {
+          "name": "test_inert_when_no_preferred_mac",
+          "input": "",
+          "passed": true,
+          "latency": 7.987022399902344e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_inert_when_auto_reconnect_false",
+          "input": "",
+          "passed": true,
+          "latency": 4.410743713378906e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_interval_clamped_to_min",
+          "input": "",
+          "passed": true,
+          "latency": 1.71661376953125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_status_has_expected_keys",
+          "input": "",
+          "passed": true,
+          "latency": 7.152557373046875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_connected_does_not_attempt_connect",
+          "input": "",
+          "passed": true,
+          "latency": 0.00030803680419921875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_disconnected_fires_connect_attempt",
+          "input": "",
+          "passed": true,
+          "latency": 8.869171142578125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_connect_failure_records_error",
+          "input": "",
+          "passed": true,
+          "latency": 7.796287536621094e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_no_bluetoothctl_logs_once_then_quiet",
+          "input": "",
+          "passed": true,
+          "latency": 4.1961669921875e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_on_inert_runs_synchronous_attempt",
+          "input": "",
+          "passed": true,
+          "latency": 5.984306335449219e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_without_mac_returns_error",
+          "input": "",
+          "passed": true,
+          "latency": 5.245208740234375e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_stop_lifecycle_with_mock_subprocess",
+          "input": "",
+          "passed": true,
+          "latency": 0.10164809226989746,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_is_idempotent",
+          "input": "",
+          "passed": true,
+          "latency": 0.00029015541076660156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_on_running_pokes_wake_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002048015594482422,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_status_includes_running_flag_after_start",
+          "input": "",
+          "passed": true,
+          "latency": 0.00019598007202148438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolve_output_uses_priority_when_no_override",
+          "input": "",
+          "passed": true,
+          "latency": 2.002716064453125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolve_output_falls_back_when_priority_unavailable",
+          "input": "",
+          "passed": true,
+          "latency": 1.0013580322265625e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolve_output_uses_override_when_set",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003788471221923828,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolve_output_falls_back_when_override_unavailable",
+          "input": "",
+          "passed": true,
+          "latency": 0.00021409988403320312,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolve_output_system_default_sentinel_matches_first_device",
+          "input": "",
+          "passed": true,
+          "latency": 7.867813110351562e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolve_output_no_priority_and_no_devices_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 6.198883056640625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_mac_match_is_case_insensitive",
+          "input": "",
+          "passed": true,
+          "latency": 6.9141387939453125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_apply_resolution_switches_default_when_changed",
+          "input": "",
+          "passed": true,
+          "latency": 3.933906555175781e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_apply_resolution_idempotent_when_active_matches",
+          "input": "",
+          "passed": true,
+          "latency": 2.384185791015625e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_apply_resolution_input_respects_get_default_input",
+          "input": "",
+          "passed": true,
+          "latency": 2.288818359375e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_list_devices_with_state_marks_active_and_source",
+          "input": "",
+          "passed": true,
+          "latency": 2.2172927856445312e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_list_devices_with_state_handles_missing_provider",
+          "input": "",
+          "passed": true,
+          "latency": 5.7220458984375e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_set_and_get_round_trip",
+          "input": "",
+          "passed": true,
+          "latency": 0.0015463829040527344,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_persists_across_restart",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006341934204101562,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_clear_all",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012738704681396484,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_atomic_write",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014603137969970703,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_corrupt_file_treated_as_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006670951843261719,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_set_none_clears_value",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009911060333251953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_override_store_empty_string_treated_as_none",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008020401000976562,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolver_runs_alongside_bt_reconnect_in_tick",
+          "input": "",
+          "passed": true,
+          "latency": 0.00013899803161621094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_resolver_only_manager_starts_without_preferred_mac",
+          "input": "",
+          "passed": true,
+          "latency": 0.00019502639770507812,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_switches_to_hfp_when_output_input_same_card",
+          "input": "",
+          "passed": true,
+          "latency": 1.5020370483398438e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_switches_to_a2dp_when_input_different",
+          "input": "",
+          "passed": true,
+          "latency": 8.821487426757812e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_noop_when_output_not_bluetooth",
+          "input": "",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_noop_when_no_card_resolved",
+          "input": "",
+          "passed": true,
+          "latency": 5.245208740234375e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_noop_when_provider_lacks_methods",
+          "input": "",
+          "passed": true,
+          "latency": 6.9141387939453125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_handles_get_card_exception",
+          "input": "",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_ensure_bt_profile_input_none_picks_a2dp",
+          "input": "",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_apply_resolution_calls_ensure_bt_profile",
+          "input": "",
+          "passed": true,
+          "latency": 2.5033950805664062e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_set_card_profile_calls_pactl_correctly",
+          "input": "",
+          "passed": true,
+          "latency": 6.29425048828125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_set_card_profile_returns_false_on_failure",
+          "input": "",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_set_card_profile_rejects_empty_args",
+          "input": "",
+          "passed": true,
+          "latency": 2.193450927734375e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_card_for_device_parses_pactl_list_sinks",
+          "input": "",
+          "passed": true,
+          "latency": 4.601478576660156e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_card_for_device_returns_none_when_missing",
+          "input": "",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_card_for_device_parses_first_sink_card_after_name",
+          "input": "",
+          "passed": true,
+          "latency": 2.5987625122070312e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_card_for_device_returns_none_on_pactl_error",
+          "input": "",
+          "passed": true,
+          "latency": 2.002716064453125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_card_for_device_empty_arg_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 1.811981201171875e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 51,
+    "passed": 51,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.1119089126586914
+  }
+}

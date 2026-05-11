@@ -12,10 +12,28 @@ export type AssistantState = 'idle' | 'listening' | 'thinking' | 'speaking' | 's
 // ─── Audio Types ─────────────────────────────────────────────────
 export type AudioOutputType = 'speaker' | 'headphones' | 'bluetooth' | 'hdmi' | 'usb' | 'airplay' | 'unknown'
 
+/**
+ * Where the assistant's active selection came from.
+ *
+ * - `'override'` — user explicitly pinned this device via the UI / config override.
+ * - `'priority'` — picked by the priority resolver from the config priority list.
+ * - `'default'` — fell through to the platform/system default (no priority match).
+ * - `null` — non-active devices typically have no selection source.
+ */
+export type AudioSelectionSource = 'override' | 'priority' | 'default' | null
+
 export interface AudioDevice {
   name: string
+  /** Friendly label from config priority list, if any. */
+  label?: string
   type: AudioOutputType
   active: boolean
+  /** True when the device is currently plugged in / reachable. Defaults to true for back-compat. */
+  available?: boolean
+  /** Provenance of the active selection — see `AudioSelectionSource`. */
+  selectionSource?: AudioSelectionSource
+  /** 0-based position in the config priority list, null if not on the list. */
+  priorityIndex?: number | null
 }
 
 export interface BluetoothDevice {
@@ -27,10 +45,20 @@ export interface BluetoothDevice {
   rssi?: number | null
 }
 
+/**
+ * Active per-side override. `null` means "no pin" (auto-resolve via priority/default).
+ * Mirrors the backend's `GET /api/audio/devices` `override` field.
+ */
+export interface AudioOverrideState {
+  output: string | null
+  input: string | null
+}
+
 export interface AudioState {
   volume: number
   outputs: AudioDevice[]
   inputs: AudioDevice[]
+  override: AudioOverrideState
   bluetoothScanning: boolean
   bluetoothDevices: BluetoothDevice[]
 }
@@ -595,9 +623,21 @@ export interface AssistantActions {
   requestSettings: () => void
   wake: () => void
   // Audio controls
+  /** Refresh outputs+inputs+override in one round-trip via `GET /api/audio/devices`. */
+  fetchDevices: () => Promise<void>
+  /** Pin a specific output device as the override; refreshes after. */
+  pinOutput: (deviceName: string) => Promise<void>
+  /** Pin a specific input device as the override; refreshes after. */
+  pinInput: (deviceName: string) => Promise<void>
+  /** Clear both output+input overrides (DELETE /api/audio/override); refreshes after. */
+  clearOverride: () => Promise<void>
+  /** @deprecated use `fetchDevices`. Kept for back-compat; internally calls `fetchDevices`. */
   listOutputs: () => void
+  /** @deprecated use `pinOutput`. */
   setOutput: (device: string) => void
+  /** @deprecated use `fetchDevices`. */
   listInputs: () => Promise<void>
+  /** @deprecated use `pinInput`. */
   setInput: (name: string) => Promise<void>
   btScan: () => void
   btPair: (mac: string) => void

@@ -311,6 +311,25 @@ class AlsaAudioProvider(AudioOutputProvider):
         except Exception as e:
             log.error("Failed to write input block to %s: %s", asoundrc, e)
 
+    # ── Card profile control (no-op on pure ALSA) ────────────────
+    # ALSA doesn't have a "card profile" concept the way PulseAudio
+    # does — Bluetooth profile negotiation happens at the BlueZ /
+    # bluealsa layer below it, not via amixer. If we end up with a
+    # BT speaker on a pure-ALSA Pi, profile switching has to be done
+    # through bluetoothctl/dbus, not via this provider. We keep it
+    # as a no-op so the AudioSessionManager can call it freely.
+
+    def set_card_profile(self, card_name: str, profile_name: str) -> bool:
+        log.debug(
+            "set_card_profile is a no-op on pure ALSA (%s -> %s)",
+            card_name, profile_name,
+        )
+        return False
+
+    def get_card_for_device(self, device_name: str) -> Optional[str]:
+        log.debug("get_card_for_device is a no-op on pure ALSA (%s)", device_name)
+        return None
+
     # ── Bluetooth (delegates to BluetoothHelper) ─────────────────
 
     def bluetooth_scan(self, timeout: int = 10) -> list[dict]:

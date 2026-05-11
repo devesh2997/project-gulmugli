@@ -1,9 +1,17 @@
 /**
  * AudioSection — composite audio controls for the Controls panel.
  *
- * Contains: volume dial, output device selector, bluetooth scanner.
- * These flow vertically without rigid borders — separated by subtle
- * breathing space and section hints.
+ * Contains: volume dial, output device selector, input device selector,
+ * bluetooth scanner. These flow vertically without rigid borders —
+ * separated by subtle breathing space and section hints.
+ *
+ * Device-list state (outputs, inputs, override) is refreshed via
+ * `actions.fetchDevices()`; the hook polls every 10s so the dashboard
+ * picks up plug/unplug events without a manual reload.
+ *
+ * Tap on a device PINS it (sets the per-side override). The "Reset to
+ * auto" button — visible only while any override is active — clears
+ * both sides and hands control back to the priority resolver.
  */
 
 import { useEffect, useRef } from 'react'
@@ -21,13 +29,14 @@ interface Props {
 export function AudioSection({ store }: Props) {
   const { audio, actions } = store
   const requestedRef = useRef(false)
+  const hasOverride = audio.override.output !== null || audio.override.input !== null
 
-  // Request output + input lists once on mount
+  // First-paint kick — the hook also polls every 10s, but we want devices
+  // visible immediately on mount rather than after the first interval tick.
   useEffect(() => {
     if (!requestedRef.current) {
       requestedRef.current = true
-      actions.listOutputs()
-      void actions.listInputs()
+      void actions.fetchDevices()
     }
   }, [actions])
 
@@ -38,6 +47,37 @@ export function AudioSection({ store }: Props) {
         volume={audio.volume}
         onChange={actions.setVolume}
       />
+
+      {/* Reset-to-auto — only visible when something is pinned */}
+      <AnimatePresence>
+        {hasOverride && (
+          <motion.button
+            key="reset-override"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            onClick={() => { void actions.clearOverride() }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              alignSelf: 'flex-start',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px',
+              fontSize: 10, fontWeight: 600, letterSpacing: 2,
+              textTransform: 'uppercase' as const,
+              color: 'var(--text-tertiary)',
+              background: 'transparent',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 12,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 12, letterSpacing: 0 }}>↺</span>
+            Reset to auto
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Output devices — only show if we have any */}
       <AnimatePresence>
@@ -61,7 +101,7 @@ export function AudioSection({ store }: Props) {
                 <OutputDevice
                   key={d.name}
                   device={d}
-                  onSelect={() => actions.setOutput(d.name)}
+                  onSelect={() => { void actions.pinOutput(d.name) }}
                 />
               ))}
             </div>
@@ -91,7 +131,7 @@ export function AudioSection({ store }: Props) {
                 <InputDevice
                   key={d.name}
                   device={d}
-                  onSelect={() => { void actions.setInput(d.name) }}
+                  onSelect={() => { void actions.pinInput(d.name) }}
                 />
               ))}
             </div>

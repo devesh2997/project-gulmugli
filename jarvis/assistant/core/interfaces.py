@@ -317,6 +317,41 @@ class AudioOutputProvider(ABC):
         """
         return False
 
+    # ── Card profile control (Bluetooth A2DP <-> HFP switching) ─────
+    # Bluetooth speakers expose multiple mutually-exclusive "profiles":
+    # a2dp_sink (high-fidelity playback, no mic) vs headset_head_unit
+    # (HFP/HSP — mic available, but speaker quality drops to ~8/16kHz
+    # narrowband). This is a hard Bluetooth spec limitation, not a
+    # software one: the radio link can't carry both A2DP and HFP at
+    # once. The AudioSessionManager flips the profile based on whether
+    # the user's chosen INPUT lives on the same BT card as the chosen
+    # OUTPUT (same card → HFP, different card → A2DP).
+    #
+    # Only the PulseAudio provider implements this — macOS and pure
+    # ALSA don't have an equivalent profile concept. Defaults return
+    # False / None so unrelated providers stay no-op.
+
+    def set_card_profile(self, card_name: str, profile_name: str) -> bool:
+        """
+        Switch the audio profile of a card (e.g., a Bluetooth speaker).
+        Currently used for A2DP <-> HFP profile switching.
+
+        Args:
+            card_name: e.g., "bluez_card.AA_BB_CC_DD_EE_FF"
+            profile_name: e.g., "a2dp_sink" or "headset_head_unit"
+
+        Returns True on success, False otherwise.
+        """
+        return False
+
+    def get_card_for_device(self, device_name: str) -> Optional[str]:
+        """
+        Look up the card name that owns a given sink or source device.
+        Used to discover which card to switch profiles on.
+        Returns the card name (e.g., "bluez_card.AA_BB_CC_DD_EE_FF") or None.
+        """
+        return None
+
 
 class MusicProvider(ABC):
     """

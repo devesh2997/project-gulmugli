@@ -2,12 +2,26 @@
  * OutputDevice — a pill-shaped chip for an audio output device.
  *
  * Active device gets a personality-accent glow and subtle pulsing border.
- * Each device type has a unique icon. Tap to switch.
+ * Each device type has a unique icon. Tap to PIN it as the active override
+ * (the backend will treat this as an explicit user choice).
+ *
+ * Renders three additional pieces of state next to the active dot:
+ *  - `selectionSource` badge (Pinned / Auto / Fallback) — provenance of the
+ *    active selection, only meaningful for the active row.
+ *  - `available === false` → chip rendered at 50% opacity with a strike-
+ *    through name and pointer disabled.
+ *  - `label` (friendly name from the config priority list) → shown as a
+ *    small caption under the device name when distinct.
+ *
  * Feels like selecting an AirPlay device — not a radio button list.
  */
 
 import { motion } from 'framer-motion'
-import type { AudioDevice, AudioOutputType } from '../../types/assistant'
+import type {
+  AudioDevice,
+  AudioOutputType,
+  AudioSelectionSource,
+} from '../../types/assistant'
 
 interface Props {
   device: AudioDevice
@@ -76,12 +90,38 @@ function DeviceIcon({ type, active }: { type: AudioOutputType; active: boolean }
   }
 }
 
+/** Compact 10px badge showing where the active selection came from. */
+function SelectionSourceBadge({ source }: { source: AudioSelectionSource | undefined }) {
+  if (!source) return null
+  const config: Record<NonNullable<AudioSelectionSource>, { glyph: string; label: string; color: string }> = {
+    override: { glyph: '\u{1F4CC}', label: 'pinned',   color: 'var(--personality-accent)' },
+    priority: { glyph: '✓',    label: 'auto',     color: 'var(--text-tertiary)' },
+    default:  { glyph: '↓',    label: 'fallback', color: 'var(--text-secondary)' },
+  }
+  const c = config[source]
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      fontSize: 10, fontWeight: 600, letterSpacing: 2,
+      textTransform: 'uppercase' as const,
+      color: c.color, whiteSpace: 'nowrap' as const,
+    }}>
+      <span style={{ fontSize: 10, letterSpacing: 0 }}>{c.glyph}</span>
+      {c.label}
+    </span>
+  )
+}
+
 export function OutputDevice({ device, onSelect }: Props) {
+  const available = device.available !== false  // default true for back-compat
+  const disabled = !available
+
   return (
     <motion.button
-      onClick={onSelect}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.95 }}
+      onClick={disabled ? undefined : onSelect}
+      disabled={disabled}
+      whileHover={disabled ? undefined : { scale: 1.03 }}
+      whileTap={disabled ? undefined : { scale: 0.95 }}
       animate={{
         borderColor: device.active
           ? 'rgba(var(--personality-accent-rgb), 0.5)'
@@ -89,6 +129,7 @@ export function OutputDevice({ device, onSelect }: Props) {
         boxShadow: device.active
           ? '0 0 16px rgba(var(--personality-accent-rgb), 0.15), 0 2px 8px rgba(0,0,0,0.2)'
           : '0 1px 4px rgba(0,0,0,0.15)',
+        opacity: disabled ? 0.5 : 1,
       }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
       style={{
@@ -101,9 +142,10 @@ export function OutputDevice({ device, onSelect }: Props) {
           ? 'rgba(var(--personality-accent-rgb), 0.06)'
           : 'transparent',
         border: '1.5px solid var(--border-subtle)',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         width: '100%',
       }}
+      aria-disabled={disabled}
     >
       <DeviceIcon type={device.type} active={device.active} />
       <span style={{
@@ -111,9 +153,13 @@ export function OutputDevice({ device, onSelect }: Props) {
         color: device.active ? 'var(--personality-accent)' : 'var(--text-secondary)',
         flex: 1, textAlign: 'left',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        textDecoration: disabled ? 'line-through' : 'none',
       }}>
-        {device.name}
+        {device.label || device.name}
       </span>
+
+      {/* Selection-source badge — only meaningful when active */}
+      {device.active && <SelectionSourceBadge source={device.selectionSource} />}
 
       {/* Active indicator dot */}
       {device.active && (

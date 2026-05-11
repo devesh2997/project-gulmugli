@@ -11,6 +11,7 @@ from api.schemas import (
     AudioInputInfo,
     AudioInputSwitchRequest,
     AudioOutputInfo,
+    AudioOverrideRequest,
     BluetoothActionRequest,
     BluetoothDeviceInfo,
     IntentResponse,
@@ -141,6 +142,126 @@ def bluetooth_status(assistant: dict = Depends(get_assistant)) -> dict:
     except Exception as e:
         log.warning("audio_session.get_status failed: %s", e)
         return {}
+
+
+# ── Device resolver (priority + override) ─────────────────────────────
+
+
+@router.get("/api/audio/devices")
+def audio_devices(assistant: dict = Depends(get_assistant)) -> dict:
+    """
+    Combined device list + override state for the dashboard.
+
+    Returns the AudioSessionManager.list_devices_with_state() output —
+    every output/input with priority label, active flag, and the
+    resolver's selection_source ("override" | "priority" | "default").
+    Includes the current override pin (output + input).
+
+    Returns {"outputs": [], "inputs": [], "override": {...}} when there's
+    no AudioSessionManager (no preferred BT mac + no resolver config).
+    """
+    session = assistant.get("audio_session")
+    if session is None or not hasattr(session, "list_devices_with_state"):
+        return {"outputs": [], "inputs": [], "override": {"output": None, "input": None}}
+    try:
+        return session.list_devices_with_state()
+    except Exception as e:
+        log.warning("audio_session.list_devices_with_state failed: %s", e)
+        return {"outputs": [], "inputs": [], "override": {"output": None, "input": None}}
+
+
+@router.post("/api/audio/override", response_model=IntentResponse)
+def set_audio_override(
+    req: AudioOverrideRequest,
+    assistant: dict = Depends(get_assistant),
+):
+    """
+    Pin the output and/or input device.
+
+    Field semantics on the request body:
+      - omitted (not in JSON)       — leave that side untouched
+      - explicit null               — clear the pin for that side
+      - non-empty string            — pin to that PA sink/source name
+
+    Calls apply_resolution() immediately so the switch happens within
+    the request — the client doesn't have to wait for the next tick.
+    """
+    session = assistant.get("audio_session")
+    if session is None or not hasattr(session, "apply_resolution"):
+        return IntentResponse(
+            ok=False,
+            error="Audio device resolver not configured.",
+        )
+
+    store = getattr(session, "_override_store", None)
+    if store is None:
+        return IntentResponse(
+            ok=False,
+            error="Audio override store not configured.",
+        )
+
+    # Use model_fields_set to distinguish "omitted" from "explicit null".
+    # Pydantic v2 sets `model_fields_set` to the fields the client actually
+    # sent; absent fields are NOT in that set even though they have a default.
+    try:
+        fields = req.model_fields_set
+    except AttributeError:
+        # Pydantic v1 fallback (unlikely in this codebase but harmless).
+        fields = {k for k in ("output", "input") if getattr(req, k, None) is not None}
+
+    if "output" in fields:
+        try:
+            store.set_output(req.output)
+        except Exception as e:
+            log.warning("AudioOverrideStore.set_output failed: %s", e)
+            return IntentResponse(ok=False, error=f"set_output failed: {e}")
+
+    if "input" in fields:
+        try:
+            store.set_input(req.input)
+        except Exception as e:
+            log.warning("AudioOverrideStore.set_input failed: %s", e)
+            return IntentResponse(ok=False, error=f"set_input failed: {e}")
+
+    # Re-resolve immediately. The result is informational — we don't
+    # surface it in the response body (the dashboard re-polls /devices).
+    try:
+        session.apply_resolution()
+    except Exception as e:
+        log.warning("apply_resolution after override failed: %s", e)
+
+    return IntentResponse(ok=True, response="Audio override updated.")
+
+
+@router.delete("/api/audio/override", response_model=IntentResponse)
+def clear_audio_override(assistant: dict = Depends(get_assistant)):
+    """Clear BOTH override pins. Re-runs the resolver immediately."""
+    session = assistant.get("audio_session")
+    if session is None or not hasattr(session, "apply_resolution"):
+        return IntentResponse(
+            ok=False,
+            error="Audio device resolver not configured.",
+        )
+
+    store = getattr(session, "_override_store", None)
+    if store is None:
+        return IntentResponse(
+            ok=False,
+            error="Audio override store not configured.",
+        )
+
+    try:
+        store.clear_all()
+    except Exception as e:
+        log.warning("AudioOverrideStore.clear_all failed: %s", e)
+        return IntentResponse(ok=False, error=str(e))
+
+    try:
+        session.apply_resolution()
+    except Exception as e:
+        log.warning("apply_resolution after clear failed: %s", e)
+
+    return IntentResponse(ok=True, response="Audio override cleared.")
 
 
 @router.post("/api/audio/bluetooth/reconnect", response_model=IntentResponse)

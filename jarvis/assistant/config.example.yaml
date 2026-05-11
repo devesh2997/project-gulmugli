@@ -204,6 +204,32 @@ audio:
   focus:
     duck_level: 20        # volume % for music when TTS is speaking (PulseAudio duck mode)
     strategy: "auto"      # "auto" (detect), "pause" (macOS/ALSA), "duck" (PulseAudio)
+
+  # ── Device-priority lists ─────────────────────────────────────
+  # Ordered lists. The first MATCH that is currently AVAILABLE wins.
+  # Evaluated every AudioSessionManager tick (default 30s) and once at
+  # startup. A user override set via the dashboard always trumps these.
+  #
+  # Match types:
+  #   - mac: "AA:BB:CC:DD:EE:FF"      — Bluetooth device by MAC
+  #     label: "Marshall Willen II"   — friendly name shown in the dashboard
+  #   - name_pattern: "USB"           — case-insensitive substring match
+  #     label: "USB Audio"            — on the device's PA name
+  #   - "system_default"               — literal: use the first available
+  #                                      device (PA's index-0 sink/source).
+  #                                      ALWAYS matches, cannot fail.
+  output_priority:
+    - mac: ""                         # set to the Marshall Willen II MAC after pairing
+      label: "Marshall Willen II"
+    - name_pattern: "USB"
+      label: "USB Audio"
+    - "system_default"
+  input_priority:
+    - name_pattern: "USB Audio"
+      label: "USB Mic"
+    - name_pattern: "headset"         # HFP mic exposed by a paired BT speaker
+      label: "Bluetooth Speaker Mic"
+    - "system_default"
   outputs:
     - name: "default"
       type: "system" # uses OS default audio device

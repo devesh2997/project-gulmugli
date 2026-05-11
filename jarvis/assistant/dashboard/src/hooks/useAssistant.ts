@@ -12,6 +12,8 @@ import type {
   AssistantActions,
   AssistantMood,
   AudioState,
+  AudioDevice,
+  AudioOverrideState,
   IntentBadge,
   ReminderData,
   TimerData,
@@ -64,7 +66,14 @@ const DEFAULT_STATE: InternalState = {
   nowPlaying: null,
   lights: null,
   volume: 50,
-  audio: { volume: 50, outputs: [], inputs: [], bluetoothScanning: false, bluetoothDevices: [] },
+  audio: {
+    volume: 50,
+    outputs: [],
+    inputs: [],
+    override: { output: null, input: null },
+    bluetoothScanning: false,
+    bluetoothDevices: [],
+  },
   intents: [],
   mood: 'neutral',
   settings: [],
@@ -453,6 +462,19 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
   const lastActionTime = useRef(0)
   const seekTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Mirror of audio.override so the pin actions can read the *other side*
+  // without forcing a re-render of the actions useMemo on every override
+  // tick. Kept in sync via the effect below.
+  const overrideRef = useRef<AudioOverrideState>({ output: null, input: null })
+  useEffect(() => {
+    overrideRef.current = state.audio.override
+  }, [state.audio.override])
+
+  // Ref to the actions object so the back-compat shims (listOutputs, etc.)
+  // and the pin* actions can call each other without circular useMemo deps.
+  // Filled in by the effect below, after `actions` is constructed.
+  const actionsRef = useRef<AssistantActions>(null as unknown as AssistantActions)
+
   /** Guard against rapid taps on play/pause/stop/skip (300ms cooldown) */
   const debouncedMusicAction = useCallback((actionName: string) => {
     const now = Date.now()
@@ -492,58 +514,116 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'wake' }))
       }
     },
-    // Audio controls — use ui_action type for backend routing
-    listOutputs: () => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'audio_list_outputs' }))
-      }
-    },
-    setOutput: (device: string) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'audio_set_output', device }))
-      }
-    },
-    // Inputs use the REST surface (GET /api/audio/inputs, POST /api/audio/inputs/default).
-    // The backend doesn't expose a WS ui_action for inputs, so the action signatures
-    // are async here while listOutputs/setOutput remain fire-and-forget over WS.
-    listInputs: async () => {
+    // Audio controls — unified REST surface (`GET /api/audio/devices`,
+    // `POST /api/audio/override`, `DELETE /api/audio/override`).
+    fetchDevices: async () => {
       try {
-        const res = await fetch('/api/audio/inputs', {
+        const res = await fetch('/api/audio/devices', {
           headers: { Accept: 'application/json' },
         })
         if (!res.ok) {
-          console.info(`[audio] /api/audio/inputs returned ${res.status}`)
+          console.info(`[audio] /api/audio/devices returned ${res.status}`)
           return
         }
-        const inputs = (await res.json()) as AudioState['inputs']
-        if (!Array.isArray(inputs)) return
-        setState(prev => ({ ...prev, audio: { ...prev.audio, inputs } }))
+        const body = (await res.json()) as {
+          outputs?: AudioDevice[]
+          inputs?: AudioDevice[]
+          override?: Partial<AudioOverrideState>
+        }
+        // On a malformed response leave existing state alone — we don't
+        // want to blow away the device list on a transient error.
+        if (!Array.isArray(body.outputs) || !Array.isArray(body.inputs)) return
+        const override: AudioOverrideState = {
+          output: body.override?.output ?? null,
+          input: body.override?.input ?? null,
+        }
+        setState(prev => ({
+          ...prev,
+          audio: {
+            ...prev.audio,
+            outputs: body.outputs!,
+            inputs: body.inputs!,
+            override,
+          },
+        }))
       } catch (err) {
-        console.info('[audio] listInputs failed:', err)
+        console.info('[audio] fetchDevices failed:', err)
       }
     },
-    setInput: async (name: string) => {
-      // Optimistic update — mirror the OutputDevice "instant feedback" feel.
+    pinOutput: async (deviceName: string) => {
+      // Optimistic: mark this device active locally before the round-trip.
       setState(prev => ({
         ...prev,
         audio: {
           ...prev.audio,
-          inputs: prev.audio.inputs.map(d => ({ ...d, active: d.name === name })),
+          outputs: prev.audio.outputs.map(d => ({ ...d, active: d.name === deviceName })),
+          override: { ...prev.audio.override, output: deviceName },
         },
       }))
       try {
-        const res = await fetch('/api/audio/inputs/default', {
+        const res = await fetch('/api/audio/override', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ name }),
+          body: JSON.stringify({
+            output: deviceName,
+            input: overrideRef.current.input,
+          }),
         })
         if (!res.ok) {
-          console.info(`[audio] /api/audio/inputs/default returned ${res.status}`)
+          console.info(`[audio] pinOutput POST returned ${res.status}`)
         }
       } catch (err) {
-        console.info('[audio] setInput failed:', err)
+        console.info('[audio] pinOutput failed:', err)
       }
+      // Re-sync regardless — confirms the backend's resolver decision.
+      await actionsRef.current.fetchDevices()
     },
+    pinInput: async (deviceName: string) => {
+      setState(prev => ({
+        ...prev,
+        audio: {
+          ...prev.audio,
+          inputs: prev.audio.inputs.map(d => ({ ...d, active: d.name === deviceName })),
+          override: { ...prev.audio.override, input: deviceName },
+        },
+      }))
+      try {
+        const res = await fetch('/api/audio/override', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            output: overrideRef.current.output,
+            input: deviceName,
+          }),
+        })
+        if (!res.ok) {
+          console.info(`[audio] pinInput POST returned ${res.status}`)
+        }
+      } catch (err) {
+        console.info('[audio] pinInput failed:', err)
+      }
+      await actionsRef.current.fetchDevices()
+    },
+    clearOverride: async () => {
+      setState(prev => ({
+        ...prev,
+        audio: { ...prev.audio, override: { output: null, input: null } },
+      }))
+      try {
+        const res = await fetch('/api/audio/override', { method: 'DELETE' })
+        if (!res.ok) {
+          console.info(`[audio] clearOverride DELETE returned ${res.status}`)
+        }
+      } catch (err) {
+        console.info('[audio] clearOverride failed:', err)
+      }
+      await actionsRef.current.fetchDevices()
+    },
+    // ── Back-compat shims (still exported so old call sites keep working) ──
+    listOutputs: () => { void actionsRef.current.fetchDevices() },
+    setOutput: (device: string) => { void actionsRef.current.pinOutput(device) },
+    listInputs: async () => { await actionsRef.current.fetchDevices() },
+    setInput: async (name: string) => { await actionsRef.current.pinInput(name) },
     btScan: () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'bt_scan' }))
@@ -631,6 +711,23 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
       sendAction({ action: 'text_input', params: { text: `ambient volume ${level}` } })
     },
   }), [sendAction, debouncedMusicAction, debouncedSeek])
+
+  // Keep actionsRef in sync — used by the back-compat shims and pin* actions
+  // so they can call sibling actions without circular useMemo deps.
+  useEffect(() => {
+    actionsRef.current = actions
+  }, [actions])
+
+  // Poll the audio device list every 10s so the dashboard learns about
+  // device-availability changes (USB mic plugged in, BT headphones connected).
+  // Wait until the WS is connected — same lifecycle as the rest of the UI —
+  // and run an immediate fetch on connect.
+  useEffect(() => {
+    if (!state.connected) return
+    void actions.fetchDevices()
+    const id = setInterval(() => { void actions.fetchDevices() }, 10_000)
+    return () => clearInterval(id)
+  }, [state.connected, actions])
 
   useEffect(() => {
     connect()
