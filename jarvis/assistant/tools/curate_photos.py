@@ -143,28 +143,131 @@ CURATE_HTML = r"""<!doctype html>
   }
   .photo-frame img.loading { opacity: 0.3; }
 
-  /* status bar at bottom */
+  /* status bar at bottom — now MORE PROMINENT */
   .status-bar {
     display: flex; align-items: center; gap: 20px;
-    padding: 10px 18px; background: var(--panel);
-    border-top: 1px solid var(--border); font-size: 13px;
+    padding: 14px 22px; background: var(--panel);
+    border-top: 1px solid var(--border); font-size: 14px;
   }
   .status-progress {
-    flex: 1; height: 4px; background: #1f1f26; border-radius: 2px;
+    flex: 1; height: 10px; background: #1f1f26; border-radius: 5px;
     overflow: hidden; position: relative;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
   }
   .status-progress > div {
-    height: 100%; background: var(--text-dim);
-    transition: width 0.3s ease;
+    height: 100%;
+    background: linear-gradient(90deg,
+      var(--accent-keep) 0%,
+      var(--accent-highlight) 100%);
+    transition: width 0.4s ease;
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.4);
   }
   .status-counts {
-    display: flex; gap: 14px; font-variant-numeric: tabular-nums;
+    display: flex; gap: 16px; font-variant-numeric: tabular-nums;
     color: var(--text-dim);
+    font-weight: 500;
+  }
+  .status-counts strong {
+    color: var(--text);
+    font-weight: 600;
   }
   .status-counts .keep { color: var(--accent-keep); }
   .status-counts .skip { color: var(--accent-skip); }
   .status-counts .hl { color: var(--accent-highlight); }
   .status-counts .un { color: var(--accent-undecided); }
+  .progress-pct {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 50px; text-align: right;
+  }
+  /* filter chip */
+  .filter-chip {
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    color: var(--accent-keep);
+    font-size: 11px; padding: 4px 10px;
+    border-radius: 12px;
+    margin-right: 8px;
+    font-weight: 500;
+  }
+
+  /* caption editor block (in sidebar) */
+  .caption-block {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .caption-block h3 {
+    margin: 0 0 10px 0;
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .caption-source {
+    margin-bottom: 8px; padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid var(--text-dim);
+    border-radius: 0 4px 4px 0;
+    font-size: 12px; line-height: 1.5;
+    color: var(--text);
+    max-height: 120px; overflow-y: auto;
+    word-wrap: break-word;
+  }
+  .caption-source.ai { border-left-color: #8b5cf6; }
+  .caption-source.manual { border-left-color: #fbbf24; }
+  .caption-source.empty {
+    color: var(--text-dim); font-style: italic;
+  }
+  .caption-source-label {
+    font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px; opacity: 0.6;
+  }
+  .caption-source.ai .caption-source-label { color: #8b5cf6; }
+  .caption-source.manual .caption-source-label { color: #fbbf24; }
+  textarea.caption-input {
+    width: 100%; min-height: 70px;
+    background: rgba(251, 191, 36, 0.06);
+    color: var(--text);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: -apple-system, sans-serif;
+    font-size: 13px; line-height: 1.45;
+    resize: vertical;
+    margin-top: 4px;
+  }
+  textarea.caption-input:focus {
+    outline: none;
+    border-color: rgba(251, 191, 36, 0.6);
+    background: rgba(251, 191, 36, 0.1);
+  }
+  .caption-actions {
+    display: flex; gap: 6px; margin-top: 6px;
+    font-size: 11px;
+  }
+  .caption-actions button {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .caption-actions button:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+  }
+  .caption-actions button.save {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--accent-highlight);
+    border-color: rgba(251, 191, 36, 0.3);
+  }
+  .caption-actions button.save:hover {
+    background: rgba(251, 191, 36, 0.25);
+  }
 
   /* current decision indicator (big overlay on photo) */
   .decision-badge {
@@ -264,9 +367,11 @@ CURATE_HTML = r"""<!doctype html>
       <span><kbd>←→</kbd> nav</span>
       <span><kbd>J</kbd> next chapter</span>
       <span><kbd>D</kbd> sidebar</span>
+      <span><kbd>C</kbd> edit caption</span>
     </div>
 
     <div class="status-bar">
+      <span class="filter-chip" id="filter-chip" style="display:none"></span>
       <div class="status-counts">
         <span>Photo <strong id="position">0</strong> / <strong id="total">0</strong></span>
         <span class="keep">✓ <strong id="count-keep">0</strong></span>
@@ -275,6 +380,7 @@ CURATE_HTML = r"""<!doctype html>
         <span class="un">· <strong id="count-undecided">0</strong></span>
       </div>
       <div class="status-progress"><div id="progress-bar" style="width: 0%"></div></div>
+      <span class="progress-pct" id="progress-pct">0%</span>
     </div>
   </div>
 
@@ -301,6 +407,28 @@ CURATE_HTML = r"""<!doctype html>
 
     <h3>Frame</h3>
     <div id="meta-frame"></div>
+
+    <div class="caption-block">
+      <h3>Caption</h3>
+
+      <div id="caption-ai-block" class="caption-source ai" style="display:none">
+        <div class="caption-source-label">AI</div>
+        <div id="caption-ai-text"></div>
+      </div>
+      <div id="caption-manual-block" class="caption-source manual" style="display:none">
+        <div class="caption-source-label">Manual (overrides AI)</div>
+        <div id="caption-manual-text"></div>
+      </div>
+
+      <textarea id="caption-input" class="caption-input"
+        placeholder="Type your own caption (overrides AI). Empty to use AI. Type &lt;NO_CAPTION&gt; to force silent."></textarea>
+
+      <div class="caption-actions">
+        <button class="save" id="caption-save">Save (⌘↵)</button>
+        <button id="caption-clear">Clear manual</button>
+        <button id="caption-silent">Force silent</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -316,7 +444,23 @@ async function loadState() {
   const r = await fetch('/api/state');
   state = await r.json();
   cursor = state.start_at || 0;
+  // Cursor must be within the (possibly filtered) photo list
+  if (cursor >= state.photos.length) cursor = 0;
   $('total').innerText = state.photos.length;
+
+  // Filter chip
+  const chip = $('filter-chip');
+  const f = state.filter || {};
+  if (f.chapter !== null && f.chapter !== undefined) {
+    chip.innerText = `Chapter ${f.chapter} only`;
+    chip.style.display = '';
+  } else if (f.undecided_only) {
+    chip.innerText = 'Undecided only';
+    chip.style.display = '';
+  } else {
+    chip.style.display = 'none';
+  }
+
   await render();
 }
 
@@ -422,6 +566,32 @@ async function render() {
   if (e.flash_fired) frame += row('Flash', 'yes');
   $('meta-frame').innerHTML = frame || '<span style="color:var(--text-dim);font-size:12px">—</span>';
 
+  // Caption blocks
+  const aiBlock = $('caption-ai-block');
+  const aiText = $('caption-ai-text');
+  const manualBlock = $('caption-manual-block');
+  const manualText = $('caption-manual-text');
+  const input = $('caption-input');
+
+  if (p.caption_ai && p.caption_ai.trim()) {
+    aiText.innerText = p.caption_ai;
+    aiBlock.style.display = '';
+    aiBlock.classList.remove('empty');
+  } else {
+    aiBlock.style.display = 'none';
+  }
+
+  if (p.caption_manual && p.caption_manual.trim()) {
+    manualText.innerText = p.caption_manual;
+    manualBlock.style.display = '';
+  } else {
+    manualBlock.style.display = 'none';
+  }
+
+  // Pre-fill editor with current manual caption (or AI as starting point if no manual)
+  input.value = p.caption_manual || '';
+  input.dataset.original = p.caption_manual || '';
+
   // Update counts
   updateCounts();
 
@@ -441,7 +611,12 @@ function updateCounts() {
   $('count-skip').innerText = s;
   $('count-highlight').innerText = h;
   $('count-undecided').innerText = u;
-  $('progress-bar').style.width = (100 * (k + s + h) / state.photos.length).toFixed(1) + '%';
+  const decided = k + s + h;
+  const pct = state.photos.length > 0
+    ? (100 * decided / state.photos.length)
+    : 0;
+  $('progress-bar').style.width = pct.toFixed(1) + '%';
+  $('progress-pct').innerText = pct.toFixed(0) + '%';
 }
 
 async function mark(action) {
@@ -489,7 +664,50 @@ function jumpChapter(direction) {
   }
 }
 
+async function saveCaption(textOverride) {
+  const p = state.photos[cursor];
+  const input = $('caption-input');
+  const text = textOverride !== undefined ? textOverride : input.value;
+  const r = await fetch('/api/caption', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({file: p.file, text: text}),
+  });
+  if (r.ok) {
+    const result = await r.json();
+    p.caption_manual = text;
+    p.caption_effective = result.effective;
+    // Re-render to reflect updated manual caption display
+    await render();
+    // Brief visual feedback
+    input.style.background = 'rgba(74, 222, 128, 0.18)';
+    setTimeout(() => { input.style.background = ''; }, 250);
+  }
+}
+
+// Caption editor buttons
+$('caption-save').onclick = () => saveCaption();
+$('caption-clear').onclick = () => { $('caption-input').value = ''; saveCaption(''); };
+$('caption-silent').onclick = () => { $('caption-input').value = '<NO_CAPTION>'; saveCaption('<NO_CAPTION>'); };
+
+// Cmd/Ctrl+Enter while focused on textarea = save
+$('caption-input').addEventListener('keydown', (ev) => {
+  if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
+    ev.preventDefault();
+    saveCaption();
+  }
+});
+
 document.addEventListener('keydown', async (ev) => {
+  // If user is typing in the caption textarea, don't intercept keystrokes
+  if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      $('caption-input').blur();
+    }
+    return;
+  }
+
   if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
   const k = ev.key.toLowerCase();
   if      (k === 'arrowright' || k === ' ') { ev.preventDefault(); navigate(1); }
@@ -501,6 +719,11 @@ document.addEventListener('keydown', async (ev) => {
   else if (k === 'd')                     { ev.preventDefault(); $('sidebar').classList.toggle('hidden'); }
   else if (k === 'j' && !ev.shiftKey)     { ev.preventDefault(); jumpChapter(1); }
   else if (k === 'j' && ev.shiftKey)      { ev.preventDefault(); jumpChapter(-1); }
+  else if (k === 'c')                     {
+    ev.preventDefault();
+    $('caption-input').focus();
+    $('caption-input').select();
+  }
 });
 
 loadState();
@@ -518,8 +741,37 @@ class MarkRequest(BaseModel):
     action: str   # "keep" | "skip" | "highlight" | "undecided"
 
 
+class CaptionRequest(BaseModel):
+    file: str
+    text: str     # the manual caption — empty string = clear manual override
+
+
+def _effective_caption(entry: dict) -> str:
+    """The caption that should display in the slideshow.
+
+    Manual wins. Explicit `<NO_CAPTION>` in manual forces silent over AI.
+    """
+    manual = (entry.get("caption_manual") or "").strip()
+    if manual == "<NO_CAPTION>":
+        return ""
+    if manual:
+        return manual
+    return entry.get("caption_ai") or ""
+
+
+def _migrate_entry(entry: dict) -> dict:
+    """In-place migrate an old `caption` field to the new `caption_ai`
+    + `caption_manual` schema. Idempotent."""
+    if "caption" in entry and "caption_ai" not in entry:
+        entry["caption_ai"] = entry.pop("caption")
+    entry.setdefault("caption_ai", "")
+    entry.setdefault("caption_manual", "")
+    return entry
+
+
 def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
-              start_at: int) -> FastAPI:
+              start_at: int, chapter_filter: int | None = None,
+              undecided_only: bool = False) -> FastAPI:
     app = FastAPI(title="Vesper Curate")
 
     # captions.yaml is the source of truth; we hold it in memory between writes
@@ -552,13 +804,29 @@ def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
     def get_state():
         doc = load_captions()
         photos = []
+        total_in_album = 0
         for entry in doc.get("photos", []):
+            _migrate_entry(entry)
+            total_in_album += 1
             fname = entry["file"]
+            ch = entry.get("chapter")
+            is_undecided = (not entry.get("keep")
+                            and not entry.get("skip")
+                            and not entry.get("highlight"))
+
+            # Apply filters
+            if chapter_filter is not None and ch != chapter_filter:
+                continue
+            if undecided_only and not is_undecided:
+                continue
+
             photos.append({
                 "file": fname,
                 "date": entry.get("date"),
-                "chapter": entry.get("chapter"),
-                "caption": entry.get("caption", ""),
+                "chapter": ch,
+                "caption_ai": entry.get("caption_ai", ""),
+                "caption_manual": entry.get("caption_manual", ""),
+                "caption_effective": _effective_caption(entry),
                 "keep": bool(entry.get("keep", False)),
                 "skip": bool(entry.get("skip", False)),
                 "highlight": bool(entry.get("highlight", False)),
@@ -582,6 +850,11 @@ def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
             "photos": photos,
             "chapters": chapters,
             "start_at": start_at if start_at is not None else first_undecided,
+            "total_in_album": total_in_album,
+            "filter": {
+                "chapter": chapter_filter,
+                "undecided_only": undecided_only,
+            },
         }
 
     @app.post("/api/mark")
@@ -592,6 +865,7 @@ def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
                           if e["file"] == req.file), None)
             if not entry:
                 raise HTTPException(404, f"Photo {req.file} not found")
+            _migrate_entry(entry)
             if req.action == "keep":
                 entry["keep"] = True
                 entry["skip"] = False
@@ -613,6 +887,26 @@ def build_app(captions_path: Path, photos_dir: Path, enriched_path: Path,
             save_captions(doc)
         return {"ok": True}
 
+    @app.post("/api/caption")
+    def set_caption(req: CaptionRequest):
+        """Write a user-entered manual caption to caption_manual.
+
+        Manual captions take precedence over the AI-generated caption.
+        Empty string clears the manual override (so AI version applies).
+        The literal `<NO_CAPTION>` forces silent even when AI wrote a
+        caption.
+        """
+        with lock:
+            doc = load_captions()
+            entry = next((e for e in doc.get("photos", [])
+                          if e["file"] == req.file), None)
+            if not entry:
+                raise HTTPException(404, f"Photo {req.file} not found")
+            _migrate_entry(entry)
+            entry["caption_manual"] = req.text
+            save_captions(doc)
+        return {"ok": True, "effective": _effective_caption(entry)}
+
     return app
 
 
@@ -627,6 +921,12 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--start-photo", type=int,
                         help="Start at photo N (1-indexed). Default: first un-decided.")
+    parser.add_argument("--chapter", type=int,
+                        help="Filter view to only photos in chapter N. "
+                        "Useful for revisiting a single trip after the first pass.")
+    parser.add_argument("--undecided-only", action="store_true",
+                        help="Filter view to only photos that haven't been "
+                        "keep/skip/highlight'd yet.")
     parser.add_argument("--no-browser", action="store_true",
                         help="Don't auto-open the browser")
     args = parser.parse_args()
@@ -666,7 +966,9 @@ def main() -> int:
 
     start_at = (args.start_photo - 1) if args.start_photo else None
 
-    app = build_app(captions_path, photos_dir, enriched_path, start_at)
+    app = build_app(captions_path, photos_dir, enriched_path, start_at,
+                    chapter_filter=args.chapter,
+                    undecided_only=args.undecided_only)
 
     url = f"http://127.0.0.1:{args.port}"
     print(f"\n  Vesper Curate")
@@ -674,7 +976,17 @@ def main() -> int:
     print(f"  Server:   {url}")
     print(f"  Captions: {captions_path}")
     print(f"  Photos:   {len(doc['photos'])} total")
-    print(f"\n  Keyboard:  K=Keep  S=Skip  H=Highlight  U=Undecided  ←→=Nav  J=NextChapter  D=ToggleSidebar")
+    if args.chapter:
+        in_chapter = sum(1 for p in doc['photos']
+                          if p.get('chapter') == args.chapter)
+        print(f"  Filter:   chapter {args.chapter} only ({in_chapter} photos)")
+    if args.undecided_only:
+        undecided = sum(1 for p in doc['photos']
+                        if not p.get('keep') and not p.get('skip')
+                        and not p.get('highlight'))
+        print(f"  Filter:   undecided only ({undecided} photos)")
+    print(f"\n  Keyboard:  K=Keep  S=Skip  H=Highlight  U=Undecided"
+          f"  ←→=Nav  J=NextChapter  D=ToggleSidebar  C=EditCaption")
     print()
 
     if not args.no_browser:

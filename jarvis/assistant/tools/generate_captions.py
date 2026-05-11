@@ -79,6 +79,25 @@ except ImportError:
     sys.exit(1)
 
 
+def _migrate_entry(entry: dict) -> dict:
+    """In-place migrate old `caption` field to `caption_ai` + `caption_manual`
+    schema. Idempotent — safe to call on already-migrated entries."""
+    if "caption" in entry and "caption_ai" not in entry:
+        entry["caption_ai"] = entry.pop("caption")
+    entry.setdefault("caption_ai", "")
+    entry.setdefault("caption_manual", "")
+    return entry
+
+
+def _has_effective_caption(entry: dict) -> bool:
+    """Return True if this photo has any caption (manual or AI) that
+    would display in the slideshow."""
+    manual = (entry.get("caption_manual") or "").strip()
+    if manual:
+        return True
+    return bool((entry.get("caption_ai") or "").strip())
+
+
 # Don't let PyYAML alphabetize keys.
 class OrderedDumper(yaml.SafeDumper):
     pass
@@ -634,8 +653,17 @@ def filter_tasks(
       - Undecided photos: excluded (user hasn't decided to keep these yet).
         Override with --include-undecided OR --all.
       - Kept + Highlighted: included.
+
+    Caption schema awareness:
+      - `--missing-only` is satisfied as long as the photo has EITHER a
+        non-empty `caption_ai` OR a non-empty `caption_manual`. Manual
+        captions never get overwritten by the AI generator, and we
+        don't waste $$ regenerating an AI caption when a manual one
+        exists.
+      - `--force` regenerates `caption_ai` ONLY. `caption_manual` is
+        sacrosanct — user-typed captions are never touched.
     """
-    entries = {p["file"]: p for p in captions_doc.get("photos", [])}
+    entries = {p["file"]: _migrate_entry(p) for p in captions_doc.get("photos", [])}
 
     out = []
     for t in tasks:
@@ -658,9 +686,9 @@ def filter_tasks(
         if is_undecided and not args.include_undecided and not args.all:
             continue
 
-        # `--missing-only`: skip photos that already have a non-empty
-        # caption.
-        if args.missing_only and entry.get("caption"):
+        # `--missing-only`: skip photos that already have a caption
+        # (either AI or manual).
+        if args.missing_only and _has_effective_caption(entry):
             continue
 
         # Default deny when no selection flag set
@@ -786,8 +814,10 @@ def main() -> int:
         cost = estimate_cost(usage)
         total_cost += cost
 
-        # Update the YAML doc in memory; write at end.
-        entries[task.file]["caption"] = caption
+        # Write to caption_ai ONLY. We never touch caption_manual,
+        # because that's the user's source of truth and overrides us.
+        _migrate_entry(entries[task.file])
+        entries[task.file]["caption_ai"] = caption
 
         # Show caption inline.
         display = caption if caption else "<silent>"

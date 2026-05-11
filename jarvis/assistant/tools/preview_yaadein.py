@@ -563,10 +563,23 @@ def build_app(captions_path: Path, photos_dir: Path, args) -> FastAPI:
     def root():
         return PREVIEW_HTML
 
+    def _effective_caption(entry):
+        """Manual caption wins. `<NO_CAPTION>` in manual forces silent."""
+        manual = (entry.get("caption_manual") or "").strip()
+        if manual == "<NO_CAPTION>":
+            return ""
+        if manual:
+            return manual
+        # Back-compat with old schema (single `caption` field)
+        if entry.get("caption_ai"):
+            return entry["caption_ai"]
+        return entry.get("caption", "")
+
     @app.get("/api/preview")
     def preview():
         """Return the slideshow state — only kept/highlighted photos,
-        with their captions and chapter metadata."""
+        with their captions and chapter metadata. Manual captions take
+        precedence over AI captions."""
         doc = yaml.safe_load(captions_path.read_text())
 
         # Filter photos: keep + highlight only (unless --all or --highlight-only)
@@ -594,7 +607,10 @@ def build_app(captions_path: Path, photos_dir: Path, args) -> FastAPI:
                 "file": p["file"],
                 "date": p.get("date"),
                 "chapter": p.get("chapter"),
-                "caption": p.get("caption", ""),
+                "caption": _effective_caption(p),
+                "caption_source": ("manual" if (p.get("caption_manual") or "").strip()
+                                   else "ai" if p.get("caption_ai")
+                                   else "none"),
                 "highlight": bool(p.get("highlight")),
             })
 
