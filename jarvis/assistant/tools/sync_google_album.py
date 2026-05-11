@@ -67,6 +67,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.parse
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -179,10 +180,14 @@ def resolve_short_link(short_url: str) -> str:
     )
 
 
-def fetch_share_page(share_url: str) -> str:
+def fetch_share_page(share_url: str) -> tuple[str, str]:
     """
     Resolve a photos.app.goo.gl short link → photos.google.com/share/...
     URL, then fetch the full HTML page that contains the photo data.
+
+    Returns (html, resolved_url). The resolved URL is needed for the
+    follow-up paginated batchexecute calls (Referer header + URL
+    structure).
     """
     resolved = resolve_short_link(share_url)
 
@@ -190,40 +195,165 @@ def fetch_share_page(share_url: str) -> str:
     s.headers.update({"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9"})
     r = s.get(resolved, timeout=30)
     r.raise_for_status()
-    return r.text
+    return r.text, resolved
 
 
-def parse_album_html(html: str) -> tuple[str, list[Photo]]:
+def parse_share_url(resolved_url: str) -> tuple[str, str]:
     """
-    Extract the album title and photo list from the share-page HTML.
-
-    Album metadata lives in two `AF_initDataCallback({key:'ds:N', ...})`
-    JavaScript blocks. ds:1 has the photo array; the page <title> tag has
-    the album name.
+    Extract the album ID and access key from a resolved share URL.
+    URLs look like: https://photos.google.com/share/<ALBUM_ID>?key=<KEY>
     """
-    # Album title (best-effort — falls back to "Album" if not present).
-    title_m = re.search(r"<title>([^<]+?)(?:\s*-\s*Google Photos)?</title>", html)
-    album_title = title_m.group(1).strip() if title_m else "Album"
+    m = re.search(r"/share/([A-Za-z0-9_-]+)\?key=([A-Za-z0-9_-]+)", resolved_url)
+    if not m:
+        raise RuntimeError(f"Could not parse album ID/key from URL: {resolved_url}")
+    return m.group(1), m.group(2)
 
-    # ds:1 data — the photo grid.
+
+def _parse_batch_response(text: str) -> tuple[list, str | None]:
+    """
+    Parse a batchexecute response. Returns (photo_array, next_token).
+
+    Response format (Google BoQ batchexecute):
+      )]}'\\n\\n<size>\\n[["wrb.fr","snAcKc","<inner_json_string>",null,...,
+        "generic"]]\\n<size>\\n[["di",N],...]\\n
+    """
+    if text.startswith(")]}'"):
+        text = text[4:]
+    text = text.strip()
+    start = text.find('[["wrb.fr"')
+    if start < 0:
+        return [], None
+    remainder = text[start:]
+    # The chunk is terminated by a newline-then-number — find the longest
+    # valid JSON prefix.
+    chunk = None
+    for cut in range(len(remainder), 0, -1):
+        try:
+            chunk = json.loads(remainder[:cut])
+            break
+        except json.JSONDecodeError:
+            continue
+    if not chunk:
+        return [], None
+    entry = chunk[0]
+    inner = json.loads(entry[2])
+    photos_arr = inner[1] if len(inner) > 1 else []
+    next_token = inner[2] if len(inner) > 2 else None
+    return photos_arr or [], next_token
+
+
+def fetch_paginated_photos(
+    initial_html: str,
+    resolved_url: str,
+    session: requests.Session,
+) -> list[Any]:
+    """
+    Extract all photos from a shared album, following the pagination
+    chain. The initial HTML contains the first ~300 photos plus a
+    continuation token in `data[2]` of the `ds:1` callback. Each
+    subsequent call to the `snAcKc` batchexecute RPC returns the next
+    batch and a new token (or null when the album end is reached).
+
+    Returns the raw photo array entries (caller parses them into Photo
+    objects). Combined order: newest-first (matches Google's natural
+    response order; the caller will re-sort chronologically).
+    """
+    # 1. Parse the initial page's ds:1 callback.
     m = re.search(
         r"AF_initDataCallback\(\{key:\s*'ds:1'.*?data:(\[.*?\]), sideChannel:",
-        html,
-        re.DOTALL,
+        initial_html, re.DOTALL,
     )
     if not m:
         raise RuntimeError(
             "Could not locate the photo data block in the share page. "
-            "Google may have changed the HTML structure — share the page "
-            "HTML and we can update the parser."
+            "Google may have changed the HTML structure."
+        )
+    data = json.loads(m.group(1))
+    all_photos: list = list(data[1] or [])
+    cont = data[2] if len(data) > 2 else None
+
+    log_func = print
+    log_func(f"  Initial page: {len(all_photos)} photos")
+
+    # 2. Parse album ID + key for the API calls.
+    album_id, key = parse_share_url(resolved_url)
+
+    # 3. Loop through pagination.
+    page = 1
+    max_pages = 50  # safety cap; albums beyond this are uncommon
+    while cont and page < max_pages:
+        page += 1
+        url = "https://photos.google.com/_/PhotosUi/data/batchexecute"
+        params = {
+            "rpcids": "snAcKc",
+            "source-path": f"/share/{album_id}",
+            "f.sid": "-1",
+            "bl": "boq_photosuiserver_20260506.06_p0",
+            "hl": "en-US",
+            "soc-app": "165",
+            "soc-platform": "1",
+            "soc-device": "1",
+            "_reqid": str(int(time.time() * 1000) % 1000000 + page),
+            "rt": "c",
+        }
+        # snAcKc args: [album_id, continuation_token, null, key]
+        inner_args = json.dumps([album_id, cont, None, key])
+        f_req = json.dumps([[["snAcKc", inner_args, None, "generic"]]])
+        body = urllib.parse.urlencode({"f.req": f_req})
+
+        for attempt in range(1, 4):
+            try:
+                r = session.post(
+                    url, params=params, data=body, timeout=30,
+                    headers={
+                        "Content-Type":
+                            "application/x-www-form-urlencoded;charset=UTF-8",
+                        "X-Same-Domain": "1",
+                        "Origin": "https://photos.google.com",
+                        "Referer": resolved_url,
+                    },
+                )
+                if r.status_code == 200:
+                    break
+                time.sleep(2 ** attempt)
+            except requests.RequestException:
+                if attempt == 3:
+                    raise
+                time.sleep(2 ** attempt)
+        else:
+            raise RuntimeError(
+                f"Pagination call failed after 3 attempts at page {page}"
+            )
+
+        new_photos, cont = _parse_batch_response(r.text)
+        log_func(f"  Page {page}: {len(new_photos)} more photos")
+        all_photos.extend(new_photos)
+
+    if cont:
+        log_func(
+            f"  WARNING: hit max_pages={max_pages} cap with more photos "
+            f"potentially remaining"
         )
 
-    data = json.loads(m.group(1))
-    if not isinstance(data, list) or len(data) < 2 or not data[1]:
-        raise RuntimeError("Photo data block is structured unexpectedly")
+    return all_photos
 
-    raw_photos: list[Any] = data[1]
 
+def extract_album_title(html: str) -> str:
+    """Extract the album title from the share-page HTML."""
+    m = re.search(r"<title>([^<]+?)(?:\s*-\s*Google Photos)?</title>", html)
+    return m.group(1).strip() if m else "Album"
+
+
+def raw_to_photos(raw_photos: list[Any]) -> list[Photo]:
+    """
+    Convert raw photo arrays (as returned by ds:1 / snAcKc batchexecute)
+    into Photo objects. Each raw entry has the form:
+
+      [photo_id, [thumbnail_url, width, height, ...], capture_ts_ms, ...]
+
+    Malformed entries are skipped silently (Google occasionally includes
+    test photos or deleted-but-listed items that don't conform).
+    """
     photos: list[Photo] = []
     for p in raw_photos:
         try:
@@ -251,11 +381,8 @@ def parse_album_html(html: str) -> tuple[str, list[Photo]]:
                 )
             )
         except (IndexError, TypeError, ValueError):
-            # Robust skip — Google occasionally adds malformed entries
-            # (test photos, deleted-but-still-listed items). Don't crash.
             continue
-
-    return album_title, photos
+    return photos
 
 
 def chronological_sort(photos: list[Photo]) -> list[Photo]:
@@ -424,14 +551,20 @@ def main() -> int:
     print(f"Output:   {output}")
     print()
 
-    print("Fetching share page...")
-    html = fetch_share_page(share_url)
-    print(f"  {len(html):,} bytes")
+    session = requests.Session()
+    session.headers["User-Agent"] = UA
 
-    print("Parsing photo list...")
-    album_title, photos = parse_album_html(html)
+    print("Fetching share page...")
+    html, resolved_url = fetch_share_page(share_url)
+    print(f"  {len(html):,} bytes initial HTML")
+
+    album_title = extract_album_title(html)
     print(f"  Album:    {album_title!r}")
-    print(f"  Photos:   {len(photos)} found")
+
+    print("\nPaginating through full album...")
+    raw_photos = fetch_paginated_photos(html, resolved_url, session)
+    photos = raw_to_photos(raw_photos)
+    print(f"\n  TOTAL: {len(photos)} photos parsed")
 
     photos = chronological_sort(photos)
     if args.limit:
