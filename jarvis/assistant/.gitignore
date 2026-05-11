@@ -1,0 +1,16 @@
+
+# Large local-only media (synced from Google Photos, not committed).
+# The photos themselves and any caption text become personal once
+# edited — they live only on the user's local machine.
+events/astha-birthday/media/photos/*.jpg
+events/astha-birthday/media/photos/*.jpeg
+events/astha-birthday/media/photos/*.png
+events/astha-birthday/media/photos/*.heic
+events/astha-birthday/media/photos/*.heif
+events/astha-birthday/media/captions.yaml
+events/astha-birthday/media/captions.*.yaml
+
+# Manifest IS committed — it's just metadata (filenames + Google Photo
+# IDs + timestamps) and lets a re-sync resume cleanly without
+# re-downloading existing photos.
+!events/astha-birthday/media/photos/manifest.json
