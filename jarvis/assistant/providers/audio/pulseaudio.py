@@ -14,6 +14,7 @@ a PulseAudio-compatible interface, so this provider works with PipeWire too.
 import re
 import shutil
 import subprocess
+from typing import Optional
 
 from core.interfaces import AudioOutputProvider
 from core.logger import get_logger
@@ -166,6 +167,124 @@ class PulseAudioProvider(AudioOutputProvider):
                     )
         except Exception as e:
             log.debug("Could not move streams to new sink: %s", e)
+
+    # ── Inputs (microphones) ─────────────────────────────────────
+
+    def list_inputs(self) -> list[dict]:
+        """
+        List available audio sources (microphones, line-in, USB capture).
+
+        Filters out monitor sources (sinks-as-sources for loopback recording)
+        which aren't real microphones — their names contain ".monitor".
+
+        Same parsing as list_outputs but against `pactl list sources short`.
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "list", "sources", "short"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode != 0:
+                return []
+
+            inputs = []
+            for line in result.stdout.strip().splitlines():
+                parts = line.split("\t")
+                if len(parts) < 2:
+                    continue
+                source_name = parts[1]
+
+                # Skip monitor sources (loopback of sinks, not real mics)
+                if ".monitor" in source_name:
+                    continue
+
+                state = parts[-1] if len(parts) >= 5 else "UNKNOWN"
+
+                # Infer type from source name
+                device_type = "system"
+                name_lower = source_name.lower()
+                if "bluetooth" in name_lower or "bluez" in name_lower:
+                    device_type = "bluetooth"
+                elif "hdmi" in name_lower:
+                    device_type = "hdmi"
+                elif "usb" in name_lower:
+                    device_type = "usb"
+
+                inputs.append({
+                    "name": source_name,
+                    "type": device_type,
+                    "active": state == "RUNNING",
+                })
+            return inputs
+
+        except subprocess.TimeoutExpired:
+            log.warning("pactl list sources timed out")
+        except Exception as e:
+            log.error("Failed to list inputs: %s", e)
+        return []
+
+    def get_default_input(self) -> Optional[str]:
+        """
+        Get the current default source name.
+
+        Returns None on any failure (timeout, no source set, pactl missing).
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "get-default-source"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                name = result.stdout.strip()
+                return name or None
+        except subprocess.TimeoutExpired:
+            log.warning("pactl get-default-source timed out")
+        except Exception as e:
+            log.debug("Failed to get default input: %s", e)
+        return None
+
+    def set_default_input(self, input_name: str) -> None:
+        """
+        Switch the default source.
+
+        Also moves any active source-outputs (recording streams) to the new
+        source so live recordings (wake-word loop, etc.) switch immediately.
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "set-default-source", input_name],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                log.info("Default source set to: %s", input_name)
+                self._move_streams_to_source(input_name)
+            else:
+                log.warning("Failed to set default source: %s", result.stderr.strip())
+        except subprocess.TimeoutExpired:
+            log.warning("pactl set-default-source timed out")
+        except Exception as e:
+            log.error("Failed to set default source: %s", e)
+
+    def _move_streams_to_source(self, source_name: str) -> None:
+        """Move all active source-outputs (recording streams) to the given source."""
+        try:
+            result = subprocess.run(
+                ["pactl", "list", "source-outputs", "short"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode != 0:
+                return
+
+            for line in result.stdout.strip().splitlines():
+                parts = line.split("\t")
+                if parts:
+                    stream_id = parts[0]
+                    subprocess.run(
+                        ["pactl", "move-source-output", stream_id, source_name],
+                        capture_output=True, text=True, timeout=5,
+                    )
+        except Exception as e:
+            log.debug("Could not move recording streams to new source: %s", e)
 
     # ── Bluetooth (delegates to BluetoothHelper) ─────────────────
 

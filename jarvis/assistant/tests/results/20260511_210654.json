@@ -1,0 +1,116 @@
+{
+  "timestamp": "2026-05-11T21:06:54.496965",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "event_scheduler": {
+      "total": 10,
+      "passed": 10,
+      "total_latency": 0.007883548736572266,
+      "tests": [
+        {
+          "name": "test_no_rollover_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.00061798095703125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_baseline_initializes_on_first_tick_with_no_baseline",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010790824890136719,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_auto_midnight_off_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.0011019706726074219,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_auto_midnight_on_fires",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005199909210205078,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_skipped_if_already_triggered_this_year",
+          "input": "",
+          "passed": true,
+          "latency": 0.00043392181396484375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_no_active_event_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.00030684471130371094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_eve_or_aftermath_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004029273986816406,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_on_trigger_exception_does_not_propagate",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006020069122314453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_baseline_advances_after_rollover_check",
+          "input": "",
+          "passed": true,
+          "latency": 0.00041604042053222656,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_stop_lifecycle",
+          "input": "",
+          "passed": true,
+          "latency": 0.002402782440185547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.007883548736572266
+  }
+}

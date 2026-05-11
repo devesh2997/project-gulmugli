@@ -30,6 +30,7 @@ export interface BluetoothDevice {
 export interface AudioState {
   volume: number
   outputs: AudioDevice[]
+  inputs: AudioDevice[]
   bluetoothScanning: boolean
   bluetoothDevices: BluetoothDevice[]
 }
@@ -596,6 +597,8 @@ export interface AssistantActions {
   // Audio controls
   listOutputs: () => void
   setOutput: (device: string) => void
+  listInputs: () => Promise<void>
+  setInput: (name: string) => Promise<void>
   btScan: () => void
   btPair: (mac: string) => void
   btDisconnect: (mac: string) => void

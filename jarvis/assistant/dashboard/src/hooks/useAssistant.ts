@@ -64,7 +64,7 @@ const DEFAULT_STATE: InternalState = {
   nowPlaying: null,
   lights: null,
   volume: 50,
-  audio: { volume: 50, outputs: [], bluetoothScanning: false, bluetoothDevices: [] },
+  audio: { volume: 50, outputs: [], inputs: [], bluetoothScanning: false, bluetoothDevices: [] },
   intents: [],
   mood: 'neutral',
   settings: [],
@@ -501,6 +501,47 @@ export function useAssistant(wsUrl?: string, onTokenUpdate?: (path: string, valu
     setOutput: (device: string) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ui_action', action: 'audio_set_output', device }))
+      }
+    },
+    // Inputs use the REST surface (GET /api/audio/inputs, POST /api/audio/inputs/default).
+    // The backend doesn't expose a WS ui_action for inputs, so the action signatures
+    // are async here while listOutputs/setOutput remain fire-and-forget over WS.
+    listInputs: async () => {
+      try {
+        const res = await fetch('/api/audio/inputs', {
+          headers: { Accept: 'application/json' },
+        })
+        if (!res.ok) {
+          console.info(`[audio] /api/audio/inputs returned ${res.status}`)
+          return
+        }
+        const inputs = (await res.json()) as AudioState['inputs']
+        if (!Array.isArray(inputs)) return
+        setState(prev => ({ ...prev, audio: { ...prev.audio, inputs } }))
+      } catch (err) {
+        console.info('[audio] listInputs failed:', err)
+      }
+    },
+    setInput: async (name: string) => {
+      // Optimistic update — mirror the OutputDevice "instant feedback" feel.
+      setState(prev => ({
+        ...prev,
+        audio: {
+          ...prev.audio,
+          inputs: prev.audio.inputs.map(d => ({ ...d, active: d.name === name })),
+        },
+      }))
+      try {
+        const res = await fetch('/api/audio/inputs/default', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ name }),
+        })
+        if (!res.ok) {
+          console.info(`[audio] /api/audio/inputs/default returned ${res.status}`)
+        }
+      } catch (err) {
+        console.info('[audio] setInput failed:', err)
       }
     },
     btScan: () => {

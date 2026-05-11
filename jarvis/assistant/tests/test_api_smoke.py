@@ -553,6 +553,77 @@ def test_yaadein_list_endpoint_returns_manifest(monkeypatch, tmp_path):
         assert "caption" in p
 
 
+# ── Test: audio inputs (mic enumeration + default switching) ──────────
+
+
+def test_audio_inputs_list_endpoint_smoke():
+    """
+    GET /api/audio/inputs returns a list (possibly empty — depends on
+    host). The endpoint must not 500 when the stub assistant's `audio`
+    is a MagicMock (every attribute access yields another MagicMock).
+
+    To make the assertion meaningful we override the stub's `audio` with
+    a fake provider that returns a known mic list. This decouples the
+    test from whatever audio devices happen to be on the test host.
+    """
+    client, fake_assistant = _build_test_app(auth_enabled=False)
+
+    class _FakeAudio:
+        def list_inputs(self):
+            return [
+                {"name": "Built-in Microphone", "type": "system", "active": True},
+                {"name": "USB Audio Device", "type": "usb", "active": False},
+            ]
+
+    fake_assistant["audio"] = _FakeAudio()
+
+    r = client.get("/api/audio/inputs")
+    assert r.status_code == 200, f"got {r.status_code}: {r.text}"
+    body = r.json()
+    assert isinstance(body, list)
+    assert len(body) == 2
+    names = {item["name"] for item in body}
+    assert "Built-in Microphone" in names
+    assert "USB Audio Device" in names
+    # Every entry conforms to the AudioInputInfo schema (name/type/active).
+    for item in body:
+        assert "name" in item and isinstance(item["name"], str)
+        assert "type" in item
+        assert "active" in item and isinstance(item["active"], bool)
+
+
+def test_audio_inputs_set_default_endpoint_smoke():
+    """
+    POST /api/audio/inputs/default invokes the provider's set_default_input
+    with the requested name and returns a successful IntentResponse.
+
+    When the provider doesn't expose `set_default_input` (e.g., the stub
+    MagicMock has it auto-generated and it doesn't raise), we still expect
+    a non-500 response — that's the contract under test.
+    """
+    client, fake_assistant = _build_test_app(auth_enabled=False)
+
+    calls = []
+
+    class _FakeAudio:
+        def set_default_input(self, name):
+            calls.append(name)
+
+    fake_assistant["audio"] = _FakeAudio()
+
+    r = client.post(
+        "/api/audio/inputs/default",
+        json={"name": "USB Audio Device"},
+    )
+    assert r.status_code == 200, f"got {r.status_code}: {r.text}"
+    body = r.json()
+    assert body["ok"] is True, body
+    assert "USB Audio Device" in body.get("response", "")
+    assert calls == ["USB Audio Device"], (
+        f"set_default_input not called with the expected arg: {calls!r}"
+    )
+
+
 # ── Test 6: CORS headers configured safely ────────────────────────────
 
 def test_cors_does_not_send_allow_credentials_with_wildcard_origin():
@@ -657,6 +728,8 @@ def run_api_smoke_tests() -> dict:
         ("events /trigger 409 outside event day", test_events_trigger_returns_409_outside_event_day),
         ("events /trigger lifecycle persists state", test_events_trigger_persists_state_and_current_reflects_it),
         ("CORS does not combine wildcard origin + credentials", test_cors_does_not_send_allow_credentials_with_wildcard_origin),
+        ("audio /inputs returns list", test_audio_inputs_list_endpoint_smoke),
+        ("audio /inputs/default switches mic", test_audio_inputs_set_default_endpoint_smoke),
         ("yaadein loader orders + auto-includes",
          _wrap_tmp(test_yaadein_loader_orders_and_auto_includes)),
         ("yaadein loader handles missing dir",

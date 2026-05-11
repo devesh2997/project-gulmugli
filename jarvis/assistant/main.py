@@ -123,6 +123,46 @@ def build_assistant() -> dict:
         assistant["audio"] = None
         log.info("No audio provider detected. Volume falls back to mpv.")
 
+    # Bluetooth auto-reconnect daemon — keeps the preferred speaker
+    # (e.g., Marshall Willen II on the Jetson) connected across power
+    # cycles, range changes, and multi-point switches from other sources.
+    # The daemon is inert (no thread spawned) when:
+    #   - no preferred_mac is configured, or
+    #   - the audio provider doesn't expose Bluetooth methods, or
+    #   - bluetoothctl isn't installed (Mac dev — uses blueutil instead).
+    bt_cfg = audio_cfg.get("bluetooth", {}) or {}
+    bt_mac = (bt_cfg.get("preferred_mac") or "").strip()
+    audio = assistant.get("audio")
+    if bt_mac and audio is not None and hasattr(audio, "bluetooth_pair"):
+        try:
+            from core.audio_session import AudioSessionManager
+            session_mgr = AudioSessionManager(
+                preferred_mac=bt_mac,
+                device_name=bt_cfg.get("device_name", "") or "",
+                reconnect_interval_s=int(bt_cfg.get("reconnect_interval_s", 30) or 30),
+                auto_reconnect=bool(bt_cfg.get("auto_reconnect", True)),
+            )
+            session_mgr.start()
+            assistant["audio_session"] = session_mgr
+            # Stop the daemon cleanly on process exit. Modeled after the
+            # mDNS unregister pattern below — we DON'T disconnect the
+            # speaker (that would break "Jetson reboots, song picks up
+            # again" UX), we just stop the polling thread.
+            try:
+                import atexit
+                atexit.register(session_mgr.stop)
+            except Exception:
+                pass
+        except Exception as e:
+            log.warning("AudioSession: failed to start (%s). Bluetooth auto-reconnect disabled.", e)
+            assistant["audio_session"] = None
+    else:
+        assistant["audio_session"] = None
+        if not bt_mac:
+            log.debug("AudioSession: no audio.bluetooth.preferred_mac in config — auto-reconnect disabled.")
+        else:
+            log.debug("AudioSession: audio provider lacks Bluetooth methods — auto-reconnect disabled.")
+
     # Voice (TTS) — smart routing per personality with fallback
     # VoiceRouter handles: preferred provider → fallback → text-only
     assistant["voice_router"] = VoiceRouter()

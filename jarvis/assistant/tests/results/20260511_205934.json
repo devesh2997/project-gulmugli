@@ -1,0 +1,4266 @@
+{
+  "timestamp": "2026-05-11T20:59:34.678461",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "api_smoke": {
+      "total": 22,
+      "passed": 22,
+      "total_latency": 0.8881082534790039,
+      "tests": [
+        {
+          "name": "status endpoint returns basic info",
+          "passed": true,
+          "latency": 0.4625070095062256,
+          "detail": ""
+        },
+        {
+          "name": "settings GET requires token when auth on",
+          "passed": true,
+          "latency": 0.02545309066772461,
+          "detail": ""
+        },
+        {
+          "name": "settings open when auth disabled",
+          "passed": true,
+          "latency": 0.02341318130493164,
+          "detail": ""
+        },
+        {
+          "name": "_is_obvious_chat classifications",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "audio cache put/pop one-shot",
+          "passed": true,
+          "latency": 2.5033950805664062e-05,
+          "detail": ""
+        },
+        {
+          "name": "audio cache TTL eviction",
+          "passed": true,
+          "latency": 0.053956031799316406,
+          "detail": ""
+        },
+        {
+          "name": "events /current returns active or null",
+          "passed": true,
+          "latency": 0.02864980697631836,
+          "detail": ""
+        },
+        {
+          "name": "events theme/tokens 404 for unknown pack",
+          "passed": true,
+          "latency": 0.022050142288208008,
+          "detail": ""
+        },
+        {
+          "name": "events theme/tokens 200 for known pack",
+          "passed": true,
+          "latency": 0.02367424964904785,
+          "detail": ""
+        },
+        {
+          "name": "events /health returns summary",
+          "passed": true,
+          "latency": 0.022169113159179688,
+          "detail": ""
+        },
+        {
+          "name": "events /trigger requires auth",
+          "passed": true,
+          "latency": 0.02130413055419922,
+          "detail": ""
+        },
+        {
+          "name": "events /trigger 409 outside event day",
+          "passed": true,
+          "latency": 0.0242156982421875,
+          "detail": ""
+        },
+        {
+          "name": "events /trigger lifecycle persists state",
+          "passed": true,
+          "latency": 0.034707069396972656,
+          "detail": ""
+        },
+        {
+          "name": "CORS does not combine wildcard origin + credentials",
+          "passed": true,
+          "latency": 0.021750926971435547,
+          "detail": ""
+        },
+        {
+          "name": "audio /inputs returns list",
+          "passed": true,
+          "latency": 0.024337053298950195,
+          "detail": ""
+        },
+        {
+          "name": "audio /inputs/default switches mic",
+          "passed": true,
+          "latency": 0.02097034454345703,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader orders + auto-includes",
+          "passed": true,
+          "latency": 0.0020341873168945312,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader handles missing dir",
+          "passed": true,
+          "latency": 0.00040912628173828125,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader rejects path-traversal in YAML",
+          "passed": true,
+          "latency": 0.0010387897491455078,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /photo rejects path traversal",
+          "passed": true,
+          "latency": 0.02730417251586914,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /list 404s when no active event",
+          "passed": true,
+          "latency": 0.022883176803588867,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /list returns manifest with stub event",
+          "passed": true,
+          "latency": 0.025223970413208008,
+          "detail": ""
+        }
+      ]
+    },
+    "imports": {
+      "total": 7,
+      "passed": 7,
+      "total_latency": 0.007734537124633789,
+      "tests": [
+        {
+          "name": "test_birthday_pack_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 0.0066378116607666016,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_core_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006718635559082031,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_api_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004048347473144531,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_provider_modules_import",
+          "input": "",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_branding_resolves_with_default_config",
+          "input": "",
+          "passed": true,
+          "latency": 8.106231689453125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_event_manager_singleton_loads",
+          "input": "",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dispatch_table_loads",
+          "input": "",
+          "passed": true,
+          "latency": 1.9073486328125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "intent_dispatch": {
+      "total": 4,
+      "passed": 4,
+      "total_latency": 1.7881393432617188e-05,
+      "tests": [
+        {
+          "name": "test_every_valid_intent_has_a_handler",
+          "input": "",
+          "passed": true,
+          "latency": 7.867813110351562e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_orphan_handlers_in_dispatch",
+          "input": "",
+          "passed": true,
+          "latency": 4.0531158447265625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dispatch_handlers_are_callable",
+          "input": "",
+          "passed": true,
+          "latency": 3.0994415283203125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_intent_schema_enum_matches_valid_intents",
+          "input": "",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "event_manager": {
+      "total": 16,
+      "passed": 16,
+      "total_latency": 0.011431455612182617,
+      "tests": [
+        {
+          "name": "test_no_events_dir_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003299713134765625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_recurring_match_on_day",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009341239929199219,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_recurring_eve_window",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007839202880859375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_recurring_aftermath_window",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007181167602539062,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_no_match_far_from_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006628036499023438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_yearly_year_boundary_dec_to_jan",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006487369537353516,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_one_time_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006000995635986328,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_range_rule_inside_window",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006511211395263672,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_multiple_packs_first_alphabetical_wins",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013561248779296875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_broken_pack_does_not_break_others",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010879039764404297,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pack_with_no_date_rule_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005099773406982422,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_features_list_exposed",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006949901580810547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_custom_eve_aftermath_windows",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006687641143798828,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_id_mismatch_uses_directory_name",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006210803985595703,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reload_picks_up_new_packs",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005810260772705078,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_leap_day_event_does_not_crash_on_non_leap_year",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005826950073242188,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "intro_runner": {
+      "total": 14,
+      "passed": 14,
+      "total_latency": 0.0167081356048584,
+      "tests": [
+        {
+          "name": "test_happy_path_all_step_types",
+          "input": "",
+          "passed": true,
+          "latency": 0.0022470951080322266,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_audio_file_skipped_continues",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012040138244628906,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unknown_step_type_logged_and_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014789104461669922,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_yaml_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008261203765869141,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_script_file_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003910064697265625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_voice_router_speak_steps_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012269020080566406,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_face_ui_dashboard_steps_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.002001047134399414,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_cancel_stops_remaining_steps",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012469291687011719,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_step_handler_exception_caught",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009348392486572266,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_template_substitution_handles_missing_keys",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008308887481689453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_playlist_calls_play_first",
+          "input": "",
+          "passed": true,
+          "latency": 0.001255035400390625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_playlist_no_music_provider_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008749961853027344,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_playlist_missing_file_noop",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008351802825927734,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_dashboard_hint_routes_through_dashboard_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013551712036132812,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "astha_jokes": {
+      "total": 13,
+      "passed": 13,
+      "total_latency": 0.00836038589477539,
+      "tests": [
+        {
+          "name": "test_bank_loads_three_joke_types",
+          "input": "",
+          "passed": true,
+          "latency": 0.001379251480102539,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_single_turn_delivery_calls_say_once",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008571147918701172,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_setup_then_punchline_pauses_between_turns",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008680820465087891,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_interactive_stage_a_delivers_wrong_punchline",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009219646453857422,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_random_with_tag_filter",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009400844573974609,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_random_empty_corpus_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004038810729980469,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_bank_file_loads_zero_jokes",
+          "input": "",
+          "passed": true,
+          "latency": 0.00017499923706054688,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_joke_skipped_others_load",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007469654083251953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_voice_router_logs_and_continues",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007851123809814453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unknown_joke_type_returns_failure",
+          "input": "",
+          "passed": true,
+          "latency": 0.00012302398681640625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_joke_rejects_invalid_type",
+          "input": "",
+          "passed": true,
+          "latency": 2.1457672119140625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_setup_then_punchline_with_empty_turns_fails",
+          "input": "",
+          "passed": true,
+          "latency": 0.00024771690368652344,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reload_picks_up_new_jokes",
+          "input": "",
+          "passed": true,
+          "latency": 0.0009100437164306641,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "birthday_quiz": {
+      "total": 17,
+      "passed": 17,
+      "total_latency": 0.022176265716552734,
+      "tests": [
+        {
+          "name": "test_pack_loads_questions_and_reveal",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014872550964355469,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_pack_file_loads_zero_questions",
+          "input": "",
+          "passed": true,
+          "latency": 0.00017690658569335938,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_question_skipped_others_load",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010039806365966797,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_question_rejects_non_dict",
+          "input": "",
+          "passed": true,
+          "latency": 2.6226043701171875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_reveal_handles_missing_block",
+          "input": "",
+          "passed": true,
+          "latency": 9.5367431640625e-07,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_shuffle_preserves_order",
+          "input": "",
+          "passed": true,
+          "latency": 0.0018780231475830078,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_shuffle_session_chooses_subset",
+          "input": "",
+          "passed": true,
+          "latency": 0.0017828941345214844,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_question_count_override",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013837814331054688,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_correct_substring_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.0017588138580322266,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_case_insensitive",
+          "input": "",
+          "passed": true,
+          "latency": 0.001516103744506836,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_wrong_path",
+          "input": "",
+          "passed": true,
+          "latency": 0.0015187263488769531,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_judge_answer_before_first_question_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013890266418457031,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_score_counts_only_correct",
+          "input": "",
+          "passed": true,
+          "latency": 0.0013380050659179688,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reveal_speaks_intro_and_outro_when_audio_missing",
+          "input": "",
+          "passed": true,
+          "latency": 0.0016770362854003906,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reveal_plays_audio_when_present_and_skips_fallback_text",
+          "input": "",
+          "passed": true,
+          "latency": 0.0024099349975585938,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reveal_with_no_voice_router_no_crash",
+          "input": "",
+          "passed": true,
+          "latency": 0.0019600391387939453,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_empty_pack_yields_zero_question_session",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008921623229980469,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "trigger_state": {
+      "total": 11,
+      "passed": 11,
+      "total_latency": 0.007814884185791016,
+      "tests": [
+        {
+          "name": "test_fresh_store_reports_not_triggered",
+          "input": "",
+          "passed": true,
+          "latency": 0.00026106834411621094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_mark_then_query_returns_true",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006427764892578125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_mark_idempotent_returns_false_second_time",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006258487701416016,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_year_keyed_storage_independent",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008289813995361328,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_state_persists_across_restart",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005421638488769531,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_first_triggered_at_returns_iso_datetime",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004520416259765625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reset_returns_true_when_state_cleared",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006899833679199219,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_corrupt_file_starts_fresh_and_renames_old",
+          "input": "",
+          "passed": true,
+          "latency": 0.0014431476593017578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_atomic_write_via_temp_file",
+          "input": "",
+          "passed": true,
+          "latency": 0.00119781494140625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_string_year_keys_in_loaded_file",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004150867462158203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_creates_parent_directory_on_first_persist",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007159709930419922,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "astha_angry_prefilter": {
+      "total": 7,
+      "passed": 7,
+      "total_latency": 0.007915258407592773,
+      "tests": [
+        {
+          "name": "test_kya_hua_in_default_personality_no_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.006629228591918945,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_in_astha_angry_returns_shortcut",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004229545593261719,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_uppercase_matches",
+          "input": "",
+          "passed": true,
+          "latency": 0.00016999244689941406,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_with_question_mark_matches",
+          "input": "",
+          "passed": true,
+          "latency": 0.00015783309936523438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_hai_does_not_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.00019216537475585938,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_kya_hua_with_extra_words_does_not_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.0001709461212158203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_unrelated_input_in_astha_angry_falls_through",
+          "input": "",
+          "passed": true,
+          "latency": 0.00017213821411132812,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "custom_playlist": {
+      "total": 15,
+      "passed": 15,
+      "total_latency": 0.005526542663574219,
+      "tests": [
+        {
+          "name": "test_load_basic_playlist",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007979869842529297,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_file_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002422332763671875,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_yaml_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005507469177246094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_skip_entries_without_youtube_search",
+          "input": "",
+          "passed": true,
+          "latency": 0.0018048286437988281,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_in_order_iteration_with_loop",
+          "input": "",
+          "passed": true,
+          "latency": 7.152557373046875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_in_order_iteration_without_loop",
+          "input": "",
+          "passed": true,
+          "latency": 3.814697265625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_shuffle_visits_every_song_before_repeating",
+          "input": "",
+          "passed": true,
+          "latency": 1.4066696166992188e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_shuffle_no_loop_terminates_after_pool",
+          "input": "",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_reset_starts_over",
+          "input": "",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_no_provider_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 1.8835067749023438e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_searches_and_plays",
+          "input": "",
+          "passed": true,
+          "latency": 0.00037407875061035156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_handles_search_exception",
+          "input": "",
+          "passed": true,
+          "latency": 0.0001461505889892578,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_handles_empty_search_results",
+          "input": "",
+          "passed": true,
+          "latency": 0.00019788742065429688,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_first_returns_none_when_play_fails",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002429485321044922,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_real_pack_playlist_loads",
+          "input": "",
+          "passed": true,
+          "latency": 0.0011200904846191406,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "voice_memos": {
+      "total": 13,
+      "passed": 13,
+      "total_latency": 0.0078029632568359375,
+      "tests": [
+        {
+          "name": "test_load_basic_bank",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008671283721923828,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_by_tag_returns_match",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007622241973876953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_by_tag_no_match_returns_none",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005543231964111328,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_by_tag_prefers_default",
+          "input": "",
+          "passed": true,
+          "latency": 0.001373291015625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_available_from_gates_playability",
+          "input": "",
+          "passed": true,
+          "latency": 0.0007641315460205078,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_available_from_null_means_always",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005419254302978516,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_list_available_filters_by_date",
+          "input": "",
+          "passed": true,
+          "latency": 0.0008389949798583984,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pick_default_falls_back_to_random",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006117820739746094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_missing_bank_file_returns_empty",
+          "input": "",
+          "passed": true,
+          "latency": 0.00019097328186035156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_malformed_memo_skipped",
+          "input": "",
+          "passed": true,
+          "latency": 0.0006260871887207031,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_invalid_iso_date_treated_as_always_available",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005209445953369141,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_play_memo_with_missing_file_returns_false",
+          "input": "",
+          "passed": true,
+          "latency": 0.00015020370483398438,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_parse_memo_rejects_non_dict",
+          "input": "",
+          "passed": true,
+          "latency": 9.5367431640625e-07,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "memory_event_recall": {
+      "total": 8,
+      "passed": 8,
+      "total_latency": 0.02092432975769043,
+      "tests": [
+        {
+          "name": "test_log_interaction_persists_tags",
+          "input": "",
+          "passed": true,
+          "latency": 0.0025899410247802734,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_by_tag_returns_matching_rows",
+          "input": "",
+          "passed": true,
+          "latency": 0.002076864242553711,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_by_tag_does_not_partial_match_across_tag_boundaries",
+          "input": "",
+          "passed": true,
+          "latency": 0.0017883777618408203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_event_memories_filters_by_event_and_year",
+          "input": "",
+          "passed": true,
+          "latency": 0.0018787384033203125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_find_by_tag_returns_empty_list_on_miss",
+          "input": "",
+          "passed": true,
+          "latency": 0.0030982494354248047,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_log_without_tags_attribute_back_compat",
+          "input": "",
+          "passed": true,
+          "latency": 0.0019741058349609375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_pre_migration_rows_load_with_empty_tags",
+          "input": "",
+          "passed": true,
+          "latency": 0.001583099365234375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_migration_idempotent_on_existing_db",
+          "input": "",
+          "passed": true,
+          "latency": 0.005934953689575195,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "memory_log": {
+      "total": 4,
+      "passed": 4,
+      "total_latency": 0.006654977798461914,
+      "tests": [
+        {
+          "name": "test_writes_to_memory_with_log_tag",
+          "input": "",
+          "passed": true,
+          "latency": 0.0025069713592529297,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_empty_payload_falls_back_to_original_input",
+          "input": "",
+          "passed": true,
+          "latency": 0.0028617382049560547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_no_memory_provider_returns_polite_fallback",
+          "input": "",
+          "passed": true,
+          "latency": 7.3909759521484375e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_log_failure_does_not_crash_caller",
+          "input": "",
+          "passed": true,
+          "latency": 0.0012788772583007812,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "event_scheduler": {
+      "total": 10,
+      "passed": 10,
+      "total_latency": 0.0047190189361572266,
+      "tests": [
+        {
+          "name": "test_no_rollover_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005888938903808594,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_baseline_initializes_on_first_tick_with_no_baseline",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003440380096435547,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_auto_midnight_off_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004620552062988281,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_auto_midnight_on_fires",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004439353942871094,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_skipped_if_already_triggered_this_year",
+          "input": "",
+          "passed": true,
+          "latency": 0.0010328292846679688,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_no_active_event_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.0003190040588378906,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_rollover_with_eve_or_aftermath_does_not_fire",
+          "input": "",
+          "passed": true,
+          "latency": 0.0005981922149658203,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_on_trigger_exception_does_not_propagate",
+          "input": "",
+          "passed": true,
+          "latency": 0.0004570484161376953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_baseline_advances_after_rollover_check",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002651214599609375,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_stop_lifecycle",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002079010009765625,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "audio_session": {
+      "total": 14,
+      "passed": 14,
+      "total_latency": 0.10294985771179199,
+      "tests": [
+        {
+          "name": "test_inert_when_no_preferred_mac",
+          "input": "",
+          "passed": true,
+          "latency": 4.601478576660156e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_inert_when_auto_reconnect_false",
+          "input": "",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_interval_clamped_to_min",
+          "input": "",
+          "passed": true,
+          "latency": 9.059906005859375e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_status_has_expected_keys",
+          "input": "",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_connected_does_not_attempt_connect",
+          "input": "",
+          "passed": true,
+          "latency": 9.298324584960938e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_disconnected_fires_connect_attempt",
+          "input": "",
+          "passed": true,
+          "latency": 7.605552673339844e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_connect_failure_records_error",
+          "input": "",
+          "passed": true,
+          "latency": 6.699562072753906e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_no_bluetoothctl_logs_once_then_quiet",
+          "input": "",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_on_inert_runs_synchronous_attempt",
+          "input": "",
+          "passed": true,
+          "latency": 3.4809112548828125e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_without_mac_returns_error",
+          "input": "",
+          "passed": true,
+          "latency": 4.291534423828125e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_stop_lifecycle_with_mock_subprocess",
+          "input": "",
+          "passed": true,
+          "latency": 0.10187792778015137,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_is_idempotent",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002796649932861328,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_on_running_pokes_wake_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002129077911376953,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_status_includes_running_flag_after_start",
+          "input": "",
+          "passed": true,
+          "latency": 0.00017905235290527344,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    },
+    "prefilter": {
+      "total": 140,
+      "passed": 140,
+      "total_latency": 0.005849361419677734,
+      "tests": [
+        {
+          "name": "bare 'pause'",
+          "input": "pause",
+          "passed": true,
+          "latency": 0.00011491775512695312,
+          "detail": ""
+        },
+        {
+          "name": "pause the music",
+          "input": "pause the music",
+          "passed": true,
+          "latency": 4.410743713378906e-05,
+          "detail": ""
+        },
+        {
+          "name": "pause the song",
+          "input": "pause the song",
+          "passed": true,
+          "latency": 9.298324584960938e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish pause",
+          "input": "pause the gaana",
+          "passed": true,
+          "latency": 5.793571472167969e-05,
+          "detail": ""
+        },
+        {
+          "name": "resume",
+          "input": "resume",
+          "passed": true,
+          "latency": 3.62396240234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "continue",
+          "input": "continue",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "stop",
+          "input": "stop",
+          "passed": true,
+          "latency": 3.266334533691406e-05,
+          "detail": ""
+        },
+        {
+          "name": "stop the music",
+          "input": "stop the music",
+          "passed": true,
+          "latency": 4.9114227294921875e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi stop",
+          "input": "gaana rok do",
+          "passed": true,
+          "latency": 0.00015783309936523438,
+          "detail": ""
+        },
+        {
+          "name": "Hindi stop",
+          "input": "gaana band karo",
+          "passed": true,
+          "latency": 7.891654968261719e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip",
+          "input": "skip",
+          "passed": true,
+          "latency": 8.273124694824219e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip this",
+          "input": "skip this",
+          "passed": true,
+          "latency": 6.29425048828125e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip this one",
+          "input": "skip this one",
+          "passed": true,
+          "latency": 3.5762786865234375e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip this song",
+          "input": "skip this song",
+          "passed": true,
+          "latency": 5.817413330078125e-05,
+          "detail": ""
+        },
+        {
+          "name": "skip song",
+          "input": "skip song",
+          "passed": true,
+          "latency": 0.0003311634063720703,
+          "detail": ""
+        },
+        {
+          "name": "skip track",
+          "input": "skip track",
+          "passed": true,
+          "latency": 5.602836608886719e-05,
+          "detail": ""
+        },
+        {
+          "name": "next",
+          "input": "next",
+          "passed": true,
+          "latency": 4.1961669921875e-05,
+          "detail": ""
+        },
+        {
+          "name": "next song",
+          "input": "next song",
+          "passed": true,
+          "latency": 3.3855438232421875e-05,
+          "detail": ""
+        },
+        {
+          "name": "next track",
+          "input": "next track",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi next",
+          "input": "agla gaana",
+          "passed": true,
+          "latency": 3.170967102050781e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi 'another song'",
+          "input": "dusra gaana",
+          "passed": true,
+          "latency": 3.075599670410156e-05,
+          "detail": ""
+        },
+        {
+          "name": "change the song",
+          "input": "change the song",
+          "passed": true,
+          "latency": 6.604194641113281e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Sajni",
+          "input": "play Sajni",
+          "passed": true,
+          "latency": 0.00043320655822753906,
+          "detail": ""
+        },
+        {
+          "name": "case-insensitive",
+          "input": "Play Sajni",
+          "passed": true,
+          "latency": 4.7206878662109375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Channa Mereya",
+          "input": "play Channa Mereya",
+          "passed": true,
+          "latency": 3.6716461181640625e-05,
+          "detail": ""
+        },
+        {
+          "name": "play with artist hint",
+          "input": "play Husn by Anuv Jain",
+          "passed": true,
+          "latency": 3.504753112792969e-05,
+          "detail": ""
+        },
+        {
+          "name": "put on Coldplay",
+          "input": "put on Coldplay",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "put on some Bollywood",
+          "input": "put on some Bollywood",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "start playing Sajni",
+          "input": "start playing Sajni",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "play me Tum Hi Ho",
+          "input": "play me Tum Hi Ho",
+          "passed": true,
+          "latency": 3.075599670410156e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish suffix bajao",
+          "input": "Sajni bajao",
+          "passed": true,
+          "latency": 2.8133392333984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "Sajni chalao",
+          "input": "Sajni chalao",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "Sajni laga do",
+          "input": "Sajni laga do",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "Sajni lagao",
+          "input": "Sajni lagao",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish prefix bajao",
+          "input": "bajao Sajni",
+          "passed": true,
+          "latency": 2.9087066650390625e-05,
+          "detail": ""
+        },
+        {
+          "name": "chalao Sajni",
+          "input": "chalao Sajni",
+          "passed": true,
+          "latency": 2.9325485229492188e-05,
+          "detail": ""
+        },
+        {
+          "name": "lagao Sajni",
+          "input": "lagao Sajni",
+          "passed": true,
+          "latency": 2.9087066650390625e-05,
+          "detail": ""
+        },
+        {
+          "name": "play quiz \u2192 quiz matcher (runs before music_play in chain)",
+          "input": "play quiz",
+          "passed": true,
+          "latency": 1.9311904907226562e-05,
+          "detail": ""
+        },
+        {
+          "name": "play trivia \u2192 quiz matcher",
+          "input": "play trivia",
+          "passed": true,
+          "latency": 2.002716064453125e-05,
+          "detail": ""
+        },
+        {
+          "name": "play game \u2192 fall through (no game matcher)",
+          "input": "play game",
+          "passed": true,
+          "latency": 2.6941299438476562e-05,
+          "detail": ""
+        },
+        {
+          "name": "play it \u2192 ambiguous pronoun, LLM",
+          "input": "play it",
+          "passed": true,
+          "latency": 1.9073486328125e-05,
+          "detail": ""
+        },
+        {
+          "name": "play this \u2192 ambiguous pronoun, LLM",
+          "input": "play this",
+          "passed": true,
+          "latency": 1.9073486328125e-05,
+          "detail": ""
+        },
+        {
+          "name": "play that \u2192 ambiguous pronoun, LLM",
+          "input": "play that",
+          "passed": true,
+          "latency": 2.2172927856445312e-05,
+          "detail": ""
+        },
+        {
+          "name": "play music \u2192 too ambiguous, let LLM choose",
+          "input": "play music",
+          "passed": true,
+          "latency": 2.09808349609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Sajni with video",
+          "input": "play Sajni with video",
+          "passed": true,
+          "latency": 9.703636169433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi 'play X video'",
+          "input": "Sajni ka video lagao",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "play Sajni video mein",
+          "input": "play Sajni video mein",
+          "passed": true,
+          "latency": 3.2901763916015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume 50",
+          "input": "volume 50",
+          "passed": true,
+          "latency": 3.910064697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume 100",
+          "input": "volume 100",
+          "passed": true,
+          "latency": 3.910064697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume 0",
+          "input": "volume 0",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume up",
+          "input": "volume up",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "volume down",
+          "input": "volume down",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "loud",
+          "input": "loud",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "louder",
+          "input": "louder",
+          "passed": true,
+          "latency": 3.3855438232421875e-05,
+          "detail": ""
+        },
+        {
+          "name": "quiet",
+          "input": "quiet",
+          "passed": true,
+          "latency": 3.504753112792969e-05,
+          "detail": ""
+        },
+        {
+          "name": "quieter",
+          "input": "quieter",
+          "passed": true,
+          "latency": 3.504753112792969e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi volume up",
+          "input": "awaaz badhao",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi volume down",
+          "input": "awaaz kam karo",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "mute",
+          "input": "mute",
+          "passed": true,
+          "latency": 3.409385681152344e-05,
+          "detail": ""
+        },
+        {
+          "name": "mute the volume",
+          "input": "mute the volume",
+          "passed": true,
+          "latency": 4.100799560546875e-05,
+          "detail": ""
+        },
+        {
+          "name": "mute the sound",
+          "input": "mute the sound",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi mute",
+          "input": "awaaz band karo",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "out-of-range volume \u2192 fall through",
+          "input": "volume 200",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        },
+        {
+          "name": "verbose set \u2192 LLM (no exact prefilter form)",
+          "input": "set volume to 50",
+          "passed": true,
+          "latency": 3.2901763916015625e-05,
+          "detail": ""
+        },
+        {
+          "name": "brightness, not volume",
+          "input": "brightness 30 percent",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": ""
+        },
+        {
+          "name": "lights off",
+          "input": "lights off",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "light off",
+          "input": "light off",
+          "passed": true,
+          "latency": 3.600120544433594e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn off the lights",
+          "input": "turn off the lights",
+          "passed": true,
+          "latency": 4.1961669921875e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn off the light",
+          "input": "turn off the light",
+          "passed": true,
+          "latency": 4.076957702636719e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi lights off",
+          "input": "batti band karo",
+          "passed": true,
+          "latency": 4.029273986816406e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hinglish",
+          "input": "light band karo",
+          "passed": true,
+          "latency": 3.981590270996094e-05,
+          "detail": ""
+        },
+        {
+          "name": "lights band karo",
+          "input": "lights band karo",
+          "passed": true,
+          "latency": 4.00543212890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "lights on",
+          "input": "lights on",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "light on",
+          "input": "light on",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn on the lights",
+          "input": "turn on the lights",
+          "passed": true,
+          "latency": 4.124641418457031e-05,
+          "detail": ""
+        },
+        {
+          "name": "turn on the light",
+          "input": "turn on the light",
+          "passed": true,
+          "latency": 4.076957702636719e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi lights on",
+          "input": "batti jalao",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "color setting \u2192 LLM",
+          "input": "lights to purple",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "brightness change \u2192 LLM",
+          "input": "dim the lights",
+          "passed": true,
+          "latency": 2.9802322387695312e-05,
+          "detail": ""
+        },
+        {
+          "name": "scene \u2192 LLM (handled by light_control via classifier)",
+          "input": "study mode",
+          "passed": true,
+          "latency": 2.6941299438476562e-05,
+          "detail": ""
+        },
+        {
+          "name": "scene + Hindi \u2192 LLM",
+          "input": "party mode laga do",
+          "passed": true,
+          "latency": 3.1948089599609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "what time is it",
+          "input": "what time is it",
+          "passed": true,
+          "latency": 0.00014090538024902344,
+          "detail": ""
+        },
+        {
+          "name": "what's the time",
+          "input": "what's the time",
+          "passed": true,
+          "latency": 4.410743713378906e-05,
+          "detail": ""
+        },
+        {
+          "name": "what is the time",
+          "input": "what is the time",
+          "passed": true,
+          "latency": 4.1961669921875e-05,
+          "detail": ""
+        },
+        {
+          "name": "what is the time right now",
+          "input": "what is the time right now",
+          "passed": true,
+          "latency": 4.00543212890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "no apostrophe",
+          "input": "whats the time",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me the time",
+          "input": "tell me the time",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me the current time",
+          "input": "tell me the current time",
+          "passed": true,
+          "latency": 3.910064697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "give me the time",
+          "input": "give me the time",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "give me the current time",
+          "input": "give me the current time",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "do you know the time",
+          "input": "do you know the time",
+          "passed": true,
+          "latency": 4.00543212890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "do you have the time",
+          "input": "do you have the time",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "current time",
+          "input": "current time",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "the time please",
+          "input": "the time please",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi",
+          "input": "kitne baje hain",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi",
+          "input": "abhi kya time hai",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "what's the date",
+          "input": "what's the date",
+          "passed": true,
+          "latency": 3.814697265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "what is the date",
+          "input": "what is the date",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "no apostrophe",
+          "input": "what is todays date",
+          "passed": true,
+          "latency": 4.029273986816406e-05,
+          "detail": ""
+        },
+        {
+          "name": "today's date",
+          "input": "today's date",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "todays date",
+          "input": "todays date",
+          "passed": true,
+          "latency": 3.504753112792969e-05,
+          "detail": ""
+        },
+        {
+          "name": "what day is today",
+          "input": "what day is today",
+          "passed": true,
+          "latency": 3.790855407714844e-05,
+          "detail": ""
+        },
+        {
+          "name": "what day is it",
+          "input": "what day is it",
+          "passed": true,
+          "latency": 3.695487976074219e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi",
+          "input": "aaj kya date hai",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "what's the weather",
+          "input": "what's the weather",
+          "passed": true,
+          "latency": 8.392333984375e-05,
+          "detail": ""
+        },
+        {
+          "name": "how is the weather",
+          "input": "how is the weather",
+          "passed": true,
+          "latency": 2.2172927856445312e-05,
+          "detail": ""
+        },
+        {
+          "name": "how hot is it",
+          "input": "how hot is it",
+          "passed": true,
+          "latency": 1.8835067749023438e-05,
+          "detail": ""
+        },
+        {
+          "name": "will it rain today",
+          "input": "will it rain today",
+          "passed": true,
+          "latency": 1.9073486328125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi heat",
+          "input": "kitni garmi hai",
+          "passed": true,
+          "latency": 1.7881393432617188e-05,
+          "detail": ""
+        },
+        {
+          "name": "set a timer for 5 minutes",
+          "input": "set a timer for 5 minutes",
+          "passed": true,
+          "latency": 1.6927719116210938e-05,
+          "detail": ""
+        },
+        {
+          "name": "timer 10 minutes",
+          "input": "timer 10 minutes",
+          "passed": true,
+          "latency": 1.5974044799804688e-05,
+          "detail": ""
+        },
+        {
+          "name": "5 minute timer",
+          "input": "5 minute timer",
+          "passed": true,
+          "latency": 1.52587890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "set timer 30 seconds",
+          "input": "set timer 30 seconds",
+          "passed": true,
+          "latency": 1.5735626220703125e-05,
+          "detail": ""
+        },
+        {
+          "name": "set alarm for 7am",
+          "input": "set alarm for 7am",
+          "passed": true,
+          "latency": 2.47955322265625e-05,
+          "detail": ""
+        },
+        {
+          "name": "wake me up at 7",
+          "input": "wake me up at 7",
+          "passed": true,
+          "latency": 1.8358230590820312e-05,
+          "detail": ""
+        },
+        {
+          "name": "cancel the timer",
+          "input": "cancel the timer",
+          "passed": true,
+          "latency": 1.5974044799804688e-05,
+          "detail": ""
+        },
+        {
+          "name": "stop the alarm",
+          "input": "stop the alarm",
+          "passed": true,
+          "latency": 1.6927719116210938e-05,
+          "detail": ""
+        },
+        {
+          "name": "snooze",
+          "input": "snooze",
+          "passed": true,
+          "latency": 1.6927719116210938e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me a story",
+          "input": "tell me a story",
+          "passed": true,
+          "latency": 1.9788742065429688e-05,
+          "detail": ""
+        },
+        {
+          "name": "tell me a bedtime story",
+          "input": "tell me a bedtime story",
+          "passed": true,
+          "latency": 2.002716064453125e-05,
+          "detail": ""
+        },
+        {
+          "name": "Hindi 'tell a story'",
+          "input": "kahani sunao",
+          "passed": true,
+          "latency": 1.8835067749023438e-05,
+          "detail": ""
+        },
+        {
+          "name": "good night",
+          "input": "good night",
+          "passed": true,
+          "latency": 1.811981201171875e-05,
+          "detail": ""
+        },
+        {
+          "name": "good morning",
+          "input": "good morning",
+          "passed": true,
+          "latency": 2.09808349609375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play quiz",
+          "input": "play quiz",
+          "passed": true,
+          "latency": 2.193450927734375e-05,
+          "detail": ""
+        },
+        {
+          "name": "trivia start",
+          "input": "trivia start",
+          "passed": true,
+          "latency": 2.193450927734375e-05,
+          "detail": ""
+        },
+        {
+          "name": "play rain sounds",
+          "input": "play rain sounds",
+          "passed": true,
+          "latency": 1.5974044799804688e-05,
+          "detail": ""
+        },
+        {
+          "name": "rain sounds",
+          "input": "rain sounds",
+          "passed": true,
+          "latency": 1.3828277587890625e-05,
+          "detail": ""
+        },
+        {
+          "name": "greeting \u2192 chat",
+          "input": "hello",
+          "passed": true,
+          "latency": 2.4080276489257812e-05,
+          "detail": ""
+        },
+        {
+          "name": "greeting \u2192 chat",
+          "input": "hi there",
+          "passed": true,
+          "latency": 2.4080276489257812e-05,
+          "detail": ""
+        },
+        {
+          "name": "chat opener \u2192 chat",
+          "input": "how are you",
+          "passed": true,
+          "latency": 2.5987625122070312e-05,
+          "detail": ""
+        },
+        {
+          "name": "chat \u2192 LLM",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        },
+        {
+          "name": "factual question \u2192 chat",
+          "input": "what is the speed of light",
+          "passed": true,
+          "latency": 3.0994415283203125e-05,
+          "detail": ""
+        },
+        {
+          "name": "factual \u2192 chat",
+          "input": "explain quantum computing",
+          "passed": true,
+          "latency": 2.8848648071289062e-05,
+          "detail": ""
+        },
+        {
+          "name": "knowledge \u2192 LLM",
+          "input": "who is the PM of India",
+          "passed": true,
+          "latency": 2.9087066650390625e-05,
+          "detail": ""
+        },
+        {
+          "name": "personality switch \u2192 LLM",
+          "input": "switch to Chandler mode",
+          "passed": true,
+          "latency": 3.0040740966796875e-05,
+          "detail": ""
+        },
+        {
+          "name": "personality switch \u2192 LLM",
+          "input": "become Devesh",
+          "passed": true,
+          "latency": 2.5987625122070312e-05,
+          "detail": ""
+        },
+        {
+          "name": "mood-music \u2192 LLM (needs mood\u2192genre mapping)",
+          "input": "kuch sad sa bajao",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        },
+        {
+          "name": "command chain \u2192 LLM",
+          "input": "play Tum Hi Ho and set lights to purple",
+          "passed": true,
+          "latency": 3.886222839355469e-05,
+          "detail": ""
+        },
+        {
+          "name": "knowledge \u2192 LLM",
+          "input": "when did Einstein die",
+          "passed": true,
+          "latency": 2.9325485229492188e-05,
+          "detail": ""
+        },
+        {
+          "name": "math \u2192 LLM",
+          "input": "what's 2 plus 2",
+          "passed": true,
+          "latency": 2.7894973754882812e-05,
+          "detail": ""
+        }
+      ],
+      "failures": []
+    },
+    "intent": {
+      "total": 111,
+      "passed": 16,
+      "total_latency": 117.19706726074219,
+      "tests": [
+        {
+          "name": "Indian indie song with artist",
+          "input": "play Husn by Anuv Jain",
+          "passed": false,
+          "latency": 0.961899995803833,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play Husn by Anuv Jain'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Indie artist request",
+          "input": "play something by Prateek Kuhad",
+          "passed": false,
+          "latency": 1.3075261116027832,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play something by Prateek Kuhad'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Alt rock song (Arctic Monkeys) \u2014 conversational title",
+          "input": "play Do I Wanna Know",
+          "passed": false,
+          "latency": 1.0013480186462402,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play Do I Wanna Know'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Pause in English",
+          "input": "pause the music",
+          "passed": false,
+          "latency": 1.2132606506347656,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'pause the music'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Pause/stop in Hindi",
+          "input": "gaana rok do",
+          "passed": false,
+          "latency": 0.9594879150390625,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'gaana rok do'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Skip in English",
+          "input": "next song please",
+          "passed": false,
+          "latency": 1.2883000373840332,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'next song please'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Resume \u2014 single word",
+          "input": "resume",
+          "passed": false,
+          "latency": 0.9568691253662109,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'resume'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Explicit volume level",
+          "input": "volume 40",
+          "passed": false,
+          "latency": 0.9548828601837158,
+          "detail": "expected 'volume', got 'chat' (params: {'message': 'volume 40'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Volume down in Hindi",
+          "input": "awaaz kam karo",
+          "passed": false,
+          "latency": 0.9501540660858154,
+          "detail": "expected 'volume', got 'chat' (params: {'message': 'awaaz kam karo'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Lights off in English",
+          "input": "turn off the lights",
+          "passed": false,
+          "latency": 1.2568809986114502,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'turn off the lights'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Color in Hinglish",
+          "input": "light ka colour green karo",
+          "passed": false,
+          "latency": 1.2725038528442383,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'light ka colour green karo'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Scene in Hinglish",
+          "input": "study mode laga do",
+          "passed": false,
+          "latency": 0.9680321216583252,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'study mode laga do'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Brightness in English",
+          "input": "brightness 30 percent",
+          "passed": false,
+          "latency": 0.9628872871398926,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'brightness 30 percent'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Personality switch English",
+          "input": "switch to Chandler mode",
+          "passed": false,
+          "latency": 1.3120551109313965,
+          "detail": "expected 'switch_personality', got 'chat' (params: {'message': 'switch to Chandler mode'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Personality switch Hindi",
+          "input": "Devesh ban ja",
+          "passed": false,
+          "latency": 1.272632122039795,
+          "detail": "expected 'switch_personality', got 'chat' (params: {'message': 'Devesh ban ja'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Chat \u2014 joke request",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 1.9445350170135498,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Chat \u2014 knowledge question (LLM trained on this \u2014 should NOT be knowledge_search)",
+          "input": "what is machine learning",
+          "passed": true,
+          "latency": 1.503458023071289,
+          "detail": "",
+          "tier": "easy",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "System time English",
+          "input": "what time is it",
+          "passed": false,
+          "latency": 0.9617931842803955,
+          "detail": "expected 'system', got 'chat' (params: {'message': 'what time is it'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "System date Hindi",
+          "input": "aaj kya date hai",
+          "passed": false,
+          "latency": 0.9178078174591064,
+          "detail": "expected 'system', got 'chat' (params: {'message': 'aaj kya date hai'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Memory recall English",
+          "input": "what songs did I play today",
+          "passed": false,
+          "latency": 0.9090759754180908,
+          "detail": "expected 'memory_recall', got 'chat' (params: {'message': 'what songs did I play today'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Memory stats Hindi",
+          "input": "kitna yaad hai tujhe",
+          "passed": false,
+          "latency": 0.9247980117797852,
+          "detail": "expected 'memory_stats', got 'chat' (params: {'message': 'kitna yaad hai tujhe'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Knowledge \u2014 current affairs English",
+          "input": "who is the current prime minister of UK",
+          "passed": false,
+          "latency": 0.9160099029541016,
+          "detail": "expected 'knowledge_search', got 'chat' (params: {'message': 'who is the current prime minister of UK'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Knowledge \u2014 news Hindi",
+          "input": "aaj India mein kya news hai",
+          "passed": false,
+          "latency": 0.9098129272460938,
+          "detail": "expected 'knowledge_search', got 'chat' (params: {'message': 'aaj India mein kya news hai'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Weather plain English",
+          "input": "what's the weather like",
+          "passed": false,
+          "latency": 0.9512159824371338,
+          "detail": "expected 'weather', got 'chat' (params: {'message': \"what's the weather like\"})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Weather Hindi",
+          "input": "mausam kaisa hai",
+          "passed": false,
+          "latency": 0.9079780578613281,
+          "detail": "expected 'weather', got 'chat' (params: {'message': 'mausam kaisa hai'})",
+          "tier": "easy",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Timer English with word-number",
+          "input": "set a timer for five minutes",
+          "passed": false,
+          "latency": 0.9180359840393066,
+          "detail": "expected 'timer', got 'chat' (params: {'message': 'set a timer for five minutes'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Reminder add English",
+          "input": "remind me to call mom at 5pm",
+          "passed": false,
+          "latency": 0.9345829486846924,
+          "detail": "expected 'reminder', got 'chat' (params: {'message': 'remind me to call mom at 5pm'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Ambient \u2014 explicit",
+          "input": "play rain sounds",
+          "passed": false,
+          "latency": 1.2343127727508545,
+          "detail": "expected 'ambient', got 'chat' (params: {'message': 'play rain sounds'})",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "Hinglish mood request (lo-fi genre)",
+          "input": "kuch lo-fi type bajao yaar",
+          "passed": false,
+          "latency": 0.9950342178344727,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'kuch lo-fi type bajao yaar'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Indie rock song in Hinglish",
+          "input": "Choo Lo laga do The Local Train wala",
+          "passed": false,
+          "latency": 0.9161219596862793,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'Choo Lo laga do The Local Train wala'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Kerala indie-folk band specific song in Hinglish",
+          "input": "When Chai Met Toast ka Firefly laga do",
+          "passed": false,
+          "latency": 1.2252748012542725,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'When Chai Met Toast ka Firefly laga do'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Recent (2023) Hindi song in Hinglish",
+          "input": "Heeriye sunaa do",
+          "passed": false,
+          "latency": 0.9469780921936035,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'Heeriye sunaa do'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish",
+            "modern"
+          ]
+        },
+        {
+          "name": "Coke Studio Pakistan crossover hit",
+          "input": "Pasoori bajao",
+          "passed": false,
+          "latency": 0.9161190986633301,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'Pasoori bajao'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish",
+            "modern"
+          ]
+        },
+        {
+          "name": "Pakistani indie band, recent",
+          "input": "AUR ka Tu Hai Kahaan lagao",
+          "passed": false,
+          "latency": 0.9485437870025635,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'AUR ka Tu Hai Kahaan lagao'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish",
+            "modern"
+          ]
+        },
+        {
+          "name": "Movie-name as music query (Hinglish)",
+          "input": "Brahmastra ka koi gaana lagao",
+          "passed": false,
+          "latency": 0.9282851219177246,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'Brahmastra ka koi gaana lagao'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Polite volume down (verbose)",
+          "input": "could you please turn down the volume a bit",
+          "passed": false,
+          "latency": 0.9131481647491455,
+          "detail": "expected 'volume', got 'chat' (params: {'message': 'could you please turn down the volume a bit'})",
+          "tier": "medium",
+          "tags": [
+            "polite"
+          ]
+        },
+        {
+          "name": "Polite indirect music request",
+          "input": "if you don't mind, can you play something nice and chill",
+          "passed": false,
+          "latency": 0.9101448059082031,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': \"if you don't mind, can you play something nice and chill\"})",
+          "tier": "medium",
+          "tags": [
+            "polite",
+            "indirect"
+          ]
+        },
+        {
+          "name": "Polite dim (no exact level)",
+          "input": "hey would you mind dimming the lights",
+          "passed": false,
+          "latency": 0.9367051124572754,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'hey would you mind dimming the lights'})",
+          "tier": "medium",
+          "tags": [
+            "polite"
+          ]
+        },
+        {
+          "name": "Light color, common form",
+          "input": "set the lights to red",
+          "passed": false,
+          "latency": 0.9185788631439209,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'set the lights to red'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Light color, indirect ('make the room')",
+          "input": "make the room a warm white",
+          "passed": false,
+          "latency": 0.9441027641296387,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'make the room a warm white'})",
+          "tier": "medium",
+          "tags": [
+            "indirect"
+          ]
+        },
+        {
+          "name": "Brightness with word-number",
+          "input": "lights at twenty percent",
+          "passed": false,
+          "latency": 1.2130341529846191,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'lights at twenty percent'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Skip with 'this one'",
+          "input": "skip this one",
+          "passed": false,
+          "latency": 1.2103180885314941,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'skip this one'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Skip in Hindi",
+          "input": "agle gaane pe jao",
+          "passed": false,
+          "latency": 0.98819899559021,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'agle gaane pe jao'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Stop with informal verb",
+          "input": "shut down the music",
+          "passed": false,
+          "latency": 1.8552961349487305,
+          "detail": "expected 'music_control', got 'chat' (params: {'message': 'shut down the music'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Lights off \u2014 colloquial verb",
+          "input": "kill the lights",
+          "passed": false,
+          "latency": 0.9457259178161621,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'kill the lights'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Sports score = knowledge_search",
+          "input": "what's the latest score in the IPL match",
+          "passed": false,
+          "latency": 0.9305849075317383,
+          "detail": "expected 'knowledge_search', got 'chat' (params: {'message': \"what's the latest score in the IPL match\"})",
+          "tier": "medium",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "General knowledge = chat (LLM has it)",
+          "input": "explain quantum entanglement",
+          "passed": true,
+          "latency": 0.9401159286499023,
+          "detail": "",
+          "tier": "medium",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Time-sensitive trivia = knowledge_search",
+          "input": "who won the Oscar for Best Picture this year",
+          "passed": false,
+          "latency": 0.9689059257507324,
+          "detail": "expected 'knowledge_search', got 'chat' (params: {'message': 'who won the Oscar for Best Picture this year'})",
+          "tier": "medium",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "History = chat (LLM has it)",
+          "input": "tell me about the Mughal empire",
+          "passed": true,
+          "latency": 0.958158016204834,
+          "detail": "",
+          "tier": "medium",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Personality, longer phrasing",
+          "input": "talk like Chandler from now on",
+          "passed": false,
+          "latency": 0.9419550895690918,
+          "detail": "expected 'switch_personality', got 'chat' (params: {'message': 'talk like Chandler from now on'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Reset to default in Hinglish",
+          "input": "default mode pe wapas aa ja",
+          "passed": false,
+          "latency": 0.9405522346496582,
+          "detail": "expected 'switch_personality', got 'chat' (params: {'message': 'default mode pe wapas aa ja'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Story with topic \u2014 should NOT be chat",
+          "input": "tell me a bedtime story about a dragon",
+          "passed": false,
+          "latency": 0.9204568862915039,
+          "detail": "expected 'story', got 'chat' (params: {'message': 'tell me a bedtime story about a dragon'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Quiz with category + difficulty",
+          "input": "let's play a Bollywood quiz, hard difficulty",
+          "passed": false,
+          "latency": 1.0312068462371826,
+          "detail": "expected 'quiz', got 'chat' (params: {'message': \"let's play a Bollywood quiz, hard difficulty\"})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Ambient \u2014 non-default sound",
+          "input": "thunderstorm sounds for sleep",
+          "passed": false,
+          "latency": 0.9660501480102539,
+          "detail": "expected 'ambient', got 'chat' (params: {'message': 'thunderstorm sounds for sleep'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Reminder with relative time",
+          "input": "remind me in two hours to check the oven",
+          "passed": false,
+          "latency": 0.9452590942382812,
+          "detail": "expected 'reminder', got 'chat' (params: {'message': 'remind me in two hours to check the oven'})",
+          "tier": "medium",
+          "tags": []
+        },
+        {
+          "name": "Reminder Hindi 24h-ish",
+          "input": "yaad dilana 8 baje medicine leni hai",
+          "passed": false,
+          "latency": 0.9176340103149414,
+          "detail": "expected 'reminder', got 'chat' (params: {'message': 'yaad dilana 8 baje medicine leni hai'})",
+          "tier": "medium",
+          "tags": [
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Chained: indie song + lights",
+          "input": "play Husn and set lights to warm white",
+          "passed": false,
+          "latency": 0.9912781715393066,
+          "detail": "expected ['music_play', 'light_control'], got ['chat']",
+          "tier": "medium",
+          "tags": [
+            "chain"
+          ]
+        },
+        {
+          "name": "Chained: stop + lights off",
+          "input": "stop music and turn off lights",
+          "passed": false,
+          "latency": 0.9398150444030762,
+          "detail": "expected ['music_control', 'light_control'], got ['chat']",
+          "tier": "medium",
+          "tags": [
+            "chain"
+          ]
+        },
+        {
+          "name": "Chained: personality + chat",
+          "input": "switch to Devesh and tell me a joke",
+          "passed": false,
+          "latency": 1.2224109172821045,
+          "detail": "expected ['switch_personality', 'chat'], got ['chat']",
+          "tier": "medium",
+          "tags": [
+            "chain"
+          ]
+        },
+        {
+          "name": "Idiom 'play it safe' \u2014 must NOT trigger music_play",
+          "input": "let's play it safe",
+          "passed": true,
+          "latency": 0.9566771984100342,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "false-friend"
+          ]
+        },
+        {
+          "name": "Movie clich\u00e9 \u2014 must NOT trigger light_control",
+          "input": "lights, camera, action",
+          "passed": true,
+          "latency": 0.9273779392242432,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "false-friend"
+          ]
+        },
+        {
+          "name": "Conversational 'stop' \u2014 must NOT trigger music_control",
+          "input": "stop being so dramatic",
+          "passed": true,
+          "latency": 1.463904857635498,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "false-friend"
+          ]
+        },
+        {
+          "name": "Reaction \u2014 must NOT trigger music_play",
+          "input": "I love this song",
+          "passed": true,
+          "latency": 1.530168056488037,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "false-friend"
+          ]
+        },
+        {
+          "name": "'play' as verb but no music \u2014 must NOT trigger music_play",
+          "input": "play with the dog",
+          "passed": true,
+          "latency": 0.9572169780731201,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "false-friend"
+          ]
+        },
+        {
+          "name": "Statement of state \u2014 should be chat, NOT a command",
+          "input": "I'm tired",
+          "passed": true,
+          "latency": 1.613713026046753,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "indirect",
+            "boundary"
+          ]
+        },
+        {
+          "name": "Implicit volume request \u2014 either volume OR chat is acceptable, but NOT music_control",
+          "input": "this music is too loud",
+          "passed": true,
+          "latency": 0.9544460773468018,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "indirect"
+          ]
+        },
+        {
+          "name": "Negation phrasing \u2014 chat OR music_play (mood) both reasonable",
+          "input": "I don't want any sad songs right now",
+          "passed": true,
+          "latency": 0.9381780624389648,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "negation"
+          ]
+        },
+        {
+          "name": "Negated command \u2014 must NOT trigger light_control(off)",
+          "input": "don't turn off the lights yet",
+          "passed": true,
+          "latency": 0.9265351295471191,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "negation"
+          ]
+        },
+        {
+          "name": "Volume = 0 (mute via volume intent)",
+          "input": "volume zero",
+          "passed": false,
+          "latency": 0.9514899253845215,
+          "detail": "expected 'volume', got 'chat' (params: {'message': 'volume zero'})",
+          "tier": "hard",
+          "tags": [
+            "edge-numeric"
+          ]
+        },
+        {
+          "name": "Volume max with word-number",
+          "input": "volume to one hundred",
+          "passed": false,
+          "latency": 1.2556111812591553,
+          "detail": "expected 'volume', got 'chat' (params: {'message': 'volume to one hundred'})",
+          "tier": "hard",
+          "tags": [
+            "edge-numeric"
+          ]
+        },
+        {
+          "name": "Extreme low brightness",
+          "input": "set the lights to 1 percent",
+          "passed": false,
+          "latency": 0.9574520587921143,
+          "detail": "expected 'light_control', got 'chat' (params: {'message': 'set the lights to 1 percent'})",
+          "tier": "hard",
+          "tags": [
+            "edge-numeric"
+          ]
+        },
+        {
+          "name": "Sub-minute timer",
+          "input": "set a 30 second timer",
+          "passed": false,
+          "latency": 0.9177489280700684,
+          "detail": "expected 'timer', got 'chat' (params: {'message': 'set a 30 second timer'})",
+          "tier": "hard",
+          "tags": [
+            "edge-numeric"
+          ]
+        },
+        {
+          "name": "Kesariya misspelled (Whisper-style 'kesriya')",
+          "input": "play kesriya",
+          "passed": false,
+          "latency": 0.9296510219573975,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play kesriya'})",
+          "tier": "hard",
+          "tags": [
+            "stt-artifact",
+            "modern"
+          ]
+        },
+        {
+          "name": "Modern (2022) song \u2014 Whisper transcribes more words",
+          "input": "play apna bana le piya",
+          "passed": false,
+          "latency": 0.944688081741333,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play apna bana le piya'})",
+          "tier": "hard",
+          "tags": [
+            "stt-artifact",
+            "modern"
+          ]
+        },
+        {
+          "name": "Aashiqui 2 song \u2014 extra vowel from Whisper",
+          "input": "play Tum Hi Hoo",
+          "passed": false,
+          "latency": 0.9326529502868652,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play Tum Hi Hoo'})",
+          "tier": "hard",
+          "tags": [
+            "stt-artifact"
+          ]
+        },
+        {
+          "name": "Foreign-city weather \u2014 knowledge OR weather",
+          "input": "what's the temperature in Tokyo",
+          "passed": false,
+          "latency": 0.9576399326324463,
+          "detail": "expected '<predicate>', got 'chat' (params: {'message': \"what's the temperature in Tokyo\"})",
+          "tier": "hard",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Time in another timezone \u2014 boundary case",
+          "input": "what time is it in New York",
+          "passed": true,
+          "latency": 0.9051418304443359,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Memory recall with specific past topic",
+          "input": "do you remember when I asked about Pasoori",
+          "passed": false,
+          "latency": 0.951369047164917,
+          "detail": "expected 'memory_recall', got 'chat' (params: {'message': 'do you remember when I asked about Pasoori'})",
+          "tier": "hard",
+          "tags": []
+        },
+        {
+          "name": "Implicit volume down \u2014 either intent acceptable",
+          "input": "make this song softer",
+          "passed": false,
+          "latency": 0.9391648769378662,
+          "detail": "expected '<predicate>', got 'chat' (params: {'message': 'make this song softer'})",
+          "tier": "hard",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "3-step chain: music + lights + chat",
+          "input": "play Heeriye, dim the lights to 30%, and tell me a joke",
+          "passed": false,
+          "latency": 0.99977707862854,
+          "detail": "expected ['music_play', 'light_control', 'chat'], got ['chat']",
+          "tier": "hard",
+          "tags": [
+            "chain",
+            "modern"
+          ]
+        },
+        {
+          "name": "3-step chain \u2014 order shuffled relative to intent priority",
+          "input": "set volume to 30, switch to Chandler, and play Channa Mereya",
+          "passed": false,
+          "latency": 0.933253288269043,
+          "detail": "expected ['volume', 'switch_personality', 'music_play'], got ['chat']",
+          "tier": "hard",
+          "tags": [
+            "chain"
+          ]
+        },
+        {
+          "name": "3-step chain: stop + lights + alarm",
+          "input": "stop the music, turn off the lights, set an alarm for 7am",
+          "passed": false,
+          "latency": 0.9239990711212158,
+          "detail": "expected ['music_control', 'light_control', 'timer'], got ['chat']",
+          "tier": "hard",
+          "tags": [
+            "chain"
+          ]
+        },
+        {
+          "name": "King's 2022 hit \u2014 outside many models' training data",
+          "input": "play Maan Meri Jaan",
+          "passed": false,
+          "latency": 0.922003984451294,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play Maan Meri Jaan'})",
+          "tier": "hard",
+          "tags": [
+            "modern"
+          ]
+        },
+        {
+          "name": "Punjabi crossover, numeric song name",
+          "input": "play 295 by Sidhu",
+          "passed": false,
+          "latency": 0.9360120296478271,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play 295 by Sidhu'})",
+          "tier": "hard",
+          "tags": [
+            "modern"
+          ]
+        },
+        {
+          "name": "AP Dhillon Punjabi crossover",
+          "input": "play Brown Munde",
+          "passed": false,
+          "latency": 0.9246289730072021,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play Brown Munde'})",
+          "tier": "hard",
+          "tags": [
+            "modern"
+          ]
+        },
+        {
+          "name": "Video flag \u2014 query must NOT contain 'with video'",
+          "input": "play Heeriye with video",
+          "passed": false,
+          "latency": 1.2990679740905762,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'play Heeriye with video'})",
+          "tier": "hard",
+          "tags": [
+            "modern"
+          ]
+        },
+        {
+          "name": "Hinglish video flag \u2014 strip 'video' from query",
+          "input": "Pasoori ka video chalao",
+          "passed": false,
+          "latency": 0.9149487018585205,
+          "detail": "expected 'music_play', got 'chat' (params: {'message': 'Pasoori ka video chalao'})",
+          "tier": "hard",
+          "tags": [
+            "hinglish",
+            "modern"
+          ]
+        },
+        {
+          "name": "Sleep \u2014 common phrasing",
+          "input": "good night",
+          "passed": false,
+          "latency": 0.91593337059021,
+          "detail": "expected 'sleep', got 'chat' (params: {'message': 'good night'})",
+          "tier": "hard",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Wake \u2014 could read as 'wake' OR personality address",
+          "input": "wake up Jarvis",
+          "passed": false,
+          "latency": 0.9414329528808594,
+          "detail": "expected '<predicate>', got 'chat' (params: {'message': 'wake up Jarvis'})",
+          "tier": "hard",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Bare answer \u2014 without quiz state, chat is reasonable",
+          "input": "the answer is Shah Rukh Khan",
+          "passed": true,
+          "latency": 1.424677848815918,
+          "detail": "",
+          "tier": "hard",
+          "tags": [
+            "boundary"
+          ]
+        },
+        {
+          "name": "Codename trigger phrase from pack.yaml manual_phrases",
+          "input": "Vesper, project AG begins",
+          "passed": false,
+          "latency": 0.9475898742675781,
+          "detail": "expected 'event_trigger', got 'chat' (params: {'message': 'Vesper, project AG begins'})",
+          "tier": "easy",
+          "tags": [
+            "event_trigger"
+          ]
+        },
+        {
+          "name": "Hinglish trigger phrase",
+          "input": "Vesper, ek surprise hai",
+          "passed": false,
+          "latency": 1.0517969131469727,
+          "detail": "expected 'event_trigger', got 'chat' (params: {'message': 'Vesper, ek surprise hai'})",
+          "tier": "easy",
+          "tags": [
+            "event_trigger",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Short codename trigger",
+          "input": "Vesper, light it up",
+          "passed": false,
+          "latency": 1.852583885192871,
+          "detail": "expected 'event_trigger', got 'chat' (params: {'message': 'Vesper, light it up'})",
+          "tier": "easy",
+          "tags": [
+            "event_trigger"
+          ]
+        },
+        {
+          "name": "Astha-style joke request, Hinglish",
+          "input": "Vesper, mujhe Astha jaisi joke sunao",
+          "passed": false,
+          "latency": 1.5985536575317383,
+          "detail": "expected 'astha_jokes', got 'chat' (params: {'message': 'Vesper, mujhe Astha jaisi joke sunao'})",
+          "tier": "easy",
+          "tags": [
+            "astha_jokes",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Astha mode invocation",
+          "input": "Vesper, Astha mode chalu karo",
+          "passed": false,
+          "latency": 1.022123098373413,
+          "detail": "expected 'astha_jokes', got 'chat' (params: {'message': 'Vesper, Astha mode chalu karo'})",
+          "tier": "easy",
+          "tags": [
+            "astha_jokes",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Phasaa-do verb-form invocation",
+          "input": "Vesper, phasaa do mujhe",
+          "passed": false,
+          "latency": 1.007378101348877,
+          "detail": "expected 'astha_jokes', got 'chat' (params: {'message': 'Vesper, phasaa do mujhe'})",
+          "tier": "medium",
+          "tags": [
+            "astha_jokes",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Generic 'tell me a joke' MUST stay chat (not astha_jokes)",
+          "input": "tell me a joke",
+          "passed": true,
+          "latency": 1.202826976776123,
+          "detail": "",
+          "tier": "medium",
+          "tags": [
+            "astha_jokes",
+            "boundary"
+          ]
+        },
+        {
+          "name": "Apology mode invocation (project_ag callback)",
+          "input": "Vesper, sorry shona",
+          "passed": false,
+          "latency": 0.96480393409729,
+          "detail": "expected 'sorry_mode', got 'chat' (params: {'message': 'Vesper, sorry shona'})",
+          "tier": "easy",
+          "tags": [
+            "sorry_mode",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Play a Devesh-recorded singing clip",
+          "input": "Vesper, sing for me",
+          "passed": false,
+          "latency": 0.9215009212493896,
+          "detail": "expected 'besura_play', got 'chat' (params: {'message': 'Vesper, sing for me'})",
+          "tier": "easy",
+          "tags": [
+            "besura"
+          ]
+        },
+        {
+          "name": "Voice memo recall (no specific topic)",
+          "input": "Vesper, Devesh ne kuch chhoda hai mere liye",
+          "passed": false,
+          "latency": 0.9919891357421875,
+          "detail": "expected 'voice_memo_play', got 'chat' (params: {'message': 'Vesper, Devesh ne kuch chhoda hai mere liye'})",
+          "tier": "easy",
+          "tags": [
+            "voice_memo",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Personalized happy-birthday recording",
+          "input": "Vesper, sing happy birthday",
+          "passed": false,
+          "latency": 0.9368069171905518,
+          "detail": "expected 'sing_happy_birthday', got 'chat' (params: {'message': 'Vesper, sing happy birthday'})",
+          "tier": "easy",
+          "tags": [
+            "birthday_song"
+          ]
+        },
+        {
+          "name": "Explicit memory log \u2014 Astha's food preference",
+          "input": "Vesper, remember that Astha loves biryani",
+          "passed": false,
+          "latency": 0.9320127964019775,
+          "detail": "expected 'memory_log', got 'chat' (params: {'message': 'Vesper, remember that Astha loves biryani'})",
+          "tier": "medium",
+          "tags": [
+            "memory_log"
+          ]
+        },
+        {
+          "name": "Year-over-year event recall \u2014 Hinglish",
+          "input": "Vesper, last year mere birthday pe kya kiya tha",
+          "passed": false,
+          "latency": 0.9339241981506348,
+          "detail": "expected 'memory_recall_event', got 'chat' (params: {'message': 'Vesper, last year mere birthday pe kya kiya tha'})",
+          "tier": "medium",
+          "tags": [
+            "memory_recall_event",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Explicit birthday-quiz invocation, Hinglish",
+          "input": "Vesper, birthday quiz khelte hain",
+          "passed": false,
+          "latency": 0.9480588436126709,
+          "detail": "expected 'birthday_quiz', got 'chat' (params: {'message': 'Vesper, birthday quiz khelte hain'})",
+          "tier": "easy",
+          "tags": [
+            "birthday_quiz",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Relationship-framed quiz request",
+          "input": "Vesper, quiz me on us",
+          "passed": false,
+          "latency": 0.925058126449585,
+          "detail": "expected 'birthday_quiz', got 'chat' (params: {'message': 'Vesper, quiz me on us'})",
+          "tier": "easy",
+          "tags": [
+            "birthday_quiz"
+          ]
+        },
+        {
+          "name": "How-well-do-you-know-me framing \u2192 birthday quiz",
+          "input": "Vesper, kitna jaanti ho mujhe",
+          "passed": false,
+          "latency": 1.0891687870025635,
+          "detail": "expected 'birthday_quiz', got 'chat' (params: {'message': 'Vesper, kitna jaanti ho mujhe'})",
+          "tier": "medium",
+          "tags": [
+            "birthday_quiz",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Hinglish trigger using the yaadein keyword",
+          "input": "Vesper, mujhe yaadein dikhao",
+          "passed": false,
+          "latency": 1.3030710220336914,
+          "detail": "expected 'yaadein_show', got 'chat' (params: {'message': 'Vesper, mujhe yaadein dikhao'})",
+          "tier": "easy",
+          "tags": [
+            "yaadein",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "English trigger using the memories keyword",
+          "input": "Vesper, show me memories",
+          "passed": false,
+          "latency": 1.22617506980896,
+          "detail": "expected 'yaadein_show', got 'chat' (params: {'message': 'Vesper, show me memories'})",
+          "tier": "easy",
+          "tags": [
+            "yaadein"
+          ]
+        },
+        {
+          "name": "Hinglish 'slideshow' invocation",
+          "input": "Vesper, slideshow start karo",
+          "passed": false,
+          "latency": 0.9834113121032715,
+          "detail": "expected 'yaadein_show', got 'chat' (params: {'message': 'Vesper, slideshow start karo'})",
+          "tier": "medium",
+          "tags": [
+            "yaadein",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Stop yaadein \u2014 Hinglish 'band karo'",
+          "input": "Vesper, slideshow band karo",
+          "passed": false,
+          "latency": 1.3693170547485352,
+          "detail": "expected 'yaadein_stop', got 'chat' (params: {'message': 'Vesper, slideshow band karo'})",
+          "tier": "medium",
+          "tags": [
+            "yaadein",
+            "hinglish"
+          ]
+        },
+        {
+          "name": "Stop yaadein \u2014 explicit yaadein keyword + stop",
+          "input": "Vesper, stop yaadein",
+          "passed": false,
+          "latency": 1.0442240238189697,
+          "detail": "expected 'yaadein_stop', got 'chat' (params: {'message': 'Vesper, stop yaadein'})",
+          "tier": "easy",
+          "tags": [
+            "yaadein"
+          ]
+        }
+      ],
+      "by_tier": {
+        "easy": {
+          "passed": 2,
+          "total": 42,
+          "score": 4.761904761904762
+        },
+        "medium": {
+          "passed": 3,
+          "total": 38,
+          "score": 7.894736842105263
+        },
+        "hard": {
+          "passed": 11,
+          "total": 31,
+          "score": 35.483870967741936
+        }
+      },
+      "by_tag": {
+        "hinglish": {
+          "passed": 0,
+          "total": 32,
+          "score": 0.0
+        },
+        "boundary": {
+          "passed": 7,
+          "total": 13,
+          "score": 53.84615384615385
+        },
+        "modern": {
+          "passed": 0,
+          "total": 11,
+          "score": 0.0
+        },
+        "chain": {
+          "passed": 0,
+          "total": 6,
+          "score": 0.0
+        },
+        "false-friend": {
+          "passed": 5,
+          "total": 5,
+          "score": 100.0
+        },
+        "yaadein": {
+          "passed": 0,
+          "total": 5,
+          "score": 0.0
+        },
+        "indirect": {
+          "passed": 2,
+          "total": 4,
+          "score": 50.0
+        },
+        "edge-numeric": {
+          "passed": 0,
+          "total": 4,
+          "score": 0.0
+        },
+        "astha_jokes": {
+          "passed": 1,
+          "total": 4,
+          "score": 25.0
+        },
+        "polite": {
+          "passed": 0,
+          "total": 3,
+          "score": 0.0
+        },
+        "stt-artifact": {
+          "passed": 0,
+          "total": 3,
+          "score": 0.0
+        },
+        "event_trigger": {
+          "passed": 0,
+          "total": 3,
+          "score": 0.0
+        },
+        "birthday_quiz": {
+          "passed": 0,
+          "total": 3,
+          "score": 0.0
+        },
+        "negation": {
+          "passed": 2,
+          "total": 2,
+          "score": 100.0
+        },
+        "sorry_mode": {
+          "passed": 0,
+          "total": 1,
+          "score": 0.0
+        },
+        "besura": {
+          "passed": 0,
+          "total": 1,
+          "score": 0.0
+        },
+        "voice_memo": {
+          "passed": 0,
+          "total": 1,
+          "score": 0.0
+        },
+        "birthday_song": {
+          "passed": 0,
+          "total": 1,
+          "score": 0.0
+        },
+        "memory_log": {
+          "passed": 0,
+          "total": 1,
+          "score": 0.0
+        },
+        "memory_recall_event": {
+          "passed": 0,
+          "total": 1,
+          "score": 0.0
+        }
+      }
+    },
+    "enrichment": {
+      "total": 14,
+      "passed": 4,
+      "total_latency": 15.178881168365479,
+      "tests": [
+        {
+          "name": "Husn \u2192 should add Anuv Jain (indie, not Bollywood)",
+          "input": "Husn",
+          "passed": false,
+          "latency": 0.9424831867218018,
+          "detail": "Not enriched: 'Husn' (expected artist addition)"
+        },
+        {
+          "name": "Baarishein \u2192 should add Anuv Jain (his debut, 200M+ streams)",
+          "input": "Baarishein",
+          "passed": false,
+          "latency": 0.9546089172363281,
+          "detail": "Not enriched: 'Baarishein' (expected artist addition)"
+        },
+        {
+          "name": "Choo Lo \u2192 should add The Local Train (indie rock band)",
+          "input": "Choo Lo",
+          "passed": false,
+          "latency": 0.943396806716919,
+          "detail": "Not enriched: 'Choo Lo' (expected artist addition)"
+        },
+        {
+          "name": "Khoj \u2192 should add When Chai Met Toast (Kerala indie-folk)",
+          "input": "Khoj",
+          "passed": false,
+          "latency": 1.2652857303619385,
+          "detail": "Not enriched: 'Khoj' (expected artist addition)"
+        },
+        {
+          "name": "Kun Faya Kun \u2192 should add A.R. Rahman (Rockstar, not generic)",
+          "input": "Kun Faya Kun",
+          "passed": false,
+          "latency": 1.2481176853179932,
+          "detail": "Not enriched: 'Kun Faya Kun' (expected artist addition)"
+        },
+        {
+          "name": "Gerua \u2192 should add Arijit Singh (from Dilwale, NOT Dum Maaro Dum)",
+          "input": "Gerua",
+          "passed": false,
+          "latency": 1.226020097732544,
+          "detail": "Not enriched: 'Gerua' (expected artist addition)"
+        },
+        {
+          "name": "Ilahi \u2192 should add artist (Yeh Jawaani Hai Deewani \u2014 Mohit Chauhan or Arijit)",
+          "input": "Ilahi",
+          "passed": false,
+          "latency": 0.9915132522583008,
+          "detail": "Not enriched: 'Ilahi' (expected artist addition)"
+        },
+        {
+          "name": "Do I Wanna Know \u2192 should add Arctic Monkeys (alt rock)",
+          "input": "Do I Wanna Know",
+          "passed": false,
+          "latency": 0.9740381240844727,
+          "detail": "Not enriched: 'Do I Wanna Know' (expected artist addition)"
+        },
+        {
+          "name": "Creep \u2192 should add Radiohead (classic alt, ambiguous title)",
+          "input": "Creep",
+          "passed": false,
+          "latency": 0.9799039363861084,
+          "detail": "Not enriched: 'Creep' (expected artist addition)"
+        },
+        {
+          "name": "Electric Feel \u2192 should add MGMT (indie classic)",
+          "input": "Electric Feel",
+          "passed": false,
+          "latency": 0.9700207710266113,
+          "detail": "Not enriched: 'Electric Feel' (expected artist addition)"
+        },
+        {
+          "name": "Artist-only (indie band) \u2192 should stay as-is",
+          "input": "When Chai Met Toast",
+          "passed": true,
+          "latency": 0.9480807781219482,
+          "detail": "\u2192 'When Chai Met Toast'"
+        },
+        {
+          "name": "Vague mood \u2192 should NOT enrich",
+          "input": "lo-fi beats for studying",
+          "passed": true,
+          "latency": 0.9276821613311768,
+          "detail": "\u2192 'lo-fi beats for studying'"
+        },
+        {
+          "name": "Genre mood query \u2192 should NOT enrich",
+          "input": "soft acoustic indie vibes",
+          "passed": true,
+          "latency": 1.2952678203582764,
+          "detail": "\u2192 'soft acoustic indie vibes'"
+        },
+        {
+          "name": "Artist-only (Indian indie) \u2192 should stay as-is",
+          "input": "Prateek Kuhad",
+          "passed": true,
+          "latency": 1.5124619007110596,
+          "detail": "\u2192 'Prateek Kuhad'"
+        }
+      ]
+    },
+    "personality": {
+      "total": 6,
+      "passed": 5,
+      "total_latency": 1.2499699592590332,
+      "tests": [
+        {
+          "name": "Default personality loaded",
+          "passed": true,
+          "latency": 5.0067901611328125e-06,
+          "detail": "Active: jarvis (Jarvis)"
+        },
+        {
+          "name": "Multiple personalities exist",
+          "passed": true,
+          "latency": 1.52587890625e-05,
+          "detail": "5 personalities: ['jarvis', 'devesh', 'astha', 'astha_angry', 'chandler']"
+        },
+        {
+          "name": "Switch personality",
+          "passed": true,
+          "latency": 0.0009958744049072266,
+          "detail": "Switched to devesh"
+        },
+        {
+          "name": "Switch back to original",
+          "passed": true,
+          "latency": 0.0007228851318359375,
+          "detail": "Back to jarvis"
+        },
+        {
+          "name": "Personality tone influences response",
+          "passed": false,
+          "latency": 1.2473039627075195,
+          "detail": "Response: "
+        },
+        {
+          "name": "Fuzzy personality name matching",
+          "passed": true,
+          "latency": 0.000926971435546875,
+          "detail": "Switched via display name 'Devesh'"
+        }
+      ]
+    },
+    "knowledge": {
+      "total": 7,
+      "passed": 7,
+      "total_latency": 5.438739776611328,
+      "tests": [
+        {
+          "name": "Knowledge provider loads",
+          "passed": true,
+          "latency": 0.00012183189392089844,
+          "detail": "Provider: duckduckgo"
+        },
+        {
+          "name": "is_available() works",
+          "passed": true,
+          "latency": 0.5245141983032227,
+          "detail": "Available: True"
+        },
+        {
+          "name": "Capabilities reported",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "Capabilities: ['search']"
+        },
+        {
+          "name": "Search returns results",
+          "passed": true,
+          "latency": 3.694448232650757,
+          "detail": "3 results, first: Python (programming language)"
+        },
+        {
+          "name": "SearchResult structure valid",
+          "passed": true,
+          "latency": 2.86102294921875e-06,
+          "detail": "title=True, snippet=True, source=duckduckgo"
+        },
+        {
+          "name": "max_results limits output",
+          "passed": true,
+          "latency": 1.2196130752563477,
+          "detail": "Requested 1, got 1"
+        },
+        {
+          "name": "fetch() returns None (Level 1)",
+          "passed": true,
+          "latency": 3.361701965332031e-05,
+          "detail": "fetch() correctly returns None (Level 1)"
+        }
+      ]
+    },
+    "latency": {
+      "total": 9,
+      "passed": 9,
+      "total_latency": 14.181048154830933,
+      "tests": [
+        {
+          "name": "Pre-filter: 20 commands (should be <10ms total)",
+          "passed": true,
+          "latency": 0.0009620189666748047,
+          "detail": "0.001s (threshold: 0.01s)",
+          "threshold": 0.01
+        },
+        {
+          "name": "Classify: simple English command",
+          "passed": true,
+          "latency": 2.0743439197540283,
+          "detail": "2.074s (threshold: 3.0s) (0.0 tok/s)",
+          "threshold": 3.0
+        },
+        {
+          "name": "Classify: Hinglish command",
+          "passed": true,
+          "latency": 3.0486650466918945,
+          "detail": "3.049s (threshold: 3.5s) (0.0 tok/s)",
+          "threshold": 3.5
+        },
+        {
+          "name": "Classify: chained command",
+          "passed": true,
+          "latency": 1.4094719886779785,
+          "detail": "1.409s (threshold: 4.0s) (0.0 tok/s)",
+          "threshold": 4.0
+        },
+        {
+          "name": "Enrich: well-known song",
+          "passed": true,
+          "latency": 0.9652340412139893,
+          "detail": "0.965s (threshold: 2.0s)",
+          "threshold": 2.0
+        },
+        {
+          "name": "Enrich: vague mood query",
+          "passed": true,
+          "latency": 1.740583896636963,
+          "detail": "1.741s (threshold: 2.0s)",
+          "threshold": 2.0
+        },
+        {
+          "name": "Chat: short response",
+          "passed": true,
+          "latency": 1.2770411968231201,
+          "detail": "1.277s (threshold: 4.0s) (0.0 tok/s)",
+          "threshold": 4.0
+        },
+        {
+          "name": "Chat: medium response",
+          "passed": true,
+          "latency": 1.9704961776733398,
+          "detail": "1.970s (threshold: 6.0s) (0.0 tok/s)",
+          "threshold": 6.0
+        },
+        {
+          "name": "Generate: raw LLM call (no system prompt)",
+          "passed": true,
+          "latency": 1.6942498683929443,
+          "detail": "1.694s (threshold: 3.0s) (0.0 tok/s)",
+          "threshold": 3.0
+        }
+      ]
+    },
+    "integration": {
+      "total": 10,
+      "passed": 8,
+      "total_latency": 5.112442255020142,
+      "tests": [
+        {
+          "name": "Config loads with required sections",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "Config has 17 sections"
+        },
+        {
+          "name": "Assistant name configured",
+          "passed": true,
+          "latency": 1.6689300537109375e-06,
+          "detail": "Name: 'Vesper'"
+        },
+        {
+          "name": "Provider registry complete",
+          "passed": true,
+          "latency": 9.918212890625e-05,
+          "detail": "All 8 categories registered. Providers: {'audio': 3, 'brain': 1, 'music': 1, 'lights': 1, 'ears': 1, 'voice': 4, 'wake_word': 1, 'memory': 1, 'knowledge': 1, 'quiz': 1, 'weather': 1}"
+        },
+        {
+          "name": "Brain provider instantiates",
+          "passed": true,
+          "latency": 0.00010609626770019531,
+          "detail": "Model: llama3.2:3b"
+        },
+        {
+          "name": "Personality manager works",
+          "passed": true,
+          "latency": 5.9604644775390625e-06,
+          "detail": "Active: jarvis, Total: 5"
+        },
+        {
+          "name": "VoiceRouter instantiates",
+          "passed": true,
+          "latency": 0.0001380443572998047,
+          "detail": "VoiceRouter created"
+        },
+        {
+          "name": "Memory provider instantiates",
+          "passed": true,
+          "latency": 0.006196022033691406,
+          "detail": "Provider: sqlite"
+        },
+        {
+          "name": "Full classify\u2192handle path works",
+          "passed": true,
+          "latency": 1.6667890548706055,
+          "detail": "Classified as chat (expected system)"
+        },
+        {
+          "name": "Brain returns valid JSON",
+          "passed": false,
+          "latency": 1.7409331798553467,
+          "detail": "Invalid JSON from LLM: "
+        },
+        {
+          "name": "LLM metadata populated",
+          "passed": false,
+          "latency": 1.698167085647583,
+          "detail": "0 tokens, 0.0 tok/s, 1.70s"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 472,
+    "passed": 364,
+    "failed": 108,
+    "score": 77.11864406779661,
+    "total_latency": 159.48284268379211
+  }
+}

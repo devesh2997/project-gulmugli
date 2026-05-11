@@ -1,5 +1,6 @@
 """
-Audio output endpoints — list outputs, Bluetooth scan/pair/disconnect.
+Audio I/O endpoints — list outputs/inputs, switch default input,
+Bluetooth scan/pair/disconnect.
 """
 
 from fastapi import APIRouter, Depends
@@ -7,6 +8,8 @@ from fastapi import APIRouter, Depends
 from api.auth import verify_token
 from api.deps import get_assistant
 from api.schemas import (
+    AudioInputInfo,
+    AudioInputSwitchRequest,
     AudioOutputInfo,
     BluetoothActionRequest,
     BluetoothDeviceInfo,
@@ -31,6 +34,46 @@ def audio_outputs(assistant: dict = Depends(get_assistant)):
     except Exception as e:
         log.warning("Failed to list audio outputs: %s", e)
         return []
+
+
+@router.get("/api/audio/inputs", response_model=list[AudioInputInfo])
+def audio_inputs(assistant: dict = Depends(get_assistant)):
+    """List available audio input devices (microphones, line-in, USB capture)."""
+    audio = assistant.get("audio")
+    if not audio or not hasattr(audio, "list_inputs"):
+        return []
+    try:
+        inputs = audio.list_inputs()
+        # Only forward fields the schema recognises; providers may add
+        # extras like `description` (ALSA) that would fail validation.
+        return [
+            AudioInputInfo(
+                name=i.get("name", "Unknown"),
+                type=i.get("type", "unknown"),
+                active=bool(i.get("active", False)),
+            )
+            for i in inputs
+        ]
+    except Exception as e:
+        log.warning("Failed to list audio inputs: %s", e)
+        return []
+
+
+@router.post("/api/audio/inputs/default", response_model=IntentResponse)
+def audio_inputs_set_default(
+    req: AudioInputSwitchRequest,
+    assistant: dict = Depends(get_assistant),
+):
+    """Set the system default audio input device by name."""
+    audio = assistant.get("audio")
+    if not audio or not hasattr(audio, "set_default_input"):
+        return IntentResponse(ok=False, error="Audio input switching not supported.")
+    try:
+        audio.set_default_input(req.name)
+        return IntentResponse(ok=True, response=f"Default input set to {req.name}.")
+    except Exception as e:
+        log.warning("Failed to set default input: %s", e)
+        return IntentResponse(ok=False, error=str(e))
 
 
 @router.post("/api/audio/bluetooth/scan", response_model=list[BluetoothDeviceInfo])
@@ -78,4 +121,52 @@ def bluetooth_disconnect(
         return IntentResponse(ok=True, response=f"Disconnected {req.mac_address}.")
     except Exception as e:
         log.warning("Bluetooth disconnect failed: %s", e)
+        return IntentResponse(ok=False, error=str(e))
+
+
+@router.get("/api/audio/bluetooth/status")
+def bluetooth_status(assistant: dict = Depends(get_assistant)) -> dict:
+    """
+    Status of the AudioSessionManager (preferred-speaker auto-reconnect).
+
+    Returns the manager's snapshot dict (see AudioSessionManager.get_status),
+    or an empty `{}` when no manager exists — e.g., no preferred_mac is
+    configured, or the audio provider doesn't expose Bluetooth.
+    """
+    session = assistant.get("audio_session")
+    if session is None or not hasattr(session, "get_status"):
+        return {}
+    try:
+        return session.get_status()
+    except Exception as e:
+        log.warning("audio_session.get_status failed: %s", e)
+        return {}
+
+
+@router.post("/api/audio/bluetooth/reconnect", response_model=IntentResponse)
+def bluetooth_reconnect(assistant: dict = Depends(get_assistant)):
+    """
+    Force an immediate Bluetooth reconnect attempt.
+
+    Used by the dashboard "reconnect now" button when the user notices
+    the speaker disconnected and doesn't want to wait for the next
+    polling interval. If the daemon is running we just poke its wake
+    event; if it's not (inert on Mac, or stopped), we run one
+    synchronous attempt for the caller.
+    """
+    session = assistant.get("audio_session")
+    if session is None or not hasattr(session, "force_reconnect"):
+        return IntentResponse(
+            ok=False,
+            error="Bluetooth auto-reconnect not configured.",
+        )
+    try:
+        result = session.force_reconnect()
+        return IntentResponse(
+            ok=bool(result.get("ok", False)),
+            response=result.get("response", "") or "",
+            error=result.get("error"),
+        )
+    except Exception as e:
+        log.warning("audio_session.force_reconnect failed: %s", e)
         return IntentResponse(ok=False, error=str(e))

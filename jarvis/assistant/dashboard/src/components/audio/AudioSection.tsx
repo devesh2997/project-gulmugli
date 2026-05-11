@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { AssistantStore } from '../../types/assistant'
 import { VolumeControl } from './VolumeControl'
 import { OutputDevice } from './OutputDevice'
+import { InputDevice } from './InputDevice'
 import { BluetoothScanner } from './BluetoothScanner'
 
 interface Props {
@@ -21,11 +22,12 @@ export function AudioSection({ store }: Props) {
   const { audio, actions } = store
   const requestedRef = useRef(false)
 
-  // Request output list once on mount
+  // Request output + input lists once on mount
   useEffect(() => {
     if (!requestedRef.current) {
       requestedRef.current = true
       actions.listOutputs()
+      void actions.listInputs()
     }
   }, [actions])
 
@@ -60,6 +62,36 @@ export function AudioSection({ store }: Props) {
                   key={d.name}
                   device={d}
                   onSelect={() => actions.setOutput(d.name)}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input devices — only show if we have any */}
+      <AnimatePresence>
+        {audio.inputs.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: 2,
+              textTransform: 'uppercase' as const,
+              color: 'var(--text-tertiary)', marginBottom: 10,
+            }}>
+              Input
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {audio.inputs.map(d => (
+                <InputDevice
+                  key={d.name}
+                  device={d}
+                  onSelect={() => { void actions.setInput(d.name) }}
                 />
               ))}
             </div>

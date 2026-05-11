@@ -1,0 +1,158 @@
+{
+  "timestamp": "2026-05-11T20:55:08.608718",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "api_smoke": {
+      "total": 22,
+      "passed": 22,
+      "total_latency": 0.8416497707366943,
+      "tests": [
+        {
+          "name": "status endpoint returns basic info",
+          "passed": true,
+          "latency": 0.42862796783447266,
+          "detail": ""
+        },
+        {
+          "name": "settings GET requires token when auth on",
+          "passed": true,
+          "latency": 0.025557756423950195,
+          "detail": ""
+        },
+        {
+          "name": "settings open when auth disabled",
+          "passed": true,
+          "latency": 0.02236318588256836,
+          "detail": ""
+        },
+        {
+          "name": "_is_obvious_chat classifications",
+          "passed": true,
+          "latency": 3.075599670410156e-05,
+          "detail": ""
+        },
+        {
+          "name": "audio cache put/pop one-shot",
+          "passed": true,
+          "latency": 2.2172927856445312e-05,
+          "detail": ""
+        },
+        {
+          "name": "audio cache TTL eviction",
+          "passed": true,
+          "latency": 0.05369091033935547,
+          "detail": ""
+        },
+        {
+          "name": "events /current returns active or null",
+          "passed": true,
+          "latency": 0.027420759201049805,
+          "detail": ""
+        },
+        {
+          "name": "events theme/tokens 404 for unknown pack",
+          "passed": true,
+          "latency": 0.021380186080932617,
+          "detail": ""
+        },
+        {
+          "name": "events theme/tokens 200 for known pack",
+          "passed": true,
+          "latency": 0.02281808853149414,
+          "detail": ""
+        },
+        {
+          "name": "events /health returns summary",
+          "passed": true,
+          "latency": 0.022047996520996094,
+          "detail": ""
+        },
+        {
+          "name": "events /trigger requires auth",
+          "passed": true,
+          "latency": 0.023359060287475586,
+          "detail": ""
+        },
+        {
+          "name": "events /trigger 409 outside event day",
+          "passed": true,
+          "latency": 0.02326488494873047,
+          "detail": ""
+        },
+        {
+          "name": "events /trigger lifecycle persists state",
+          "passed": true,
+          "latency": 0.031501054763793945,
+          "detail": ""
+        },
+        {
+          "name": "CORS does not combine wildcard origin + credentials",
+          "passed": true,
+          "latency": 0.021218061447143555,
+          "detail": ""
+        },
+        {
+          "name": "audio /inputs returns list",
+          "passed": true,
+          "latency": 0.023213863372802734,
+          "detail": ""
+        },
+        {
+          "name": "audio /inputs/default switches mic",
+          "passed": true,
+          "latency": 0.021607160568237305,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader orders + auto-includes",
+          "passed": true,
+          "latency": 0.0022029876708984375,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader handles missing dir",
+          "passed": true,
+          "latency": 0.0007770061492919922,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader rejects path-traversal in YAML",
+          "passed": true,
+          "latency": 0.0016598701477050781,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /photo rejects path traversal",
+          "passed": true,
+          "latency": 0.02391219139099121,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /list 404s when no active event",
+          "passed": true,
+          "latency": 0.02167487144470215,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /list returns manifest with stub event",
+          "passed": true,
+          "latency": 0.023298978805541992,
+          "detail": ""
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 22,
+    "passed": 22,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.8416497707366943
+  }
+}

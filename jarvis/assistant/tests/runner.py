@@ -167,6 +167,12 @@ def run_suite(suite_name: str, brain) -> dict:
         # missing optional deps + module-level errors.
         from tests.test_imports import run_imports_tests
         return run_imports_tests()
+    elif suite_name == "audio_session":
+        # Pure unit tests for core/audio_session.py — Bluetooth speaker
+        # auto-reconnect daemon. subprocess.run + shutil.which are
+        # patched out so no bluetoothctl is actually invoked. Runs <1s.
+        from tests.test_audio_session import run_audio_session_tests
+        return run_audio_session_tests()
     else:
         raise ValueError(f"Unknown suite: {suite_name}")
 
@@ -175,6 +181,7 @@ ALL_SUITES = ["api_smoke", "imports", "intent_dispatch", "event_manager",
               "intro_runner", "astha_jokes", "birthday_quiz", "trigger_state",
               "astha_angry_prefilter", "custom_playlist", "voice_memos",
               "memory_event_recall", "memory_log", "event_scheduler",
+              "audio_session",
               "prefilter", "intent", "enrichment", "personality", "knowledge",
               "latency", "integration"]
 

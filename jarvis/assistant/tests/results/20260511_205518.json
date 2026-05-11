@@ -1,0 +1,152 @@
+{
+  "timestamp": "2026-05-11T20:55:18.287235",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "audio_session": {
+      "total": 14,
+      "passed": 14,
+      "total_latency": 0.10466814041137695,
+      "tests": [
+        {
+          "name": "test_inert_when_no_preferred_mac",
+          "input": "",
+          "passed": true,
+          "latency": 6.699562072753906e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_inert_when_auto_reconnect_false",
+          "input": "",
+          "passed": true,
+          "latency": 3.314018249511719e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_interval_clamped_to_min",
+          "input": "",
+          "passed": true,
+          "latency": 9.775161743164062e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_get_status_has_expected_keys",
+          "input": "",
+          "passed": true,
+          "latency": 6.198883056640625e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_connected_does_not_attempt_connect",
+          "input": "",
+          "passed": true,
+          "latency": 0.00025200843811035156,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_disconnected_fires_connect_attempt",
+          "input": "",
+          "passed": true,
+          "latency": 7.605552673339844e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_connect_failure_records_error",
+          "input": "",
+          "passed": true,
+          "latency": 6.890296936035156e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_tick_no_bluetoothctl_logs_once_then_quiet",
+          "input": "",
+          "passed": true,
+          "latency": 3.719329833984375e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_on_inert_runs_synchronous_attempt",
+          "input": "",
+          "passed": true,
+          "latency": 4.792213439941406e-05,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_without_mac_returns_error",
+          "input": "",
+          "passed": true,
+          "latency": 5.245208740234375e-06,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_stop_lifecycle_with_mock_subprocess",
+          "input": "",
+          "passed": true,
+          "latency": 0.10344076156616211,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_start_is_idempotent",
+          "input": "",
+          "passed": true,
+          "latency": 0.0002460479736328125,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_force_reconnect_on_running_pokes_wake_event",
+          "input": "",
+          "passed": true,
+          "latency": 0.0001952648162841797,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        },
+        {
+          "name": "test_status_includes_running_flag_after_start",
+          "input": "",
+          "passed": true,
+          "latency": 0.00018262863159179688,
+          "detail": "",
+          "tier": "easy",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 14,
+    "passed": 14,
+    "failed": 0,
+    "score": 100.0,
+    "total_latency": 0.10466814041137695
+  }
+}

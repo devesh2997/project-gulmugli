@@ -67,7 +67,83 @@ def check_mic_available() -> bool:
         return False
 
 
-def record_fixed(duration: float = 5.0) -> bytes:
+def find_device_by_name_pattern(pattern: str) -> int | None:
+    """
+    Find the first input device whose name contains `pattern` (case-insensitive).
+
+    Returns the sounddevice index, or None if no input device matches.
+    Only considers devices with `max_input_channels > 0` (real mics, not
+    output-only devices that sounddevice still lists).
+
+    Used by `_resolve_default_device()` to honour
+    `audio.input.device_name_pattern` from config.yaml — e.g.,
+    pattern "USB Audio" auto-selects a ReSpeaker / USB mic without the
+    user having to know the device index.
+    """
+    if not HAS_SOUNDDEVICE or not pattern:
+        return None
+    try:
+        devices = sd.query_devices()
+    except Exception as e:
+        log.debug("query_devices failed: %s", e)
+        return None
+    needle = pattern.lower()
+    for idx, dev in enumerate(devices):
+        try:
+            if dev.get("max_input_channels", 0) > 0 and needle in dev.get("name", "").lower():
+                log.debug("Mic pattern '%s' matched device %d: %s", pattern, idx, dev.get("name"))
+                return idx
+        except Exception:
+            continue
+    log.debug("Mic pattern '%s' matched no input device", pattern)
+    return None
+
+
+def _resolve_default_device(device: str | int | None) -> str | int | None:
+    """
+    Pick the recording device for this session.
+
+    Resolution order:
+      1. Explicit `device` argument (passed by caller).
+      2. `audio.input.device_name_pattern` in config — substring match against
+         the input device list. If matched, use that index.
+      3. None → sounddevice's system default.
+
+    If `audio.input.fallback_to_default` is false AND a configured pattern
+    fails to match, returns the empty sentinel "" (which sounddevice rejects)
+    so the caller can detect the misconfiguration. The default `True` means
+    pattern misses silently fall through to the system default, matching the
+    rest of the codebase's local-first-but-graceful behaviour.
+    """
+    if device is not None:
+        return device
+
+    audio_cfg = config.get("audio", {}) or {}
+    input_cfg = audio_cfg.get("input", {}) or {}
+    pattern = (input_cfg.get("device_name_pattern") or "").strip()
+    if not pattern:
+        return None
+
+    idx = find_device_by_name_pattern(pattern)
+    if idx is not None:
+        return idx
+
+    fallback = input_cfg.get("fallback_to_default", True)
+    if fallback:
+        log.debug(
+            "Mic pattern '%s' didn't match — falling back to system default",
+            pattern,
+        )
+        return None
+    log.warning(
+        "Mic pattern '%s' didn't match any input device and "
+        "audio.input.fallback_to_default=false. Recording will likely fail.",
+        pattern,
+    )
+    return None
+
+
+def record_fixed(duration: float = 5.0, device: str | int | None = None) -> bytes:
     """
     Record audio for a fixed duration.
 
@@ -75,16 +151,20 @@ def record_fixed(duration: float = 5.0) -> bytes:
 
     Args:
         duration: How many seconds to record (default: 5s)
+        device: Optional sounddevice device index/name. None → resolve via
+            config (audio.input.device_name_pattern) or system default.
     """
     if not HAS_SOUNDDEVICE:
         raise RuntimeError("sounddevice not installed. Install with: pip install sounddevice")
 
-    log.debug("Recording %.1fs of audio...", duration)
+    dev = _resolve_default_device(device)
+    log.debug("Recording %.1fs of audio (device=%r)...", duration, dev)
     audio = sd.rec(
         int(duration * SAMPLE_RATE),
         samplerate=SAMPLE_RATE,
         channels=CHANNELS,
         dtype=DTYPE,
+        device=dev,
     )
     sd.wait()  # Block until recording is done
     log.debug("Recording complete.")
@@ -96,6 +176,7 @@ def record_smart(
     silence_timeout: float = 1.0,
     max_duration: float = 15.0,
     pre_speech_timeout: float = 5.0,
+    device: str | int | None = None,
 ) -> bytes:
     """
     Smart recording with voice activity detection.
@@ -198,12 +279,14 @@ def record_smart(
             done.set()
             return
 
+    dev = _resolve_default_device(device)
     stream = sd.InputStream(
         samplerate=SAMPLE_RATE,
         channels=CHANNELS,
         dtype=DTYPE,
         callback=callback,
         blocksize=chunk_samples,
+        device=dev,
     )
 
     with stream:
@@ -224,7 +307,7 @@ def record_smart(
     return _audio_to_wav_bytes(audio)
 
 
-def record_until_stop() -> tuple[bytes, threading.Event]:
+def record_until_stop(device: str | int | None = None) -> tuple[bytes, threading.Event]:
     """
     Record audio until the stop event is set.
 
@@ -252,12 +335,14 @@ def record_until_stop() -> tuple[bytes, threading.Event]:
 
     log.debug("Recording (max %ds, set stop_event to end)...", max_duration)
 
+    dev = _resolve_default_device(device)
     stream = sd.InputStream(
         samplerate=SAMPLE_RATE,
         channels=CHANNELS,
         dtype=DTYPE,
         callback=callback,
         blocksize=int(SAMPLE_RATE * 0.1),  # 100ms blocks
+        device=dev,
     )
 
     with stream:
@@ -275,7 +360,7 @@ def record_until_stop() -> tuple[bytes, threading.Event]:
     return _audio_to_wav_bytes(audio), stop_event
 
 
-def record_with_enter_to_stop() -> bytes:
+def record_with_enter_to_stop(device: str | int | None = None) -> bytes:
     """
     Record audio, stop when Enter is pressed.
 
@@ -297,12 +382,14 @@ def record_with_enter_to_stop() -> bytes:
 
     max_duration = config.get("ears", {}).get("max_record_seconds", 10)
 
+    dev = _resolve_default_device(device)
     stream = sd.InputStream(
         samplerate=SAMPLE_RATE,
         channels=CHANNELS,
         dtype=DTYPE,
         callback=callback,
         blocksize=int(SAMPLE_RATE * 0.1),  # 100ms blocks
+        device=dev,
     )
 
     with stream:

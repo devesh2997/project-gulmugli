@@ -213,6 +213,28 @@ audio:
     #   mac_address: "XX:XX:XX:XX:XX:XX"
     # - name: "room_speaker"
     #   type: "hdmi"
+  bluetooth:
+    # Auto-reconnect daemon for a preferred Bluetooth speaker.
+    # Linux/Jetson only (uses bluetoothctl). When `preferred_mac` is empty
+    # the daemon stays inert — no thread is spawned and no logs are
+    # generated. On macOS dev (no bluetoothctl), the daemon detects the
+    # missing tool and idles silently.
+    preferred_mac: ""           # e.g., "AA:BB:CC:DD:EE:FF" — Marshall Willen II MAC
+    device_name: ""             # friendly name for logs/UI (e.g., "Marshall Willen II")
+    auto_reconnect: true        # set false to disable the daemon entirely
+    reconnect_interval_s: 30    # poll cadence (clamped to >= 5s)
+
+  # --- Input (microphone) selection ---
+  # The wake-word and STT loops record via `sounddevice`. Without a
+  # `device_name_pattern`, they use the OS default mic. Set the pattern
+  # to a substring of the device name to auto-pick a specific mic
+  # (e.g., "USB Audio" or "ReSpeaker"). Case-insensitive substring match.
+  # When `fallback_to_default` is true (default), a pattern that matches
+  # no device silently falls back to the OS default — local-first /
+  # graceful-degradation friendly.
+  input:
+    device_name_pattern: ""    # e.g. "USB Audio" to prefer the USB mic. Empty = OS default.
+    fallback_to_default: true  # if the pattern matches nothing, fall back to default
 
 lights:
   provider: "tuya" # options: tuya, hue, wiz, mqtt, custom

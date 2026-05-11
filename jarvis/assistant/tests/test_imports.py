@@ -47,6 +47,7 @@ CORE_MODULES = [
     "core.pipeline",
     "core.prefilter",
     "core.voice_router",
+    "core.audio_session",
 ]
 
 API_MODULES = [

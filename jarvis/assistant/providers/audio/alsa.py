@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from core.interfaces import AudioOutputProvider
 from core.logger import get_logger
@@ -179,6 +180,136 @@ class AlsaAudioProvider(AudioOutputProvider):
             )
         except Exception as e:
             log.error("Failed to write %s: %s", asoundrc, e)
+
+    # ── Inputs (microphones) ─────────────────────────────────────
+
+    def list_inputs(self) -> list[dict]:
+        """
+        List available audio capture devices via `arecord -l`.
+
+        Output parsing matches the same "card N: ID [Description], device M:"
+        format as `aplay -l`.
+        """
+        if not shutil.which("arecord"):
+            log.debug("arecord not found — no input enumeration via ALSA")
+            return []
+        try:
+            result = subprocess.run(
+                ["arecord", "-l"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode != 0:
+                return []
+
+            inputs = []
+            for line in result.stdout.splitlines():
+                match = re.match(
+                    r"card\s+(\d+):\s+(\w+)\s+\[(.+?)\],\s+device\s+(\d+):",
+                    line,
+                )
+                if match:
+                    card_num = match.group(1)
+                    description = match.group(3)
+                    device_num = match.group(4)
+
+                    device_type = "system"
+                    desc_lower = description.lower()
+                    if "bluetooth" in desc_lower or "bluez" in desc_lower:
+                        device_type = "bluetooth"
+                    elif "usb" in desc_lower:
+                        device_type = "usb"
+
+                    inputs.append({
+                        "name": f"hw:{card_num},{device_num}",
+                        "type": device_type,
+                        "active": False,
+                        "description": description,
+                    })
+            return inputs
+
+        except subprocess.TimeoutExpired:
+            log.warning("arecord -l timed out")
+        except Exception as e:
+            log.error("Failed to list inputs: %s", e)
+        return []
+
+    def get_default_input(self) -> Optional[str]:
+        """
+        Read the current default capture device from ~/.asoundrc, if set.
+
+        Pure ALSA has no concept of "get default source" outside of parsing
+        the config files. Returns None if nothing's been configured by us
+        (the kernel default is implicit — usually card 0).
+        """
+        asoundrc = Path.home() / ".asoundrc"
+        if not asoundrc.exists():
+            return None
+        try:
+            text = asoundrc.read_text()
+            # Look for the pcm.!default-capture or pcm.!default block we wrote.
+            # We tag our writes; if present, return the card number we wrote.
+            m = re.search(r"pcm\.!default(?:_capture|_input)?\s*\{\s*[^}]*card\s+(\S+)",
+                          text, re.DOTALL)
+            if m:
+                return f"hw:{m.group(1).strip()},0"
+        except Exception as e:
+            log.debug("Could not read .asoundrc: %s", e)
+        return None
+
+    def set_default_input(self, input_name: str) -> None:
+        """
+        Set the default ALSA capture device by appending/replacing a
+        pcm.!default_capture block in ~/.asoundrc.
+
+        Only affects processes started AFTER the write. Active recordings
+        (the wake-word loop) keep using the old device until restarted.
+
+        Expects input_name in "hw:X,Y" format (from list_inputs).
+        """
+        asoundrc = Path.home() / ".asoundrc"
+        try:
+            if input_name.startswith("hw:"):
+                card = input_name.split(":")[1].split(",")[0]
+            else:
+                card = input_name
+
+            # Keep any existing playback block intact — only update the
+            # capture block, identified by our marker tag.
+            existing = asoundrc.read_text() if asoundrc.exists() else ""
+
+            marker_begin = "# >>> jarvis-capture begin"
+            marker_end = "# <<< jarvis-capture end"
+            new_block = (
+                f"{marker_begin}\n"
+                f"pcm.!default_capture {{\n"
+                f"    type hw\n"
+                f"    card {card}\n"
+                f"}}\n"
+                f"ctl.!default_capture {{\n"
+                f"    type hw\n"
+                f"    card {card}\n"
+                f"}}\n"
+                f"{marker_end}\n"
+            )
+
+            if marker_begin in existing and marker_end in existing:
+                # Replace the existing tagged block in-place.
+                pattern = re.compile(
+                    re.escape(marker_begin) + r".*?" + re.escape(marker_end) + r"\n?",
+                    re.DOTALL,
+                )
+                updated = pattern.sub(new_block, existing)
+            else:
+                updated = existing.rstrip() + "\n\n" + new_block if existing else new_block
+
+            asoundrc.write_text(updated)
+            log.info(
+                "Default ALSA input set to: %s (written to %s). "
+                "Note: active recordings use the old device until restarted.",
+                input_name, asoundrc,
+            )
+        except Exception as e:
+            log.error("Failed to write input block to %s: %s", asoundrc, e)
 
     # ── Bluetooth (delegates to BluetoothHelper) ─────────────────
 

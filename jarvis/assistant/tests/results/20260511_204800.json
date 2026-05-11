@@ -1,0 +1,146 @@
+{
+  "timestamp": "2026-05-11T20:48:00.123133",
+  "system": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.11.11",
+    "model": "llama3.2:3b",
+    "endpoint": "http://localhost:11434"
+  },
+  "suites": {
+    "api_smoke": {
+      "total": 20,
+      "passed": 4,
+      "total_latency": 0.6329739093780518,
+      "tests": [
+        {
+          "name": "status endpoint returns basic info",
+          "passed": false,
+          "latency": 0.36922311782836914,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "settings GET requires token when auth on",
+          "passed": false,
+          "latency": 0.005942821502685547,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "settings open when auth disabled",
+          "passed": false,
+          "latency": 0.005501747131347656,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "_is_obvious_chat classifications",
+          "passed": false,
+          "latency": 0.0014431476593017578,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "audio cache put/pop one-shot",
+          "passed": false,
+          "latency": 0.0014920234680175781,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "audio cache TTL eviction",
+          "passed": true,
+          "latency": 0.051177024841308594,
+          "detail": ""
+        },
+        {
+          "name": "events /current returns active or null",
+          "passed": false,
+          "latency": 0.005940914154052734,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "events theme/tokens 404 for unknown pack",
+          "passed": false,
+          "latency": 0.006405830383300781,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "events theme/tokens 200 for known pack",
+          "passed": false,
+          "latency": 0.004681110382080078,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "events /health returns summary",
+          "passed": false,
+          "latency": 0.004834175109863281,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "events /trigger requires auth",
+          "passed": false,
+          "latency": 0.004731893539428711,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "events /trigger 409 outside event day",
+          "passed": false,
+          "latency": 0.13381385803222656,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "events /trigger lifecycle persists state",
+          "passed": false,
+          "latency": 0.004887104034423828,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "CORS does not combine wildcard origin + credentials",
+          "passed": false,
+          "latency": 0.005953073501586914,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "yaadein loader orders + auto-includes",
+          "passed": true,
+          "latency": 0.005723237991333008,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader handles missing dir",
+          "passed": true,
+          "latency": 0.0003330707550048828,
+          "detail": ""
+        },
+        {
+          "name": "yaadein loader rejects path-traversal in YAML",
+          "passed": true,
+          "latency": 0.0011403560638427734,
+          "detail": ""
+        },
+        {
+          "name": "yaadein /photo rejects path traversal",
+          "passed": false,
+          "latency": 0.005376100540161133,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "yaadein /list 404s when no active event",
+          "passed": false,
+          "latency": 0.00791311264038086,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        },
+        {
+          "name": "yaadein /list returns manifest with stub event",
+          "passed": false,
+          "latency": 0.0064601898193359375,
+          "detail": "RuntimeError: Form data requires \"python-multipart\" to be installed. \nYou can install \"python-multipart\" with: \n\npip install python-multipart\n"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 20,
+    "passed": 4,
+    "failed": 16,
+    "score": 20.0,
+    "total_latency": 0.6329739093780518
+  }
+}

@@ -292,6 +292,19 @@ class AudioOutputInfo(BaseModel):
     active: bool = False
 
 
+# Aliased for the input side — same shape as AudioOutputInfo. Kept distinct
+# in the OpenAPI schema so generated clients can tell inputs/outputs apart
+# even though the wire format is identical.
+class AudioInputInfo(BaseModel):
+    name: str
+    type: str = "unknown"
+    active: bool = False
+
+
+class AudioInputSwitchRequest(BaseModel):
+    name: str = Field(..., min_length=1, description="Input device name (from /api/audio/inputs).")
+
+
 class BluetoothDeviceInfo(BaseModel):
     name: str
     mac_address: str

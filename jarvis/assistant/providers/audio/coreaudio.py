@@ -11,6 +11,7 @@ import json
 import platform
 import shutil
 import subprocess
+from typing import Optional
 
 from core.interfaces import AudioOutputProvider
 from core.logger import get_logger
@@ -138,6 +139,142 @@ class CoreAudioProvider(AudioOutputProvider):
             log.warning("SwitchAudioSource timed out")
         except Exception as e:
             log.error("Failed to switch output: %s", e)
+
+    # ── Inputs (microphones) ─────────────────────────────────────
+
+    def list_inputs(self) -> list[dict]:
+        """
+        List available audio input devices (microphones, line-in, USB capture).
+
+        Parses `system_profiler SPAudioDataType -json` for entries with
+        `coreaudio_device_input > 0`. system_profiler is always available
+        on macOS — no brew package needed.
+        """
+        try:
+            result = subprocess.run(
+                ["system_profiler", "SPAudioDataType", "-json"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode != 0:
+                log.warning("system_profiler failed: %s", result.stderr.strip())
+                return []
+
+            data = json.loads(result.stdout)
+            inputs = []
+            audio_items = data.get("SPAudioDataType", [])
+            for item in audio_items:
+                items_list = item.get("_items", [])
+                for device in items_list:
+                    # Only treat as input if it has input channels.
+                    # system_profiler exposes this under several possible keys
+                    # depending on macOS version; check the common ones.
+                    input_chans = (
+                        device.get("coreaudio_device_input")
+                        or device.get("coreaudio_input_source")
+                        or 0
+                    )
+                    try:
+                        input_chans = int(input_chans)
+                    except (TypeError, ValueError):
+                        input_chans = 1 if input_chans else 0
+
+                    is_default_input = (
+                        device.get("coreaudio_default_audio_input_device") == "spaudio_yes"
+                    )
+
+                    # Include device if it has input channels OR is marked as default input
+                    if input_chans <= 0 and not is_default_input:
+                        continue
+
+                    name = device.get("_name", "Unknown")
+                    coreaudio_info = device.get("coreaudio_device_transport", "")
+                    device_type = "system"
+                    if "bluetooth" in coreaudio_info.lower():
+                        device_type = "bluetooth"
+                    elif "usb" in coreaudio_info.lower():
+                        device_type = "usb"
+                    elif "hdmi" in name.lower():
+                        device_type = "hdmi"
+
+                    inputs.append({
+                        "name": name,
+                        "type": device_type,
+                        "active": is_default_input,
+                    })
+            return inputs
+
+        except (subprocess.TimeoutExpired, json.JSONDecodeError) as e:
+            log.warning("Failed to list inputs: %s", e)
+        except Exception as e:
+            log.error("Failed to list inputs: %s", e)
+        return []
+
+    def get_default_input(self) -> Optional[str]:
+        """
+        Return the current default input device name.
+
+        Uses SwitchAudioSource if available (`brew install switchaudio-osx`).
+        Falls back to parsing system_profiler for the device marked as default.
+        Returns None on any failure.
+        """
+        if shutil.which("SwitchAudioSource"):
+            try:
+                result = subprocess.run(
+                    ["SwitchAudioSource", "-c", "-t", "input"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if result.returncode == 0:
+                    name = result.stdout.strip()
+                    return name or None
+            except subprocess.TimeoutExpired:
+                log.warning("SwitchAudioSource -c (input) timed out")
+            except Exception as e:
+                log.debug("SwitchAudioSource current input failed: %s", e)
+
+        # Fallback: parse system_profiler for default-input device
+        try:
+            result = subprocess.run(
+                ["system_profiler", "SPAudioDataType", "-json"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode != 0:
+                return None
+            data = json.loads(result.stdout)
+            for item in data.get("SPAudioDataType", []):
+                for device in item.get("_items", []):
+                    if device.get("coreaudio_default_audio_input_device") == "spaudio_yes":
+                        return device.get("_name") or None
+        except Exception as e:
+            log.debug("system_profiler default-input fallback failed: %s", e)
+        return None
+
+    def set_default_input(self, input_name: str) -> None:
+        """
+        Switch the default input device by name.
+
+        Requires SwitchAudioSource (brew install switchaudio-osx). Without it,
+        logs a warning — the user can switch manually in System Settings → Sound.
+        """
+        if not shutil.which("SwitchAudioSource"):
+            log.warning(
+                "SwitchAudioSource not found. Install: brew install switchaudio-osx. "
+                "You can switch audio input manually in System Settings → Sound."
+            )
+            return
+
+        try:
+            result = subprocess.run(
+                ["SwitchAudioSource", "-t", "input", "-s", input_name],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                log.info("Switched audio input to: %s", input_name)
+            else:
+                log.warning("Failed to switch input: %s", result.stderr.strip())
+        except subprocess.TimeoutExpired:
+            log.warning("SwitchAudioSource (input) timed out")
+        except Exception as e:
+            log.error("Failed to switch input: %s", e)
 
     # ── Bluetooth (delegates to BluetoothHelper) ─────────────────
 

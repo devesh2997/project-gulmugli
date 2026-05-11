@@ -244,6 +244,45 @@ class AudioOutputProvider(ABC):
         """Switch the default audio output (e.g., switch from HDMI to Bluetooth)."""
         ...
 
+    # ── Inputs (microphones, line-in, USB capture) ────────────────
+    # NOTE: the class is named AudioOutputProvider for legacy reasons (every
+    # current provider implements it). Input methods are added here so all
+    # platform providers share one entry point. May rename to
+    # AudioIOProvider later — until then, treat this as the system audio
+    # I/O interface, not just outputs.
+
+    def list_inputs(self) -> list[dict]:
+        """
+        List available audio input devices (microphones, line-in, USB capture).
+
+        Returns: [{"name": "alsa_input.usb-Foo", "type": "usb", "active": True}, ...]
+
+        Default implementation returns empty list. Providers that support
+        microphone enumeration override this.
+        """
+        return []
+
+    def get_default_input(self) -> Optional[str]:
+        """
+        Get the name of the current default input device, or None if no
+        default is set / no mic is plugged in / not supported on this platform.
+
+        Implementations MUST NOT raise — return None instead.
+        """
+        return None
+
+    def set_default_input(self, input_name: str) -> None:
+        """
+        Switch the default input device by name.
+
+        Should also move any active recording streams to the new source
+        (where the underlying audio server supports it — pactl does, ALSA
+        does not).
+
+        Default implementation is a no-op. Override per-provider.
+        """
+        return None
+
     @abstractmethod
     def is_available(self) -> bool:
         """Check if this audio provider can operate on the current platform."""
